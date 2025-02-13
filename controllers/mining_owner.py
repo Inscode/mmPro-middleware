@@ -88,3 +88,35 @@ def view_tpls():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500  # Return server error message
+    
+    #get 5 licenses most recent and status is active
+@mining_owner_bp.route('/mining-homeLicenses', methods=['GET'])
+@role_required(['MLOwner'])
+def mining_home():
+    try:
+        # Check if the Authorization token is present in the request
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return jsonify({"error": "Authorization token is missing"}), 401
+        
+        # Check if the token starts with 'Bearer ' (you can also validate it further here if needed)
+        if not auth_header.startswith('Bearer '):
+            return jsonify({"error": "Invalid token format. Expected 'Bearer <token>'"}), 401
+        
+        # Extract the token from the header
+        token = auth_header.split(' ')[1]
+
+        # Validate the token (for now, we simply check if it's present, but you can add further validation logic)
+        if not token:
+            return jsonify({"error": "Invalid or missing token"}), 401
+
+        # If the token is valid, proceed with the mining_licenses logic
+        issues, error = MLOwnerService.mining_homeLicenses()
+        
+        if error:
+            return jsonify({"error": error}), 500
+
+        return jsonify({"mining_home": issues})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
