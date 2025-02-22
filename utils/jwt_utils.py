@@ -14,7 +14,7 @@ class JWTUtils:
     @staticmethod
     def create_jwt_token(user_id, user_role, api_key):
         encrypted_api_key = JWTUtils.cipher.encrypt(api_key.encode()).decode()
-        expiration_time = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)
+        expiration_time = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=24)
 
         payload = {
             'user_id': user_id,

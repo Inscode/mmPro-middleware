@@ -34,9 +34,9 @@ class LimitUtils:
         except Exception as e:
             return None, f"Server error: {str(e)}"
 
-# Example usage:
-id, error = LimitUtils.get_limit()
-if error:
-    print(f"Error: {error}")
-else:
-    print(f"latest_issue_id:",id)
+# # Example usage:
+# id, error = LimitUtils.get_limit()
+# if error:
+#     print(f"Error: {error}")
+# else:
+#     print(f"latest_issue_id:",id)

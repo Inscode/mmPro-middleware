@@ -3,42 +3,44 @@ import os
 from dotenv import load_dotenv
 import json
 from datetime import datetime
-
 from utils.jwt_utils import JWTUtils
+from utils.MLOUtils import MLOUtils
+from flask import request
+
 
 
 load_dotenv()
 
 class GsmbOfficerService:
     @staticmethod
-    def get_Issues_Data():
+    def get_Issues_Data(token):  # Accept token as a parameter
         try:
+            # Use the passed token here
+            api_key = JWTUtils.get_api_key_from_token(token)
+
+            if not api_key:
+                return None, "API Key is missing"
+
             REDMINE_URL = os.getenv("REDMINE_URL")
-            API_KEY = os.getenv("REDMINE_ADMIN_API_KEY")
 
-            if not REDMINE_URL or not API_KEY:
-                return None, "Redmine URL or API Key is missing"
-
-            # Define query parameters for project_id=31 and tracker_id=7
-            params = {
-                "project_id": 31,
-                "tracker_id": 7
-            }
+            if not REDMINE_URL:
+                return None, "Redmine URL is missing"
 
             headers = {
-                "X-Redmine-API-Key": API_KEY
+                "X-Redmine-API-Key": api_key,
+                "Content-Type": "application/json"
             }
 
-            response = requests.get(
-                f"{REDMINE_URL}/issues.json",
-                params=params,
-                headers=headers
-            )
+            url = f"{REDMINE_URL}/projects/gsmb/issues.json"
+            print(f"Fetching data from URL: {url}")
+
+            response = requests.get(url, headers=headers)
 
             if response.status_code != 200:
                 return None, f"Failed to fetch issues: {response.status_code} - {response.text}"
 
             issues = response.json().get("issues", [])
+            print(f"Issues retrieved: {issues}")
 
             return issues, None  # Returning the list of issues and no error
 

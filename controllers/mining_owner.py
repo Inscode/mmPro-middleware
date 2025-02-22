@@ -133,7 +133,7 @@ def update_ml(issue_id):
 
         # Call the create_tpl method with the provided 'data'
         # issue, error = MLOwnerService.create_tpl(data)
-        updated_issue, error = MLOwnerService.update_issue(issue_id, data, auth_header)
+        updated_issue, error = MLOwnerService.update_issue(issue_id, data)
 
         if error:
             return jsonify({"error": error}), 400  # Return error message if something went wrong
