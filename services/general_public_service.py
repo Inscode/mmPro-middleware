@@ -3,157 +3,179 @@ import requests
 from dotenv import load_dotenv
 from twilio.rest import Client
 from twilio.base.exceptions import TwilioException
-from utils.jwt_utils import JWTUtils
 import random
 from diskcache import Cache
 
-
-cache = Cache('otp_cache') 
-
-
+# Initialize cache and load environment variables
+cache = Cache('otp_cache')
 load_dotenv()
 
-TWILIO_ACCOUNT_SID = 'AC99293cf8d316875de7dfd3c164e90cbb'
-TWILIO_AUTH_TOKEN = 'f848dae98a365e367fa4f08056c871c2'  
-VERIFY_SERVICE_SID = 'VA8e0fb628c45e51612bf3e2dd68ef1efe'
-
-client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-
+# Configuration from environment variables
 REDMINE_URL = os.getenv("REDMINE_URL")
 API_KEY = os.getenv("REDMINE_ADMIN_API_KEY")
+TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
+TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
+VERIFY_SERVICE_SID = os.getenv("VERIFY_SERVICE_SID")
+
+# Initialize Twilio client if credentials are available
+twilio_client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN) if all([TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN]) else None
 
 class GeneralPublicService:
-    # @staticmethod
-    # def is_lorry_number_valid(lorry_number):
-    #     try:
-
-    #         if not REDMINE_URL or not API_KEY:
-    #             return None, "Redmine URL or API Key is missing"
-
-    #         headers = {"X-Redmine-API-Key": API_KEY}
-
-    #         # Fetch all TPL licenses (tracker_id = 8)
-    #         tpl_params = {"tracker_id": 8}
-    #         tpl_response = requests.get(f"{REDMINE_URL}/issues.json", params=tpl_params, headers=headers)
-
-    #         if tpl_response.status_code != 200:
-    #             return None, f"Failed to fetch TPL issues: {tpl_response.status_code} - {tpl_response.text}"
-
-    #         tpl_issues = tpl_response.json().get("issues", [])
-
-    #         lorry_number_lower = lorry_number.lower()
-
-    #         # Check if any TPL license matches the given lorry number (cf_13)
-    #         tpl_license_exists = any(
-    #             any(cf["id"] == 13 and cf["value"].lower() == lorry_number_lower for cf in issue.get("custom_fields", []))
-    #             for issue in tpl_issues
-    #         )
-
-    #         return tpl_license_exists, None  # Return True if exists, False if not
-
-    #     except Exception as e:
-    #         return None, f"Server error: {str(e)}"
+    # Constants based on your Redmine configuration
+    TRACKER_TPL = 8          # TPL License tracker
+    TRACKER_COMPLAINT = 26   # Complaints tracker
+    CUSTOM_FIELD_LORRY = 53  # Lorry Number field
+    CUSTOM_FIELD_PHONE = 66  # Mobile Number field
+    CUSTOM_FIELD_ROLE = 67   # Role field
+    PROJECT_ADMIN = 14       # Admin project ID
+    STATUS_NEW = 11          # New status ID
 
     @staticmethod
     def is_lorry_number_valid(lorry_number):
+        """
+        Check if a lorry number exists in the TPL license records
+        """
         try:
-            # Extract the user-specific API key from the token
-            api_key = API_KEY
+            if not REDMINE_URL or not API_KEY:
+                return None, "Redmine configuration missing"
 
-            if not REDMINE_URL or not api_key:
-                return None, "Redmine URL or API Key is missing"
+            headers = {"X-Redmine-API-Key": API_KEY}
+            params = {
+                "tracker_id": GeneralPublicService.TRACKER_TPL,
+                "limit": 100  # Adjust based on expected number of records
+            }
 
-            headers = {"X-Redmine-API-Key": api_key}
-
-            # Fetch all TPL licenses (tracker_id = 5)
-            tpl_params = {"tracker_id": 5}
-            tpl_response = requests.get(f"{REDMINE_URL}/issues.json", params=tpl_params, headers=headers)
-
-            if tpl_response.status_code != 200:
-                return None, f"Failed to fetch TPL issues: {tpl_response.status_code} - {tpl_response.text}"
-
-            tpl_issues = tpl_response.json().get("issues", [])
-            lorry_number_lower = lorry_number.lower()
-
-            # Check if any TPL license matches the given lorry number (cf_13)
-            tpl_license_exists = any(
-                any(cf["id"] == 53 and cf["value"].lower() == lorry_number_lower for cf in issue.get("custom_fields", []))
-                for issue in tpl_issues
+            response = requests.get(
+                f"{REDMINE_URL}/issues.json",
+                params=params,
+                headers=headers
             )
 
-            return tpl_license_exists, None
+            if response.status_code != 200:
+                return None, f"Redmine API error: {response.status_code}"
 
+            issues = response.json().get("issues", [])
+            lorry_number_lower = lorry_number.lower().strip()
+
+            for issue in issues:
+                for field in issue.get("custom_fields", []):
+                    if field.get("id") == GeneralPublicService.CUSTOM_FIELD_LORRY:
+                        if str(field.get("value", "")).lower() == lorry_number_lower:
+                            return True, None
+
+            return False, None
+
+        except requests.RequestException as e:
+            return None, f"Network error: {str(e)}"
         except Exception as e:
-            return None, f"Server error: {str(e)}"
+            return None, f"Unexpected error: {str(e)}"
 
     @staticmethod
     def generate_otp():
-        return str(random.randint(100000, 999999))  # Generate a 6-digit OTP
+        """Generate a 6-digit OTP"""
+        return str(random.randint(100000, 999999))
 
     @staticmethod
     def send_verification_code(phone):
-        otp = GeneralPublicService.generate_otp()  # Generate OTP
-        cache.set(phone, otp, expire=600)  # Store OTP in cache for 10 minutes
-
+        """
+        Send OTP to the provided phone number
+        Returns tuple: (success: bool, message: str)
+        """
         try:
-            url = "https://message.textware.lk:5001/sms/send_sms.php"
-            params = {
-                "username": "aasait",
-                "password": "Aasait@textware132",
-                "src": "TWTEST",
-                "dst": phone,
-                "msg": f"Your OTP code is {otp}"
-            }
-            response = requests.get(url, params=params)
+            # Clean phone number and validate
+            phone = phone.strip()
+            if not phone.startswith('+'):
+                phone = f"+94{phone.lstrip('0')}"  # Assuming Sri Lankan numbers
+            
+            otp = GeneralPublicService.generate_otp()
+            cache.set(phone, otp, expire=600)  # 10 minute expiration
 
-            if response.status_code == 200:
-                return True, "Message sent successfully"
-            else:
-                return False, f"Failed to send message: {response.text}"
+            # Using Textware SMS gateway
+            response = requests.get(
+                "https://message.textware.lk:5001/sms/send_sms.php",
+                params={
+                    "username": "aasait",
+                    "password": "Aasait@textware132",
+                    "src": "AASAIT",
+                    "dst": phone,
+                    "msg": f"Your AASA verification code is: {otp}"
+                },
+                timeout=10
+            )
+
+            if response.status_code == 200 and "success" in response.text.lower():
+                return True, "OTP sent successfully"
+            return False, f"SMS gateway error: {response.text}"
 
         except requests.RequestException as e:
-            return False, str(e)
+            return False, f"Network error: {str(e)}"
+        except Exception as e:
+            return False, f"Unexpected error: {str(e)}"
 
     @staticmethod
     def verify_code(phone, code):
-        stored_otp = cache.get(phone)  # Retrieve stored OTP
-
-        if stored_otp is None:
+        """
+        Verify the OTP code for a phone number
+        Returns tuple: (success: bool, message: str)
+        """
+        stored_otp = cache.get(phone.strip())
+        if not stored_otp:
             return False, "OTP expired or not found"
-
-        if stored_otp == code:
-            cache.delete(phone)  # Remove OTP after successful verification
-            return True, None
-        else:
-            return False, "Invalid OTP"
+        if stored_otp == code.strip():
+            cache.delete(phone)
+            return True, "Verification successful"
+        return False, "Invalid OTP code"
 
     @staticmethod
-    def create_complaint(phoneNumber, vehicleNumber):
-        issue_data = {
+    def create_complaint(phone_number, vehicle_number, description=None):
+        """
+        Create a new complaint ticket in Redmine
+        Returns tuple: (success: bool, issue_id/error_message: str)
+        """
+        try:
+            issue_data = {
                 'issue': {
-                    'project_id': 1,  
-                    'tracker_id': 6,  
-                    'subject': "New Complaint",  
-                    'status_id': 1, 
-                    'priority_id': 2,  
+                    'project_id': GeneralPublicService.PROJECT_ADMIN,
+                    'tracker_id': GeneralPublicService.TRACKER_COMPLAINT,
+                    'subject': f"Vehicle Complaint: {vehicle_number}",
+                    'description': description or "No additional details provided",
+                    'status_id': GeneralPublicService.STATUS_NEW,
+                    'priority_id': 2,  # Normal priority
                     'custom_fields': [
-                        {'id': 66, 'name': "Mobile Number", 'value': phoneNumber},
-                        {'id': 53, 'name': "Lorry Number", 'value': vehicleNumber},
-                        {'id': 67, 'name': "Role", 'value': "Public"}
+                        {
+                            'id': GeneralPublicService.CUSTOM_FIELD_PHONE,
+                            'value': phone_number
+                        },
+                        {
+                            'id': GeneralPublicService.CUSTOM_FIELD_LORRY,
+                            'value': vehicle_number
+                        },
+                        {
+                            'id': GeneralPublicService.CUSTOM_FIELD_ROLE,
+                            'value': "Public"
+                        }
                     ]
                 }
             }
-        
-        api_key = API_KEY
 
-        response = requests.post(
-            f'{REDMINE_URL}/issues.json',
-            json=issue_data,
-            headers={'X-Redmine-API-Key': api_key, 'Content-Type': 'application/json'}
-        )
+            response = requests.post(
+                f'{REDMINE_URL}/issues.json',
+                json=issue_data,
+                headers={
+                    'X-Redmine-API-Key': API_KEY,
+                    'Content-Type': 'application/json'
+                },
+                timeout=30
+            )
 
-        if response.status_code == 201:
-            issue_id = response.json()['issue']['id']
-            return True, issue_id
-        else:
-            return False, 'Failed to create complaint'
+            if response.status_code == 201:
+                issue_id = response.json().get('issue', {}).get('id')
+                return True, str(issue_id) if issue_id else "Complaint created"
+            else:
+                error = response.json().get('errors', ['Failed to create complaint'])[0]
+                return False, f"Redmine error: {error}"
+
+        except requests.RequestException as e:
+            return False, f"Network error: {str(e)}"
+        except Exception as e:
+            return False, f"Unexpected error: {str(e)}"
