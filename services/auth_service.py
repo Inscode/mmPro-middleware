@@ -47,7 +47,7 @@ class AuthService:
             for membership in user_data.get('memberships', []):
                 project_name = membership.get('project', {}).get('name')
                 print(f"Checking project: {project_name}")
-                if project_name == "MMPRO-GSMB":
+                if project_name == "GSMB":
                     roles = membership.get('roles', [])
                     if roles:
                         gsm_project_role = roles[0].get('name')
