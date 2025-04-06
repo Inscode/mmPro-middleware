@@ -22,7 +22,7 @@ class PoliceOfficerService:
             current_time_utc = datetime.utcnow().replace(tzinfo=timezone.utc)
 
             # Fetch all TPL licenses (tracker_id = 5)
-            tpl_params = {"tracker_id": 5}
+            tpl_params = {"tracker_id": 8}
             tpl_response = requests.get(f"{REDMINE_URL}/issues.json", params=tpl_params, headers=headers)
 
             if tpl_response.status_code != 200:
@@ -76,9 +76,9 @@ class PoliceOfficerService:
 
             # Extract TPL data
             tpl_data = {
-                "LicenseNumber": next((cf["value"] for cf in valid_tpl_license["custom_fields"] if cf["id"] == 59), None),
-                "Cubes": next((cf["value"] for cf in valid_tpl_license["custom_fields"] if cf["id"] == 58), None),
-                "Destination": next((cf["value"] for cf in valid_tpl_license["custom_fields"] if cf["id"] == 68), None),
+                "LicenseNumber": next((cf["value"] for cf in valid_tpl_license["custom_fields"] if cf["id"] == 8), None),
+                "Cubes": next((cf["value"] for cf in valid_tpl_license["custom_fields"] if cf["id"] == 15), None),
+                "Destination": next((cf["value"] for cf in valid_tpl_license["custom_fields"] if cf["id"] == 12), None),
                 "ValidUntil": (created_on_sl + timedelta(hours=estimated_hours)).strftime("%A, %B %d, %Y at %I:%M %p"),
                 "Route_01": next((cf["value"] for cf in valid_tpl_license["custom_fields"] if cf["id"] == 55), None),
                 "Route_02": next((cf["value"] for cf in valid_tpl_license["custom_fields"] if cf["id"] == 56), None),
@@ -90,7 +90,7 @@ class PoliceOfficerService:
             # Fetch corresponding Mining License (tracker_id = 4)
             ml_number = tpl_data["LicenseNumber"]
             if ml_number:
-                ml_params = {"tracker_id": 4, "subject": ml_number}
+                ml_params = {"tracker_id": 8, "subject": ml_number}
                 ml_response = requests.get(f"{REDMINE_URL}/issues.json", params=ml_params, headers=headers)
 
                 if ml_response.status_code == 200:
@@ -102,7 +102,7 @@ class PoliceOfficerService:
                             "owner": mining_license["assigned_to"]["name"] if isinstance(mining_license["assigned_to"], dict) else str(mining_license["assigned_to"]),
                             "License Start Date": mining_license["start_date"],
                             "License End Date": mining_license["due_date"],
-                            "License Owner Contact Number": next((cf["value"] for cf in mining_license["custom_fields"] if cf["id"] == 66), None),
+                            "License Owner Contact Number": next((cf["value"] for cf in mining_license["custom_fields"] if cf["id"] == 3), None),
                             "Grama Niladhari Division": next((cf["value"] for cf in mining_license["custom_fields"] if cf["id"] == 31), None),
                         }
                         tpl_data.update(mining_data)
@@ -123,13 +123,13 @@ class PoliceOfficerService:
                     'project_id': 31,  
                     'tracker_id': 26,  
                     'subject': "New Complaint",  
-                    'status_id': 11, 
+                    'status_id': 29, 
                     'priority_id': 2,  
                     'assigned_to_id': 59,
                     'custom_fields': [
                         {'id': 3, 'name': "Mobile Number", 'value': phoneNumber},
                         {'id': 13, 'name': "Lorry Number", 'value': vehicleNumber},
-                        {'id': 68, 'name': "Role", 'value': "PoliceOfficer"}
+                        {'id': 8, 'name': "Role", 'value': "PoliceOfficer"}
                     ]
                 }
             }
