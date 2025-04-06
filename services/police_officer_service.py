@@ -36,7 +36,7 @@ class PoliceOfficerService:
             for issue in tpl_issues:
                 # Check lorry number match (custom field 53)
                 lorry_match = any(
-                    cf["id"] == 53 and cf.get("value") and str(cf["value"]).lower() == lorry_number_lower
+                    cf["id"] == 13 and cf.get("value") and str(cf["value"]).lower() == lorry_number_lower
                     for cf in issue.get("custom_fields", [])
                 )
             
