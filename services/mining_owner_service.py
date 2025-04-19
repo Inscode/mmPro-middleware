@@ -330,7 +330,7 @@ class MLOwnerService:
                    # "due_date": (datetime.now() + timedelta(hours=time_hours)).strftime("%Y-%m-%d"),
                     "estimated_hours" :time_hours,
                     "custom_fields": [
-                        {"id": 53, "name": "Lorry Number", "value": data.get("lorry_number", "")},
+                        {"id": 13, "name": "Lorry Number", "value": data.get("lorry_number", "")},
                         {"id": 54, "name": "Driver Contact", "value": data.get("driver_contact", "")},
                         {"id": 55, "name": "Route 01", "value": data.get("route_01", "")},
                         {"id": 56, "name": "Route 02", "value": data.get("route_02", "")},

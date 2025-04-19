@@ -80,9 +80,9 @@ class PoliceOfficerService:
                 "Cubes": next((cf["value"] for cf in valid_tpl_license["custom_fields"] if cf["id"] == 15), None),
                 "Destination": next((cf["value"] for cf in valid_tpl_license["custom_fields"] if cf["id"] == 12), None),
                 "ValidUntil": (created_on_sl + timedelta(hours=estimated_hours)).strftime("%A, %B %d, %Y at %I:%M %p"),
-                "Route_01": next((cf["value"] for cf in valid_tpl_license["custom_fields"] if cf["id"] == 55), None),
-                "Route_02": next((cf["value"] for cf in valid_tpl_license["custom_fields"] if cf["id"] == 56), None),
-                "Route_03": next((cf["value"] for cf in valid_tpl_license["custom_fields"] if cf["id"] == 57), None),
+                "Route_01": next((cf["value"] for cf in valid_tpl_license["custom_fields"] if cf["id"] == 118), None),
+                "Route_02": next((cf["value"] for cf in valid_tpl_license["custom_fields"] if cf["id"] == 119), None),
+                "Route_03": next((cf["value"] for cf in valid_tpl_license["custom_fields"] if cf["id"] == 120), None),
                 "IsValid": is_valid,
                 
             }
