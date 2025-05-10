@@ -852,6 +852,8 @@ class MLOwnerService:
                     "google_location": MLOwnerService.get_custom_field_value(custom_fields, "Google location "),
                     "mobile_number": MLOwnerService.get_custom_field_value(custom_fields, "Mobile Number"),
                     "detailed_mine_restoration_plan": attachment_urls.get("Detailed Mine Restoration Plan"),
+                    "economic_viability_report": attachment_urls.get("Economic Viability Report"),
+                    "license_boundary_survey": attachment_urls.get("License Boundary Survey"),
                     "deed_and_survey_plan": attachment_urls.get("Deed and Survey Plan"),
                     "payment_receipt": attachment_urls.get("Payment Receipt"),
                 }
