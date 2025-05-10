@@ -237,13 +237,17 @@ class GsmbManagmentService:
                                 "title": issue.get("assigned_to", {}).get("name", "Unknown"),
                                 "description": f"Royalty: {royalty_value}",
                                 "avatar": "https://via.placeholder.com/40",
+                                "royalty_value": royalty_value 
                             })
 
                 offset += len(issues)
 
+                fetched_orders.sort(key=lambda x: x["royalty_value"], reverse=True)
+                top_5_orders = fetched_orders[:5]
+
             return jsonify({
                 "total_royalty": total_royalty,
-                "orders": fetched_orders
+                "orders": top_5_orders
             }), None
 
         except Exception as e:

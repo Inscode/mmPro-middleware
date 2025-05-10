@@ -13,8 +13,8 @@ from services.general_public_service import cache  # Import the existing cache i
 import logging
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# logging.basicConfig(level=logging.INFO)
+# logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -22,7 +22,6 @@ GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 REDMINE_URL = os.getenv("REDMINE_URL")
 REDMINE_API_KEY = os.getenv("REDMINE_ADMIN_API_KEY")
 REDMINE_ADMIN_API_KEY = os.getenv("REDMINE_ADMIN_API_KEY")
-
 
 class AuthService:
     ENCRYPTION_KEY = Fernet.generate_key()  # Generate only once and store safely
