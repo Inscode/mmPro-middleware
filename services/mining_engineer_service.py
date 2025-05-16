@@ -76,38 +76,55 @@ class MiningEnginerService:
             # Step 2: Define query parameters for project_id=1 and tracker_id=4 (ML)
             params = {
                 "project_id": 1,
-                "tracker_id": 4 , # ML tracker ID
-                "status_id": "!7"
+                "tracker_id": 4,  # ML tracker ID
             }
 
             headers = {
                 "X-Redmine-API-Key": API_KEY
             }
 
-            # Make the Redmine request
-            limit = LimitUtils.get_limit()
-            response = requests.get(
-                f"{REDMINE_URL}/projects/mmpro-gsmb/issues.json?offset=0&limit={limit}",
-                params=params,
-                headers=headers
-            )
+            # Pagination variables
+            offset = 0
+            limit = 100  # Redmine default/max is usually 100
+            all_issues = []
 
-            # Check if the request was successful
-            if response.status_code != 200:
-                error_msg = f"Redmine API error: {response.status_code}"
-                if response.text:
-                    error_msg += f" - {response.text[:200]}"  # Truncate long error messages
-                return None, error_msg
+            while True:
+                paged_params = params.copy()
+                paged_params.update({"offset": offset, "limit": limit})
 
-            data = response.json()
-            issues = data.get("issues", [])
+                response = requests.get(
+                    f"{REDMINE_URL}/projects/mmpro-gsmb/issues.json",
+                    params=paged_params,
+                    headers=headers
+                )
 
+                if response.status_code != 200:
+                    error_msg = f"Redmine API error: {response.status_code}"
+                    if response.text:
+                        error_msg += f" - {response.text[:200]}"
+                    return None, error_msg
+
+                data = response.json()
+                issues = data.get("issues", [])
+                all_issues.extend(issues)
+
+                if len(issues) < limit:
+                    break  # No more pages
+
+                offset += limit
+
+            # Filter issues based on status_id
+            valid_status_ids = {26, 31, 32, 6}
             processed_issues = []
-            for issue in issues:
+            for issue in all_issues:
+                status_id = issue.get("status", {}).get("id")
+                if status_id not in valid_status_ids:
+                    continue
+
                 # Process custom fields using IDs
                 custom_fields = {field['id']: field['value']
-                                for field in issue.get('custom_fields', [])
-                                if field.get('value') and str(field.get('value')).strip()}
+                                 for field in issue.get('custom_fields', [])
+                                 if field.get('value') and str(field.get('value')).strip()}
 
                 attachment_urls = MiningEnginerService.get_attachment_urls(API_KEY, REDMINE_URL, issue.get("custom_fields", []))
 
@@ -116,19 +133,19 @@ class MiningEnginerService:
                     "subject": issue.get("subject"),
                     "status": issue.get("status", {}).get("name"),
                     "assigned_to": issue.get("assigned_to", {}).get("name"),
-                    "exploration_license_no": custom_fields.get(19),  # ID for "Exploration Licence No"
-                    "Land_Name": custom_fields.get(28),  # ID for "Land Name(Licence Details)"
-                    "Land_owner_name": custom_fields.get(29),  # ID for "Land owner name"
-                    "Name_of_village": custom_fields.get(30),  # ID for "Name of village"
-                    "Grama_Niladhari": custom_fields.get(31),  # ID for "Grama Niladhari Division"
-                    "Divisional_Secretary_Division": custom_fields.get(32),  # ID for "Divisional Secretary Division"
-                    "administrative_district": custom_fields.get(33),  # ID for "Administrative District"
-                    "Capacity": custom_fields.get(34),  # ID for "Capacity"
-                    "Mobile_Numbe": custom_fields.get(66),  # ID for "Mobile Number"
-                    "Google_location": custom_fields.get(92),  # ID for "Google location"
-                    "Detailed_Plan": attachment_urls.get("Detailed Mine Restoration Plan") or custom_fields.get(72),  # ID for "Detailed Mine Restoration Plan"
-                    "Payment_Receipt": attachment_urls.get("Payment Receipt") or custom_fields.get(80),  # ID for "Payment Receipt"
-                    "Deed_Plan": attachment_urls.get("Deed and Survey Plan") or custom_fields.get(90),  # ID for "Deed and Survey Plan"
+                    "exploration_license_no": custom_fields.get(19),
+                    "Land_Name": custom_fields.get(28),
+                    "Land_owner_name": custom_fields.get(29),
+                    "Name_of_village": custom_fields.get(30),
+                    "Grama_Niladhari": custom_fields.get(31),
+                    "Divisional_Secretary_Division": custom_fields.get(32),
+                    "administrative_district": custom_fields.get(33),
+                    "Capacity": custom_fields.get(34),
+                    "Mobile_Numbe": custom_fields.get(66),
+                    "Google_location": custom_fields.get(92),
+                    "Detailed_Plan": attachment_urls.get("Detailed Mine Restoration Plan") or custom_fields.get(72),
+                    "Payment_Receipt": attachment_urls.get("Payment Receipt") or custom_fields.get(80),
+                    "Deed_Plan": attachment_urls.get("Deed and Survey Plan") or custom_fields.get(90),
                     "mining_number": attachment_urls.get("Mining License Number") or custom_fields.get(101),
                 })
 
@@ -723,3 +740,46 @@ class MiningEnginerService:
         except Exception as e:
             return {"error": f"Server error: {str(e)}"}         
         
+
+    @staticmethod
+    def set_license_hold(issue_id, reason_for_hold, token):
+        try:
+            user_api_key = JWTUtils.get_api_key_from_token(token)
+            if not user_api_key:
+                return False, "Invalid or missing API key in token"
+
+            REDMINE_URL = os.getenv("REDMINE_URL")
+            if not REDMINE_URL:
+                return False, "Environment variable 'REDMINE_URL' is not set"
+
+            # 1. Get the "Hold" status ID (assuming fixed or fetch dynamically)
+            # You can hardcode the Hold status ID if fixed, here example 39 as per your data
+            hold_status_id = 39
+
+            # 2. Update the issue status to "Hold" and set the "Reason For Hold" custom field
+            update_payload = {
+                "issue": {
+                    "status_id": hold_status_id,
+                    "custom_fields": [
+                        {
+                            "id":106,
+                            "value": reason_for_hold
+                        }
+                    ]
+                }
+            }
+
+            response = requests.put(
+                f"{REDMINE_URL}/issues/{issue_id}.json",
+                json=update_payload,
+                headers={"X-Redmine-API-Key": user_api_key, "Content-Type": "application/json"}
+            )
+
+            if response.status_code not in [200, 204]:
+                return False, f"Failed to update issue: {response.status_code} - {response.text}"
+
+            return True, None
+
+        except Exception as e:
+            return False, f"Server error: {str(e)}"
+

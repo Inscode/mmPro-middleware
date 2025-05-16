@@ -18,6 +18,100 @@ class MLOwnerService:
     ORS_API_KEY = os.getenv("ORS_API_KEY")
     
 
+    # @staticmethod
+    # def mining_licenses(token):
+    #     try:
+    #         REDMINE_URL = os.getenv("REDMINE_URL")
+    #         API_KEY = JWTUtils.get_api_key_from_token(token)
+
+    #         if not REDMINE_URL or not API_KEY:
+    #             return None, "Redmine URL or API Key is missing"
+
+    #         # Step 1: Extract user_id from the token
+    #         user_id, error = MLOUtils.get_user_info_from_token(token)
+    #         if not user_id:
+    #             return None, error
+
+            
+
+    #         # Step 2: Define query parameters for project_id=1 and tracker_id=4 (ML)
+    #         params = {
+    #             "project_id": 1,
+    #             "tracker_id": 4,  # ML tracker ID
+    #             "status_id": 7 
+    #         }
+
+    #         headers = {
+    #             "Content-Type": "application/json",
+    #             "X-Redmine-API-Key": API_KEY
+    #         }
+
+    #         limit = LimitUtils.get_limit()
+            
+    #         response = requests.get(
+    #             f"{REDMINE_URL}/projects/mmpro-gsmb/issues.json?offset=0&limit={limit}",
+    #             params=params,
+    #             headers=headers
+    #         )
+
+    #         # Check if the request was successful
+    #         if response.status_code != 200:
+    #             print(f"Failed to fetch issues: {response.status_code} - {response.text}")
+    #             return None, f"Failed to fetch issues: {response.status_code} - {response.text}"
+
+    #         issues = response.json().get("issues", [])
+    #         print(f"Fetched {len(issues)} issues")
+
+    #         # Step 3: Filter the issues based on the logged-in user's user_id
+    #         filtered_issues = [
+    #             issue for issue in issues if MLOUtils.issue_belongs_to_user(issue, user_id)
+    #         ]
+           
+ 
+    #         # Step 4: Extract and format the required fields
+    #         relevant_issues = []
+    #         for issue in filtered_issues:
+    #             # Extract custom fields
+    #             custom_fields = issue.get("custom_fields", [])
+    #             custom_fields_dict = {field["name"]: field["value"] for field in custom_fields}
+
+    #             # Get required fields
+    #             license_number = custom_fields_dict.get("Mining License Number", "N/A")  # License number is in the "subject" field
+    #             owner_name = custom_fields_dict.get("Name of Applicant OR Company", "N/A")
+    #             location = custom_fields_dict.get("Name of village ", "N/A")
+    #             start_date = issue.get("start_date", "N/A")
+    #             due_date = issue.get("due_date", "N/A")
+    #             # remaining_cubes = custom_fields_dict.get("Remaining", 0)
+    #             roylaty = custom_fields_dict.get("Royalty", "N/A")
+
+    #             # Determine status
+    #             current_date = datetime.now().date()
+    #             due_date_obj = datetime.strptime(due_date, "%Y-%m-%d").date() if due_date != "N/A" else None
+
+    #             # if due_date_obj and (current_date > due_date_obj or remaining_cubes <= 0):
+    #             #     status = "Expired"
+    #             # else:
+    #             #     status = "Active"
+
+    #             # Append formatted issue data
+    #             relevant_issues.append({
+    #                 "License Number": license_number,
+    #                 "Owner Name": owner_name,
+    #                 "Location": location,
+    #                 "Start Date": start_date,
+    #                 "Due Date": due_date,
+    #                 # "Status": status,
+    #                 "Royalty": roylaty
+    #             })
+
+        
+    #         return relevant_issues, None  # Returning filtered issues and no error
+
+    #     except Exception as e:
+    #         print(f"Exception in mining_licenses: {str(e)}")
+    #         return None, f"Server error: {str(e)}"
+
+
     @staticmethod
     def mining_licenses(token):
         try:
@@ -32,86 +126,182 @@ class MLOwnerService:
             if not user_id:
                 return None, error
 
-            
-
-            # Step 2: Define query parameters for project_id=1 and tracker_id=4 (ML)
+            # Step 2: Define query parameters
             params = {
                 "project_id": 1,
-                "tracker_id": 4,  # ML tracker ID
-                "status_id": 7 
+                "tracker_id": 4  # ML tracker ID
             }
 
             headers = {
-                "Content-Type": "application/json",
                 "X-Redmine-API-Key": API_KEY
             }
 
+            # Step 3: Fetch issues
             limit = LimitUtils.get_limit()
-            
             response = requests.get(
                 f"{REDMINE_URL}/projects/mmpro-gsmb/issues.json?offset=0&limit={limit}",
                 params=params,
                 headers=headers
             )
 
-            # Check if the request was successful
             if response.status_code != 200:
-                print(f"Failed to fetch issues: {response.status_code} - {response.text}")
                 return None, f"Failed to fetch issues: {response.status_code} - {response.text}"
 
             issues = response.json().get("issues", [])
-            print(f"Fetched {len(issues)} issues")
-
-            # Step 3: Filter the issues based on the logged-in user's user_id
-            filtered_issues = [
-                issue for issue in issues if MLOUtils.issue_belongs_to_user(issue, user_id)
-            ]
-           
- 
-            # Step 4: Extract and format the required fields
             relevant_issues = []
-            for issue in filtered_issues:
-                # Extract custom fields
-                custom_fields = issue.get("custom_fields", [])
-                custom_fields_dict = {field["name"]: field["value"] for field in custom_fields}
 
-                # Get required fields
-                license_number = custom_fields_dict.get("Mining License Number", "N/A")  # License number is in the "subject" field
-                owner_name = custom_fields_dict.get("Name of Applicant OR Company", "N/A")
-                location = custom_fields_dict.get("Name of village ", "N/A")
-                start_date = issue.get("start_date", "N/A")
-                due_date = issue.get("due_date", "N/A")
-                remaining_cubes = int(custom_fields_dict.get("Remaining", 0))
-                roylaty = int(custom_fields_dict.get("Royalty", 0))
+            for issue in issues:
+                assigned_to = issue.get("assigned_to", {})
+                assigned_user_id = assigned_to.get("id", None)
 
-                # Determine status
-                current_date = datetime.now().date()
-                due_date_obj = datetime.strptime(due_date, "%Y-%m-%d").date() if due_date != "N/A" else None
+                if assigned_user_id == user_id:
+                    custom_fields = issue.get("custom_fields", [])
+                    custom_fields_dict = {field["name"]: field["value"] for field in custom_fields}
 
-                if due_date_obj and (current_date > due_date_obj or remaining_cubes <= 0):
-                    status = "Expired"
-                else:
-                    status = "Active"
+                    owner_name = assigned_to.get("name", "N/A")
+                    license_number = custom_fields_dict.get("Mining License Number", "N/A")
+                    divisional_secretary = custom_fields_dict.get("Divisional Secretary Division", "N/A")
+                    location = custom_fields_dict.get("Name of village ", "N/A")
+                    start_date = issue.get("start_date", "N/A")
+                    due_date = issue.get("due_date", "N/A")
 
-                # Append formatted issue data
-                relevant_issues.append({
-                    "License Number": license_number,
-                    "Owner Name": owner_name,
-                    "Location": location,
-                    "Start Date": start_date,
-                    "Due Date": due_date,
-                    "Status": status,
-                    "Royalty": roylaty
-                })
+                    # Handle remaining cubes safely
+                    remaining_str = custom_fields_dict.get("Remaining", "0")
+                    try:
+                        remaining_cubes = int(remaining_str) if remaining_str.strip() else 0
+                    except ValueError:
+                        remaining_cubes = 0
 
-        
-            return relevant_issues, None  # Returning filtered issues and no error
+                    royalty = custom_fields_dict.get("Royalty", "N/A")
+
+                    # Get status from issue object
+                    status = issue.get("status", {}).get("name", "Unknown")
+
+                    relevant_issues.append({
+                        "License Number": license_number,
+                        "Divisional Secretary Division": divisional_secretary,
+                        "Owner Name": owner_name,
+                        "Location": location,
+                        "Start Date": start_date,
+                        "Due Date": due_date,
+                        "Remaining Cubes": remaining_cubes,
+                        "Royalty": royalty,
+                        "Status": status
+                    })
+
+            return relevant_issues, None
 
         except Exception as e:
-            print(f"Exception in mining_licenses: {str(e)}")
             return None, f"Server error: {str(e)}"
 
+
     # Home function (mining_homeLicenses)
+    # @staticmethod
+    # def mining_homeLicenses(token):
+    #     try:
+    #         REDMINE_URL = os.getenv("REDMINE_URL")
+    #         API_KEY = JWTUtils.get_api_key_from_token(token)
+
+    #         if not REDMINE_URL or not API_KEY:
+    #             return None, "Redmine URL or API Key is missing"
+
+    #         # Step 1: Extract user_id from the token
+    #         user_id, error = MLOUtils.get_user_info_from_token(token)
+    #         if not user_id:
+    #             return None, error
+            
+        
+
+    #         # Step 2: Define query parameters for project_id=1 and tracker_id=4 (ML)
+    #         params = {
+    #             "project_id": 1,
+    #             "tracker_id": 4,  # ML tracker ID
+    #             "status_id": 7 
+    #         }
+
+    #         headers = {
+    #             "X-Redmine-API-Key": API_KEY
+    #         }
+
+    #         # Make the Redmine request
+    #         limit = LimitUtils.get_limit()
+    #         response = requests.get(
+    #             f"{REDMINE_URL}/projects/mmpro-gsmb/issues.json?offset=0&limit={limit}",
+    #             params=params,
+    #             headers=headers
+    #         )
+
+    #         # Check if the request was successful
+    #         if response.status_code != 200:
+    #             return None, f"Failed to fetch issues: {response.status_code} - {response.text}"
+
+    #         issues = response.json().get("issues", [])
+
+    #         # Step 3: Filter the issues based on the logged-in user's user_id
+    #         filtered_issues = [
+    #             issue for issue in issues if MLOUtils.issue_belongs_to_user(issue, user_id)
+    #         ]
+
+    #         filtered_issues_sorted = sorted(
+    #         filtered_issues,
+    #         key=lambda x: (
+    #             datetime.strptime(x.get("updated_on"), "%Y-%m-%dT%H:%M:%SZ") if x.get("updated_on") else datetime.min,
+    #             datetime.strptime(x.get("created_on"), "%Y-%m-%dT%H:%M:%SZ") if x.get("created_on") else datetime.min
+    #         ),
+    #         reverse=True
+    #         )
+            
+    #         relevant_issues = []
+    #         for issue in filtered_issues_sorted:
+    #             # Extract custom fields
+    #             custom_fields = issue.get("custom_fields", [])
+    #             custom_fields_dict = {field["name"]: field["value"] for field in custom_fields}
+
+    #             # Get required fields
+    #             license_number = custom_fields_dict.get("Mining License Number", "N/A")  
+
+    #             license_number = custom_fields_dict.get("Mining License Number", "N/A")  
+    #             divisional_secretary = custom_fields_dict.get("Divisional Secretary Division", "N/A")
+    #             owner_name = issue.get("Name of Applicant OR Company", "N/A")
+    #             location = custom_fields_dict.get("Name of village ", "N/A")
+    #             start_date = issue.get("start_date", "N/A")
+    #             due_date = issue.get("due_date", "N/A")
+    #             remaining_str = custom_fields_dict.get("Remaining", "0")
+    #             try:
+    #                 remaining_cubes = int(remaining_str) if remaining_str.strip() else 0
+    #             except ValueError:
+    #                 remaining_cubes = 0
+    #             royalty = custom_fields_dict.get("Royalty", "N/A")
+                
+
+    #             # Determine status
+    #             current_date = datetime.now().date()
+    #             due_date_obj = datetime.strptime(due_date, "%Y-%m-%d").date() if due_date != "N/A" else None
+
+    #             if due_date_obj and (current_date > due_date_obj or remaining_cubes <= 0):
+    #                 status = "Expired"
+    #             else:
+    #                 status = "Active"
+
+    #             # Append formatted issue data
+    #             relevant_issues.append({
+    #                 "License Number": license_number,
+    #                 "Divisional Secretary Division": divisional_secretary,
+    #                 "Owner Name": owner_name,
+    #                 "Location": location,
+    #                 "Start Date": start_date,
+    #                 "Due Date": due_date,
+    #                 "Remaining Cubes": remaining_cubes,
+    #                 "Status": status,
+    #                 "Royalty": royalty
+    #             })
+
+    #         # Return the relevant issue data
+    #         return relevant_issues, None  # Returning filtered issues and no error
+
+    #     except Exception as e:
+    #         return None, f"Server error: {str(e)}"
+
     @staticmethod
     def mining_homeLicenses(token):
         try:
@@ -125,14 +315,12 @@ class MLOwnerService:
             user_id, error = MLOUtils.get_user_info_from_token(token)
             if not user_id:
                 return None, error
-            
-        
 
             # Step 2: Define query parameters for project_id=1 and tracker_id=4 (ML)
             params = {
                 "project_id": 1,
                 "tracker_id": 4,  # ML tracker ID
-                "status_id": 7 
+                "status_id": 7
             }
 
             headers = {
@@ -153,70 +341,55 @@ class MLOwnerService:
 
             issues = response.json().get("issues", [])
 
-            # Step 3: Filter the issues based on the logged-in user's user_id
-            filtered_issues = [
-                issue for issue in issues if MLOUtils.issue_belongs_to_user(issue, user_id)
-            ]
-
-            filtered_issues_sorted = sorted(
-            filtered_issues,
-            key=lambda x: (
-                datetime.strptime(x.get("updated_on"), "%Y-%m-%dT%H:%M:%SZ") if x.get("updated_on") else datetime.min,
-                datetime.strptime(x.get("created_on"), "%Y-%m-%dT%H:%M:%SZ") if x.get("created_on") else datetime.min
-            ),
-            reverse=True
-            )
-            
             relevant_issues = []
-            for issue in filtered_issues_sorted:
-                # Extract custom fields
-                custom_fields = issue.get("custom_fields", [])
-                custom_fields_dict = {field["name"]: field["value"] for field in custom_fields}
+            current_date = datetime.now().date()
 
-                # Get required fields
-                license_number = custom_fields_dict.get("Mining License Number", "N/A")  
-
-                license_number = custom_fields_dict.get("Mining License Number", "N/A")  
-                divisional_secretary = custom_fields_dict.get("Divisional Secretary Division", "N/A")
-                owner_name = issue.get("Name of Applicant OR Company", "N/A")
-                location = custom_fields_dict.get("Name of village ", "N/A")
-                start_date = issue.get("start_date", "N/A")
+            for issue in issues:
+                assigned_to = issue.get("assigned_to", {})
+                assigned_user_id = assigned_to.get("id", None)
                 due_date = issue.get("due_date", "N/A")
-                remaining_str = custom_fields_dict.get("Remaining", "0")
-                try:
-                    remaining_cubes = int(remaining_str) if remaining_str.strip() else 0
-                except ValueError:
-                    remaining_cubes = 0
-                royalty = custom_fields_dict.get("Royalty", "N/A")
                 
+                # Combined filter for assigned user and due date existence
+                if assigned_user_id == user_id and due_date != "N/A":
+                    due_date_obj = datetime.strptime(due_date, "%Y-%m-%d").date()
+                    
+                    # Check due date is after current date
+                    if due_date_obj > current_date:
+                        # Extract fields
+                        custom_fields = issue.get("custom_fields", [])
+                        custom_fields_dict = {field["name"]: field["value"] for field in custom_fields}
 
-                # Determine status
-                current_date = datetime.now().date()
-                due_date_obj = datetime.strptime(due_date, "%Y-%m-%d").date() if due_date != "N/A" else None
+                        owner_name = assigned_to.get("name", "N/A")
+                        license_number = custom_fields_dict.get("Mining License Number", "N/A")
+                        divisional_secretary = custom_fields_dict.get("Divisional Secretary Division", "N/A")
+                        location = custom_fields_dict.get("Name of village ", "N/A")
+                        start_date = issue.get("start_date", "N/A")
 
-                if due_date_obj and (current_date > due_date_obj or remaining_cubes <= 0):
-                    status = "Expired"
-                else:
-                    status = "Active"
+                        remaining_str = custom_fields_dict.get("Remaining", "0")
+                        try:
+                            remaining_cubes = int(remaining_str) if remaining_str.strip() else 0
+                        except ValueError:
+                            remaining_cubes = 0
 
-                # Append formatted issue data
-                relevant_issues.append({
-                    "License Number": license_number,
-                    "Divisional Secretary Division": divisional_secretary,
-                    "Owner Name": owner_name,
-                    "Location": location,
-                    "Start Date": start_date,
-                    "Due Date": due_date,
-                    "Remaining Cubes": remaining_cubes,
-                    "Status": status,
-                    "Royalty": royalty
-                })
+                        royalty = custom_fields_dict.get("Royalty", "N/A")
 
-            # Return the relevant issue data
-            return relevant_issues, None  # Returning filtered issues and no error
+                        relevant_issues.append({
+                            "License Number": license_number,
+                            "Divisional Secretary Division": divisional_secretary,
+                            "Owner Name": owner_name,
+                            "Location": location,
+                            "Start Date": start_date,
+                            "Due Date": due_date,
+                            "Remaining Cubes": remaining_cubes,
+                            "Royalty": royalty
+                        })
+
+            return relevant_issues, None
 
         except Exception as e:
             return None, f"Server error: {str(e)}"
+
+
 
     @staticmethod
     def create_tpl(data, token):
@@ -836,6 +1009,7 @@ class MLOwnerService:
                     "status": issue.get("status", {}).get("name"),
                     "assigned_to": assigned_to.get("name"),
                     "created_on": issue.get("created_on"),
+                    "updated_on": issue.get("updated_on"),
                     "assigned_to_details": {
                         "id": assigned_to_details.get("id"),
                         "name": f"{assigned_to_details.get('firstname', '')} {assigned_to_details.get('lastname', '')}".strip(),
@@ -852,6 +1026,8 @@ class MLOwnerService:
                     "google_location": MLOwnerService.get_custom_field_value(custom_fields, "Google location "),
                     "mobile_number": MLOwnerService.get_custom_field_value(custom_fields, "Mobile Number"),
                     "detailed_mine_restoration_plan": attachment_urls.get("Detailed Mine Restoration Plan"),
+                    "economic_viability_report": attachment_urls.get("Economic Viability Report"),
+                    "license_boundary_survey": attachment_urls.get("License Boundary Survey"),
                     "deed_and_survey_plan": attachment_urls.get("Deed and Survey Plan"),
                     "payment_receipt": attachment_urls.get("Payment Receipt"),
                 }
@@ -912,3 +1088,59 @@ class MLOwnerService:
             if field.get("name") == field_name:
                 return field.get("value")
         return None
+    
+
+    @staticmethod
+    def get_pending_mining_license_details(token):
+        try:
+            user_api_key = JWTUtils.get_api_key_from_token(token)
+            if not user_api_key:
+                return None, "Invalid or missing API key in the token"
+
+            user_response = JWTUtils.decode_jwt_and_get_user_id(token)
+            user_id = user_response.get("user_id")
+            if not user_id:
+                return None, "Failed to extract user info"
+
+            REDMINE_URL = os.getenv("REDMINE_URL")
+            if not REDMINE_URL:
+                return None, "Environment variable 'REDMINE_URL' is not set"
+
+            ml_issues_url = f"{REDMINE_URL}/issues.json?tracker_id=4&project_id=1&status_id=!7"
+            response = requests.get(
+                ml_issues_url,
+                headers={"X-Redmine-API-Key": user_api_key, "Content-Type": "application/json"}
+            )
+
+            if response.status_code != 200:
+                return None, f"Failed to fetch ML issues: {response.status_code} - {response.text}"
+
+            issues = response.json().get("issues", [])
+
+            license_summaries = []
+
+            for issue in issues:
+                assigned_to = issue.get("assigned_to", {})
+                assigned_to_id = assigned_to.get("id")
+
+                # Filter: only include issues assigned to current user
+                if assigned_to_id != user_id:
+                    continue
+
+                custom_fields = issue.get("custom_fields", [])
+
+                mining_license_no = MLOwnerService.get_custom_field_value(custom_fields, "Mining License Number")
+
+                license_summaries.append({
+                    "mining_license_number": mining_license_no,
+                    "created_on": issue.get("created_on"),
+                    "updated_on": issue.get("updated_on"),
+                    "status": issue.get("status", {}).get("name")
+                })
+
+            return license_summaries, None
+
+        except Exception as e:
+            return None, f"Server error: {str(e)}"
+
+#sample 

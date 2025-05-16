@@ -213,12 +213,17 @@ def ml_request():
 
         # Handle file uploads through AuthService
         detailed_mine_file = request.files.get('detailed_mine_plan') 
+        economic_report_file = request.files.get('economic_viability_report')
         payment_receipt_file = request.files.get('payment_receipt')  #Deed and Survey Plan
         Deed_plan_file = request.files.get('Deed_plan')
+        license_boundary_survey_file = request.files.get('license_boundary_survey')
+
 
         detailed_mine_plan_id = AuthService.upload_file_to_redmine(detailed_mine_file) if detailed_mine_file else None
+        economic_viability_report_id = AuthService.upload_file_to_redmine(economic_report_file) if economic_report_file else None
         payment_receipt_id = AuthService.upload_file_to_redmine(payment_receipt_file) if payment_receipt_file else None
         Deed_plan_id = AuthService.upload_file_to_redmine(Deed_plan_file) if Deed_plan_file else None
+        license_boundary_survey_id = AuthService.upload_file_to_redmine(license_boundary_survey_file) if license_boundary_survey_file else None
 
         # Add file references to custom fields
         if detailed_mine_plan_id:
@@ -226,8 +231,11 @@ def ml_request():
         if payment_receipt_id:
             custom_fields.append({"id": 80, "value": payment_receipt_id})
         if Deed_plan_id:
-            custom_fields.append({"id": 90, "value": Deed_plan_id})    
-        
+            custom_fields.append({"id": 90, "value": Deed_plan_id})
+        if economic_viability_report_id:
+            custom_fields.append({"id": 100, "value": economic_viability_report_id})    
+        if license_boundary_survey_id:
+            custom_fields.append({"id": 105, "value": license_boundary_survey_id})    
         # Update data with custom_fields
         data['custom_fields'] = custom_fields
         
@@ -263,6 +271,26 @@ def get_mining_license_requests():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+@mining_owner_bp.route('/get-pending-license-details', methods=['GET'])
+@check_token
+@role_required(['MLOwner'])
+def get_mining_license_summary():
+    try:
+        token = request.headers.get('Authorization')
+
+        if not token:
+            return jsonify({"error": "Authorization token is missing"}), 400
+
+        mining_licenses, error = MLOwnerService.get_pending_mining_license_details(token)
+
+        if error:
+            return jsonify({"error": error}), 500
+
+        return jsonify({"success": True, "data": mining_licenses}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 

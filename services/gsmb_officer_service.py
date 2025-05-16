@@ -15,14 +15,96 @@ class GsmbOfficerService:
 
     ORS_API_KEY = os.getenv("ORS_API_KEY")
     
+    # @staticmethod
+    # def get_mlowners(token):
+    #     try:
+    #         # 🔑 Extract user's API key from token for memberships request
+    #         user_api_key = JWTUtils.get_api_key_from_token(token)
+    #         if not user_api_key:
+    #             return None, "Invalid or missing API key in the token"
+
+    #         # 🔑 Get Redmine Admin API key for user details request
+    #         admin_api_key = os.getenv("REDMINE_ADMIN_API_KEY")
+    #         if not admin_api_key:
+    #             return None, "Environment variable 'REDMINE_ADMIN_API_KEY' is not set"
+
+    #         # 🌐 Get Redmine URL
+    #         REDMINE_URL = os.getenv("REDMINE_URL")
+
+    #         if not REDMINE_URL:
+    #             return None, "Environment variable 'REDMINE_URL' is not set"
+
+    #         # 1️⃣ Fetch memberships using the **user's API key**
+    #         memberships_url = f"{REDMINE_URL}/projects/mmpro-gsmb/memberships.json"
+    #         memberships_response = requests.get(
+    #             memberships_url, 
+    #             headers={"X-Redmine-API-Key": user_api_key, "Content-Type": "application/json"}
+    #         )
+
+    #         if memberships_response.status_code != 200:
+    #             return None, f"Failed to fetch memberships: {memberships_response.status_code} - {memberships_response.text}"
+
+    #         memberships = memberships_response.json().get("memberships", [])
+
+    #         # 2️⃣ Filter users who have the role "MLOwner"
+    #         ml_owner_ids = [
+    #             membership['user']['id'] for membership in memberships
+    #             if any(role["name"] == "MLOwner" for role in membership.get("roles", []))
+    #         ]
+
+    #         if not ml_owner_ids:
+    #             return [], None  # No MLOwner users found
+
+    #         # 3️⃣ Fetch user details using the **admin API key** (for broader access)
+    #         users_url = f"{REDMINE_URL}/users.json?status=1&limit=100"
+    #         users_response = requests.get(
+    #             users_url, 
+    #             headers={"X-Redmine-API-Key": admin_api_key, "Content-Type": "application/json"}
+    #         )
+
+    #         if users_response.status_code != 200:
+    #             return None, f"Failed to fetch user details: {users_response.status_code} - {users_response.text}"
+
+    #         all_users = users_response.json().get("users", [])
+
+    #         # 4️⃣ Filter users who match MLOwner IDs
+    #         ml_owners_details = [
+    #             user for user in all_users if user["id"] in ml_owner_ids
+    #         ]
+
+    #         # Fetch the mining license counts for all users
+    #         license_counts, license_error = GsmbOfficerService.get_mining_license_counts(token)
+    #         if license_error:
+    #             return None, license_error
+
+    #         # 5️⃣ Map license count to each MLOwner
+    #         formatted_ml_owners = []
+    #         for ml_owner in ml_owners_details:
+    #             owner_name = f"{ml_owner.get('firstname', '')} {ml_owner.get('lastname', '')}"
+    #             ml_owner_name = owner_name.strip()
+    #             license_count = license_counts.get(ml_owner_name, 0)
+
+    #             # Prepare formatted output
+    #             formatted_owner = {
+    #                 "id": ml_owner["id"],
+    #                 "ownerName": ml_owner_name,
+    #                 "NIC": next((field["value"] for field in ml_owner.get("custom_fields", []) if field["name"] == "National Identity Card"), ""),
+    #                 "email": ml_owner.get("mail", ""),
+    #                 "phoneNumber": next((field["value"] for field in ml_owner.get("custom_fields", []) if field["name"] == "Mobile Number"), ""),
+    #                 "totalLicenses": license_count
+    #             }
+                
+    #             formatted_ml_owners.append(formatted_owner)
+
+    #         return formatted_ml_owners, None  # ✅ Return the formatted user details with license count
+
+    #     except Exception as e:
+    #         return None, f"Server error: {str(e)}"
+
+    
     @staticmethod
     def get_mlowners(token):
         try:
-            # 🔑 Extract user's API key from token for memberships request
-            user_api_key = JWTUtils.get_api_key_from_token(token)
-            if not user_api_key:
-                return None, "Invalid or missing API key in the token"
-
             # 🔑 Get Redmine Admin API key for user details request
             admin_api_key = os.getenv("REDMINE_ADMIN_API_KEY")
             if not admin_api_key:
@@ -30,35 +112,13 @@ class GsmbOfficerService:
 
             # 🌐 Get Redmine URL
             REDMINE_URL = os.getenv("REDMINE_URL")
-
             if not REDMINE_URL:
                 return None, "Environment variable 'REDMINE_URL' is not set"
 
-            # 1️⃣ Fetch memberships using the **user's API key**
-            memberships_url = f"{REDMINE_URL}/projects/mmpro-gsmb/memberships.json"
-            memberships_response = requests.get(
-                memberships_url, 
-                headers={"X-Redmine-API-Key": user_api_key, "Content-Type": "application/json"}
-            )
-
-            if memberships_response.status_code != 200:
-                return None, f"Failed to fetch memberships: {memberships_response.status_code} - {memberships_response.text}"
-
-            memberships = memberships_response.json().get("memberships", [])
-
-            # 2️⃣ Filter users who have the role "MLOwner"
-            ml_owner_ids = [
-                membership['user']['id'] for membership in memberships
-                if any(role["name"] == "MLOwner" for role in membership.get("roles", []))
-            ]
-
-            if not ml_owner_ids:
-                return [], None  # No MLOwner users found
-
-            # 3️⃣ Fetch user details using the **admin API key** (for broader access)
+            # 1️⃣ Fetch all users with admin API key
             users_url = f"{REDMINE_URL}/users.json?status=1&limit=100"
             users_response = requests.get(
-                users_url, 
+                users_url,
                 headers={"X-Redmine-API-Key": admin_api_key, "Content-Type": "application/json"}
             )
 
@@ -67,39 +127,43 @@ class GsmbOfficerService:
 
             all_users = users_response.json().get("users", [])
 
-            # 4️⃣ Filter users who match MLOwner IDs
+            # 2️⃣ Filter users by custom field "User Type" == "mlOwner"
             ml_owners_details = [
-                user for user in all_users if user["id"] in ml_owner_ids
+                user for user in all_users
+                if any(field.get("name") == "User Type" and field.get("value") == "mlOwner"
+                    for field in user.get("custom_fields", []))
             ]
 
-            # Fetch the mining license counts for all users
+            if not ml_owners_details:
+                return [], None  # No MLOwners found
+
+            # 3️⃣ Fetch mining license counts
             license_counts, license_error = GsmbOfficerService.get_mining_license_counts(token)
             if license_error:
                 return None, license_error
 
-            # 5️⃣ Map license count to each MLOwner
+            # 4️⃣ Format response
             formatted_ml_owners = []
             for ml_owner in ml_owners_details:
-                owner_name = f"{ml_owner.get('firstname', '')} {ml_owner.get('lastname', '')}"
-                ml_owner_name = owner_name.strip()
-                license_count = license_counts.get(ml_owner_name, 0)
+                owner_name = f"{ml_owner.get('firstname', '')} {ml_owner.get('lastname', '')}".strip()
+                license_count = license_counts.get(owner_name, 0)
 
-                # Prepare formatted output
                 formatted_owner = {
                     "id": ml_owner["id"],
-                    "ownerName": ml_owner_name,
+                    "ownerName": owner_name,
                     "NIC": next((field["value"] for field in ml_owner.get("custom_fields", []) if field["name"] == "National Identity Card"), ""),
                     "email": ml_owner.get("mail", ""),
                     "phoneNumber": next((field["value"] for field in ml_owner.get("custom_fields", []) if field["name"] == "Mobile Number"), ""),
                     "totalLicenses": license_count
                 }
-                
+
                 formatted_ml_owners.append(formatted_owner)
 
-            return formatted_ml_owners, None  # ✅ Return the formatted user details with license count
+            return formatted_ml_owners, None
 
         except Exception as e:
             return None, f"Server error: {str(e)}"
+
         
     @staticmethod
     def get_tpls(token):

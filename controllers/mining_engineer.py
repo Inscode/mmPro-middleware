@@ -354,3 +354,27 @@ def get_me_approve_single_license(issue_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500    
 
+@mining_enginer_bp.route('/set-license-hold', methods=['POST'])
+@check_token
+@role_required(['miningEngineer'])
+def set_license_hold():
+    try:
+        data = request.get_json()
+        issue_id = data.get("issue_id")
+        reason_for_hold = data.get("reason_for_hold")
+
+        if not issue_id or not reason_for_hold:
+            return jsonify({"error": "Both 'issue_id' and 'reason_for_hold' are required."}), 400
+
+        token = request.headers.get('Authorization')
+        if not token:
+            return jsonify({"error": "Authorization token is missing"}), 400
+
+        success, error = MiningEnginerService.set_license_hold(issue_id, reason_for_hold, token)
+        if not success:
+            return jsonify({"error": error}), 500
+
+        return jsonify({"success": True, "message": f"Issue {issue_id} set to Hold successfully."}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

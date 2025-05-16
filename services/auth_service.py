@@ -37,7 +37,7 @@ class AuthService:
             )
 
             if response.status_code != 200:
-                return None, None, 'Invalid credentials'
+                return None, None, 'Invalid credentials. Check the Username and password and try again.'
 
             user_data = response.json().get('user')
             if not user_data:
