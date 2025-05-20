@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime, timedelta
 import smtplib
 from email.mime.text import MIMEText
-from services.general_public_service import cache  # Import the existing cache instance
+from services.cache import cache  # Import the existing cache instance
 import logging
 
 # Configure logging

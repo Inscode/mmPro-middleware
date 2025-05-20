@@ -337,7 +337,7 @@ class MiningEnginerService:
             return None, f"Unexpected error: {str(e)}"
 
     @staticmethod
-    def create_ml_appointment(token, start_date,mining_license_number):
+    def create_ml_appointment(token, start_date,mining_license_number,Google_location):
         """
         Creates a Mining Engineer appointment in Redmine.
         
@@ -383,6 +383,10 @@ class MiningEnginerService:
                         {
                             "id": 101,  # Mining License Number field
                             "value": mining_license_number
+                        },
+                        {
+                            "id": 92,  # Mining License Number field
+                            "value": Google_location,
                         }
                     ]
                 }
@@ -576,7 +580,13 @@ class MiningEnginerService:
                     "subject": issue.get("subject"),
                     "start_date": issue.get("start_date"),
                     "status": issue.get("status", {}).get("name"),
-                    "mining_license": next(
+                    "assigned_to": issue.get("assigned_to", {}).get("name"),
+                    "Google_location": next(
+                        (cf["value"] for cf in issue.get("custom_fields", []) 
+                        if cf.get("id") == 92),
+                        None
+                    ),
+                    "mining_number": next(
                         (cf["value"] for cf in issue.get("custom_fields", []) 
                         if cf.get("id") == 101),
                         None
@@ -738,6 +748,85 @@ class MiningEnginerService:
             return processed_issue
 
         except Exception as e:
+
+            return {"error": f"Server error: {str(e)}"}
+        
+
+
+    @staticmethod
+    def get_me_licenses_count(token):
+        try:
+            REDMINE_URL = os.getenv("REDMINE_URL")
+            API_KEY = JWTUtils.get_api_key_from_token(token)
+
+            if not REDMINE_URL or not API_KEY:
+                return None, "Redmine URL or API Key is missing"
+
+            # Step 1: Extract user_id from the token
+            user_id, error = MLOUtils.get_user_info_from_token(token)
+            if not user_id:
+                return None, error
+
+            # Step 2: Define query parameters for project_id=1 and tracker_id=4 (ML)
+            params = {
+                "project_id": 1,
+                "tracker_id": 4,  # ML tracker ID
+            }
+
+            headers = {
+                "X-Redmine-API-Key": API_KEY
+            }
+
+            # Pagination variables
+            offset = 0
+            limit = 100
+            all_issues = []
+
+            while True:
+                paged_params = params.copy()
+                paged_params.update({"offset": offset, "limit": limit})
+
+                response = requests.get(
+                    f"{REDMINE_URL}/projects/mmpro-gsmb/issues.json",
+                    params=paged_params,
+                    headers=headers
+                )
+
+                if response.status_code != 200:
+                    error_msg = f"Redmine API error: {response.status_code}"
+                    if response.text:
+                        error_msg += f" - {response.text[:200]}"
+                    return None, error_msg
+
+                data = response.json()
+                issues = data.get("issues", [])
+                all_issues.extend(issues)
+
+                if len(issues) < limit:
+                    break
+
+                offset += limit
+
+            # Status ID to Name mapping
+            status_map = {
+                6: "Rejected",
+                26: "Awaiting ME Scheduling",
+                31: "ME Appointment Scheduled",
+                32: "ME Approved"
+            }
+            valid_status_ids = set(status_map.keys())
+            status_counts = {status_map[status_id]: 0 for status_id in valid_status_ids}
+
+            for issue in all_issues:
+                status_id = issue.get("status", {}).get("id")
+                if status_id in valid_status_ids:
+                    status_counts[status_map[status_id]] += 1
+
+            return status_counts, None
+
+        except Exception as e:
+            return None, f"Server error: {str(e)}"
+
             return {"error": f"Server error: {str(e)}"}         
         
 
@@ -782,4 +871,5 @@ class MiningEnginerService:
 
         except Exception as e:
             return False, f"Server error: {str(e)}"
+
 

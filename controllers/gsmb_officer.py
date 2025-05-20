@@ -687,3 +687,23 @@ def update_issue_status():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+
+@gsmb_officer_bp.route('/complaint/<int:issue_id>/resolve', methods=['PUT'])
+@check_token
+@role_required(['GSMBOfficer'])
+def mark_complaint_resolved(issue_id):
+    try:
+        token = request.headers.get('Authorization')
+        if not token:
+            return jsonify({"error": "Authorization token is missing"}), 400
+
+        result, error = GsmbOfficerService.mark_complaint_resolved(token, issue_id)
+
+        if error:
+            return jsonify({"error": error}), 500
+
+        return jsonify({"success": True, "message": "Complaint marked as resolved"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

@@ -607,4 +607,10 @@ def create_issue():
             'error': 'Internal server error',
             'details': str(e)
         }), 500
+
+@auth_bp.route('/test', methods=['GET'])
+def auth_():
+    return jsonify({"success": "require"}), 200
     
+
+

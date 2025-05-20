@@ -5,11 +5,9 @@ from twilio.rest import Client
 from twilio.base.exceptions import TwilioException
 from utils.jwt_utils import JWTUtils
 import random
-from diskcache import Cache
+from services.cache import cache
 from datetime import datetime, timedelta
 
-
-cache = Cache('otp_cache') 
 
 
 load_dotenv()

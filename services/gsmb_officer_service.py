@@ -407,6 +407,7 @@ class GsmbOfficerService:
                     "subject": issue.get("subject"),
                     "status": issue.get("status", {}).get("name"),
                     "assigned_to": assigned_to.get("name"),
+                    "assigned_to_id": assigned_to.get("id"),
                     "created_on": issue.get("created_on"),
 
                     # From custom field map
@@ -496,7 +497,7 @@ class GsmbOfficerService:
                 "start_date": issue.get("start_date"),
                 "due_date": issue.get("due_date"),
                 "exploration_licence_no": custom_field_map.get("Exploration Licence No"),
-                "applicant_or_company_name": custom_field_map.get("Name of Applicant OR Company"),
+                # "applicant_or_company_name": custom_field_map.get("Name of Applicant OR Company"),
                 "land_name": custom_field_map.get("Land Name(Licence Details)"),
                 "land_owner_name": custom_field_map.get("Land owner name"),
                 "village_name": custom_field_map.get("Name of village "),
@@ -510,10 +511,11 @@ class GsmbOfficerService:
                 "license_number": custom_field_map.get("Mining License Number"),
                 "mining_license_number": custom_field_map.get("Mining License Number"),
                 "mobile_number": custom_field_map.get("Mobile Number"),
+                "reason_for_hold":custom_field_map.get("Reason For Hold"),
                 "economic_viability_report": attachments.get("Economic Viability Report"),
                 "license_fee_receipt": attachments.get("License fee receipt"),
                 "detailed_mine_restoration_plan": attachments.get("Detailed Mine Restoration Plan"),
-                "professional": attachments.get("Professional"),
+                # "professional": attachments.get("Professional"),
                 "deed_and_survey_plan": attachments.get("Deed and Survey Plan"),
                 "payment_receipt": attachments.get("Payment Receipt"),
                 "license_boundary_survey": attachments.get("License Boundary Survey")
@@ -553,10 +555,11 @@ class GsmbOfficerService:
             for issue in issues:
                 custom_fields = issue.get("custom_fields", [])
 
-                # Extract Lorry Number and Mobile Number from custom fields
+                # Extract relevant fields
                 lorry_number = None
                 mobile_number = None
                 role = None
+                resolved = None  # ✅ NEW
 
                 for field in custom_fields:
                     if field.get("name") == "Lorry Number":
@@ -565,26 +568,26 @@ class GsmbOfficerService:
                         mobile_number = field.get("value")
                     elif field.get("name") == "Role":
                         role = field.get("value")
-
-
+                    elif field.get("name") == "Resolved":  # ✅ NEW
+                        resolved = field.get("value")
 
                 # 🛠️ Format complaint_date
                 created_on = issue.get("created_on")
                 complaint_date = None
                 if created_on:
                     try:
-                        # Parse ISO datetime and format it
                         dt = datetime.strptime(created_on, "%Y-%m-%dT%H:%M:%SZ")
-                        complaint_date = dt.strftime("%Y-%m-%d %H:%M:%S")  # 👈 this adds the space
+                        complaint_date = dt.strftime("%Y-%m-%d %H:%M:%S")
                     except Exception as e:
-                        complaint_date = created_on  # fallback if parsing fails
+                        complaint_date = created_on
 
                 formatted_complaint = {
-                    "id": issue.get("id"), 
+                    "id": issue.get("id"),
                     "lorry_number": lorry_number,
                     "mobile_number": mobile_number,
                     "complaint_date": complaint_date,
                     "role": role,
+                    "resolved": resolved  # ✅ Add to response
                 }
                 formatted_complaints.append(formatted_complaint)
 
@@ -592,6 +595,7 @@ class GsmbOfficerService:
 
         except Exception as e:
             return None, str(e)
+
 
 
     # @staticmethod
@@ -1239,3 +1243,44 @@ class GsmbOfficerService:
 
         except Exception as e:
             return None, f"Server error: {str(e)}"
+
+    @staticmethod
+    def mark_complaint_resolved(token, issue_id):
+        try:
+            user_api_key = JWTUtils.get_api_key_from_token(token)
+            if not user_api_key:
+                return None, "Invalid or missing API key"
+
+            REDMINE_URL = os.getenv("REDMINE_URL")
+            if not REDMINE_URL:
+                return None, "Environment variable 'REDMINE_URL' is not set"
+
+            # Prepare the custom field update payload
+            update_payload = {
+                "issue": {
+                    "custom_fields": [
+                        {
+                            "id": 107,  # Custom field ID for "Resolved"
+                            "value": "1"
+                        }
+                    ]
+                }
+            }
+
+            response = requests.put(
+                f"{REDMINE_URL}/issues/{issue_id}.json",
+                headers={
+                    "X-Redmine-API-Key": user_api_key,
+                    "Content-Type": "application/json"
+                },
+                data=json.dumps(update_payload)
+            )
+
+            if response.status_code not in (200, 204):
+                return None, f"Failed to update issue: {response.status_code} - {response.text}"
+
+            return True, None
+
+        except Exception as e:
+            return None, f"Server error: {str(e)}"
+

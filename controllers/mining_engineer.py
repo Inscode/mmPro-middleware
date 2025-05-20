@@ -86,7 +86,7 @@ def create_ml_appointment():
         if not data:
             return jsonify({"error": "Request body is empty"}), 400
 
-        required_fields = ['start_date', 'mining_license_number']
+        required_fields = ['start_date', 'mining_license_number','Google_location']
         if not all(field in data for field in required_fields):
             return jsonify({
                 "error": f"Missing required fields: {', '.join(required_fields)}"
@@ -96,7 +96,8 @@ def create_ml_appointment():
         result, error = MiningEnginerService.create_ml_appointment(
             token=token,
             start_date=data['start_date'],
-            mining_license_number=data['mining_license_number']
+            mining_license_number=data['mining_license_number'],
+            Google_location=data['Google_location']
         )
 
         # 4. Handle response
@@ -354,6 +355,34 @@ def get_me_approve_single_license(issue_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500    
 
+
+# Get the count of Mining Licenses
+@mining_enginer_bp.route('/me-licenses-count', methods=['GET'])
+@check_token
+@role_required(['miningEngineer'])
+def get_me_licenses_count():
+    try:
+        # Get the token from the Authorization header
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return jsonify({"error": "Authorization header is missing"}), 401
+            
+        # Split the header to get the token part (handle both "Bearer token" and just "token")
+        parts = auth_header.split()
+        token = parts[1] if len(parts) == 2 else auth_header
+        
+        # Fetch Mining Licenses from the service
+        mining_licenses, error = MiningEnginerService.get_me_licenses_count(token)
+        
+        if error:
+            return jsonify({"error": error}), 500 if "Server error" in error else 400
+            
+        return jsonify({"success": True, "data": mining_licenses}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+
 @mining_enginer_bp.route('/set-license-hold', methods=['POST'])
 @check_token
 @role_required(['miningEngineer'])
@@ -378,3 +407,4 @@ def set_license_hold():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+

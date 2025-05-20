@@ -10,6 +10,7 @@ from utils.MLOUtils import MLOUtils
 from flask import request
 from utils.limit_utils import LimitUtils
 from werkzeug.utils import secure_filename
+import time
 
 load_dotenv()
 
@@ -560,7 +561,7 @@ class MLOwnerService:
             def geocode_location(city_name): 
                 url = f"https://nominatim.openstreetmap.org/search?q={city_name}&format=json"
                 headers = {
-                    "User-Agent": "YourAppName/1.0 (your.email@example.com)"  # <-- important for Nominatim usage policy
+                    "User-Agent": "MiningLicenseTPL/1.0 (it-support@miningcompany.com)"  # <-- important for Nominatim usage policy
                 }
                 response_first = requests.get(url, headers=headers, timeout=1)
                 
@@ -581,6 +582,7 @@ class MLOwnerService:
 
             # Geocode both cities
             coord1 = geocode_location(city1)
+            time.sleep(1)
             coord2 = geocode_location(city2)
 
 
@@ -1139,6 +1141,79 @@ class MLOwnerService:
                 })
 
             return license_summaries, None
+
+        except Exception as e:
+            return None, f"Server error: {str(e)}"
+        
+    @staticmethod
+    def get_mining_license_by_id(token, issue_id):
+        try:
+            # 🔐 Extract API key from JWT token
+            api_key = JWTUtils.get_api_key_from_token(token)
+            if not api_key:
+                return None, "Invalid or missing API key"
+
+            # 🌍 Load Redmine URL from environment
+            REDMINE_URL = os.getenv("REDMINE_URL")
+            if not REDMINE_URL:
+                return None, "REDMINE_URL environment variable not set"
+
+            # 🔗 Fetch issue details
+            issue_url = f"{REDMINE_URL}/issues/{issue_id}.json?include=attachments"
+            response = requests.get(
+                issue_url,
+                headers={"X-Redmine-API-Key": api_key, "Content-Type": "application/json"}
+            )
+
+            if response.status_code != 200:
+                return None, f"Failed to fetch issue: {response.status_code} - {response.text}"
+
+            issue = response.json().get("issue")
+            if not issue:
+                return None, "Issue data not found"
+
+            # 🗂️ Extract and map custom fields to a dictionary
+            custom_fields = issue.get("custom_fields", [])
+            custom_field_map = {field["name"]: field.get("value") for field in custom_fields}
+
+            # 📎 Get attachment URLs
+            attachments = MLOwnerService.get_attachment_urls(api_key, REDMINE_URL, custom_fields)
+
+            # 🧾 Build the final structured response
+            formatted_issue = {
+                "id": issue.get("id"),
+                "subject": issue.get("subject"),
+                "status": issue.get("status", {}).get("name"),
+                "author": issue.get("author", {}).get("name"),
+                "assigned_to": issue.get("assigned_to", {}).get("name"),
+                "start_date": issue.get("start_date"),
+                "due_date": issue.get("due_date"),
+                "exploration_licence_no": custom_field_map.get("Exploration Licence No"),
+                # "applicant_or_company_name": custom_field_map.get("Name of Applicant OR Company"),
+                "land_name": custom_field_map.get("Land Name(Licence Details)"),
+                "land_owner_name": custom_field_map.get("Land owner name"),
+                "village_name": custom_field_map.get("Name of village "),
+                "grama_niladhari_division": custom_field_map.get("Grama Niladhari Division"),
+                "divisional_secretary_division": custom_field_map.get("Divisional Secretary Division"),
+                "administrative_district": custom_field_map.get("Administrative District"),
+                "capacity": custom_field_map.get("Capacity"),
+                "used": custom_field_map.get("Used"),
+                "remaining": custom_field_map.get("Remaining"),
+                "royalty": custom_field_map.get("Royalty"),
+                "license_number": custom_field_map.get("Mining License Number"),
+                "mining_license_number": custom_field_map.get("Mining License Number"),
+                "mobile_number": custom_field_map.get("Mobile Number"),
+                "reason_for_hold":custom_field_map.get("Reason For Hold"),
+                "economic_viability_report": attachments.get("Economic Viability Report"),
+                "license_fee_receipt": attachments.get("License fee receipt"),
+                "detailed_mine_restoration_plan": attachments.get("Detailed Mine Restoration Plan"),
+                # "professional": attachments.get("Professional"),
+                "deed_and_survey_plan": attachments.get("Deed and Survey Plan"),
+                "payment_receipt": attachments.get("Payment Receipt"),
+                "license_boundary_survey": attachments.get("License Boundary Survey")
+            }
+
+            return formatted_issue, None
 
         except Exception as e:
             return None, f"Server error: {str(e)}"
