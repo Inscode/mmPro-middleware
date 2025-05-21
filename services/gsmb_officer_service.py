@@ -915,6 +915,7 @@ class GsmbOfficerService:
         except Exception as e:
             return False, str(e)
         
+  
     @staticmethod
     def reject_mining_request(token, data):
         try:
@@ -925,20 +926,13 @@ class GsmbOfficerService:
                 return False, "Environment variable 'REDMINE_URL' is not set"
 
             mining_request_id = data.get("mining_request_id")
-            comments = data.get("comments")
 
-            if not mining_request_id or not comments:
-                return False, "Missing required fields (mining_request_id or comments)"
+            if not mining_request_id:
+                return False, "Missing required field (mining_request_id)"
 
             update_payload = {
                 "issue": {
-                    "status_id": 6,  # Rejected
-                    "custom_fields": [
-                        {
-                            "id": 103,  # Comments field
-                            "value": comments
-                        }
-                    ]
+                    "status_id": 6  # Rejected
                 }
             }
 

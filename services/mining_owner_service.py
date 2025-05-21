@@ -130,7 +130,8 @@ class MLOwnerService:
             # Step 2: Define query parameters
             params = {
                 "project_id": 1,
-                "tracker_id": 4  # ML tracker ID
+                "tracker_id": 4,  # ML tracker ID
+                "status_id": 7
             }
 
             headers = {
@@ -389,7 +390,6 @@ class MLOwnerService:
 
         except Exception as e:
             return None, f"Server error: {str(e)}"
-
 
 
     @staticmethod
@@ -656,43 +656,139 @@ class MLOwnerService:
         except Exception as e:
             return None, f"Server error: {str(e)}"
 
+
+    # @staticmethod
+    # def ml_detail(l_number, token):
+    #     api_key = JWTUtils.get_api_key_from_token(token)
+    #     try:
+    #         REDMINE_URL = os.getenv("REDMINE_URL")
+    #         if not REDMINE_URL or not api_key:
+    #             return None, "Redmine URL or API Key is missing"
+
+    #         headers = {
+    #             "X-Redmine-API-Key": api_key,
+    #             "Content-Type": "application/json"
+    #         }
+    #         limit = LimitUtils.get_limit()
+    #         limit = limit[0] if isinstance(limit, tuple) else limit
+    #         offset = 0
+
+    #         while True:
+    #             url = f"{REDMINE_URL}/projects/mmpro-gsmb/issues.json?offset={offset}&limit={limit}"
+    #             response = requests.get(url, headers=headers)
+    #             if response.status_code != 200:
+    #                 return None, f"Failed to fetch issues: {response.status_code} - {response.text}"
+
+    #             issues = response.json().get("issues", [])
+    #             for issue in issues:
+    #                 for field in issue.get("custom_fields", []):
+    #                      if (field.get("id") == 101 and 
+    #                     str(field.get("value", "")).strip().lower() == str(l_number).strip().lower()):
+                       
+    #                         custom_fields_dict = {f["name"]: f["value"] for f in issue.get("custom_fields", [])}
+    #                         assigned_to = issue.get("assigned_to", {})
+    #                         result = {
+    #                             "id": issue.get("id"),
+    #                             "assigned_to": {
+    #                                 "id": assigned_to.get("id"),
+    #                                 "name": assigned_to.get("name")
+    #                             },
+    #                             "custom_fields": custom_fields_dict,
+    #                         }
+    #                         return result, None
+
+    #                 if len(issues) < limit:
+    #                     break
+    #                 offset += limit
+
+    #             return None, None
+
+    #     except Exception as e:
+    #         return None, f"Server error: {str(e)}"
+        
+
     @staticmethod
     def ml_detail(l_number, token):
-        api_key = JWTUtils.get_api_key_from_token(token)
         try:
             REDMINE_URL = os.getenv("REDMINE_URL")
-
-            if not REDMINE_URL or not api_key:
+            API_KEY = JWTUtils.get_api_key_from_token(token)
+            if not REDMINE_URL or not API_KEY:
                 return None, "Redmine URL or API Key is missing"
-            
-            
+
             headers = {
-                "X-Redmine-API-Key": api_key,
+                "X-Redmine-API-Key": API_KEY,
                 "Content-Type": "application/json"
             }
             limit = LimitUtils.get_limit()
-            url = f"{REDMINE_URL}/projects/mmpro-gsmb/issues.json?offset=0&limit={limit}"
-         
+            limit = limit[0] if isinstance(limit, tuple) else limit
+            offset = 0
 
-            response = requests.get(url, headers=headers)
+            # Search all issues for the matching Mining License Number
+            while True:
+                url = f"{REDMINE_URL}/projects/mmpro-gsmb/issues.json?offset={offset}&limit={limit}"
+                response = requests.get(url, headers=headers)
+                if response.status_code != 200:
+                    return None, f"Failed to fetch issues: {response.status_code} - {response.text}"
 
-            if response.status_code != 200:
-                return None, f"Failed to fetch issues: {response.status_code} - {response.text}"
+                issues = response.json().get("issues", [])
+                for issue in issues:
+                    for field in issue.get("custom_fields", []):
+                        if field.get("id") == 101 and str(field.get("value", "")).strip().lower() == str(l_number).strip().lower():
+                            # Found the issue, now fetch full details by ID
+                            issue_id = issue.get("id")
+                            detail_url = f"{REDMINE_URL}/issues/{issue_id}.json"
+                            detail_resp = requests.get(detail_url, headers=headers)
+                            if detail_resp.status_code != 200:
+                                return None, f"Failed to fetch issue details: {detail_resp.status_code} - {detail_resp.text}"
+                            issue_data = detail_resp.json().get("issue", {})
 
-            issues = response.json().get("issues", [])
+                            # Convert custom fields to dict for easy access
+                            custom_fields = issue_data.get("custom_fields", [])
+                            cf = {f["name"]: f.get("value") for f in custom_fields}
 
-            # Filter issues based on subject matching l_number
-            filtered_issues = []
-            for issue in issues:
-                for field in issue.get("custom_fields", []):
-                    if field.get("id") == 101 and field.get("value") == l_number:
-                        filtered_issues.append(issue)
-                        break
+                            # Build the response structure
+                            result = {
+                                "id": issue_data.get("id"),
+                                "subject": issue_data.get("subject"),
+                                "status": issue_data.get("status", {}).get("name"),
+                                "author": issue_data.get("author", {}).get("name"),
+                                "assigned_to": issue_data.get("assigned_to", {}).get("name"),
+                                "start_date": issue_data.get("start_date"),
+                                "due_date": issue_data.get("due_date"),
+                                "created_on": issue_data.get("created_on"),
+                                "updated_on": issue_data.get("updated_on"),
+                                "royalty": cf.get("Royalty"),
+                                "exploration_licence_no": cf.get("Exploration Licence No"),
+                                "land_name": cf.get("Land Name(Licence Details)"),
+                                "land_owner_name": cf.get("Land owner name"),
+                                "village_name": cf.get("Name of village "),
+                                "grama_niladhari_division": cf.get("Grama Niladhari Division"),
+                                "divisional_secretary_division": cf.get("Divisional Secretary Division"),
+                                "administrative_district": cf.get("Administrative District"),
+                                "capacity": cf.get("Capacity"),
+                                "used": cf.get("Used"),
+                                "remaining": cf.get("Remaining"),
+                                "mobile_number": cf.get("Mobile Number"),
+                                "google_location": cf.get("Google location "),
+                                "reason_for_hold": cf.get("Reason For Hold"),
+                                "economic_viability_report": cf.get("Economic Viability Report"),
+                                "detailed_mine_restoration_plan": cf.get("Detailed Mine Restoration Plan"),
+                                "deed_and_survey_plan": cf.get("Deed and Survey Plan"),
+                                "payment_receipt": cf.get("Payment Receipt"),
+                                "license_boundary_survey": cf.get("License Boundary Survey"),
+                                "mining_license_number": cf.get("Mining License Number"),
+                            }
+                            return result, None
 
-            return filtered_issues[0] if filtered_issues else None, None
+                if len(issues) < limit:
+                    break
+                offset += limit
+
+            return None, "No mining license found for the given number."
 
         except Exception as e:
             return None, f"Server error: {str(e)}"
+      
         
         
     @staticmethod
@@ -892,7 +988,6 @@ class MLOwnerService:
             payload = {
                 "issue": {
                     "project_id": data.get("project_id", 1),
-                    "tracker_id": data.get("tracker_id", 4),
                     "status_id": data.get("status_id", 8),
                     "priority_id": data.get("priority_id", 2),
                     "assigned_to_id": data.get("assigned_to"),  # Get from data dictionary
@@ -904,6 +999,7 @@ class MLOwnerService:
                         {"id": 28, "value": data.get("land_name", "")},  
                         {"id": 29, "value": data.get("land_owner_name", "")},
                         {"id": 30, "value": data.get("village_name", "")},
+                        {"id": 31, "value": data.get("grama_niladari", "")},
                         {"id": 31, "value": data.get("grama_niladari", "")},
                         {"id": 32, "value": data.get("divisional_secretary_division", "")},
                         {"id": 33, "value": data.get("administrative_district", "")},   
@@ -1217,5 +1313,3 @@ class MLOwnerService:
 
         except Exception as e:
             return None, f"Server error: {str(e)}"
-
-#sample 
