@@ -408,3 +408,27 @@ def set_license_hold():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@mining_enginer_bp.route('/me-hold-licenses', methods=['GET'])
+@check_token
+@role_required(['miningEngineer'])
+def get_me_hold_licenses():
+    try:
+        # Extract token from headers
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            return jsonify({"error": "Authorization token is missing"}), 401
+
+        token = auth_header.replace("Bearer ", "").strip()
+        if not token:
+            return jsonify({"error": "Authorization token is invalid"}), 401
+
+        # Call service
+        licenses, error = MiningEnginerService.get_me_hold_licenses(token)
+
+        if error:
+            return jsonify({"error": error}), 500 if "Server error" in error else 400
+
+        return jsonify({"success": True, "data": licenses}), 200
+
+    except Exception as e:
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500

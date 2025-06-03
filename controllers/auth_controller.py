@@ -5,6 +5,10 @@ from utils.user_utils import UserUtils
 import jwt
 from config import Config
 import requests
+import smtplib
+from email.mime.text import MIMEText
+from services.cache import cache
+import random
 
 auth_bp = Blueprint('auth_controller', __name__)
 
@@ -51,13 +55,13 @@ def auth_google():
     if auth_result[0] is None:  # If authentication failed
         return jsonify({"error": auth_result[1]}), 401
 
-    user_id, user_data, user_role, api_key = auth_result  
+    user_id, user_data, user_role = auth_result  
 
     username=f"{user_data.get('firstname')} {user_data.get('lastname')}",
     # Create JWT token using the service
-    jwt_token =  JWTUtils.create_jwt_token(user_id,user_role, api_key)
+    tokens =  JWTUtils.create_jwt_token(user_id,user_role)
 
-    return jsonify({'token': jwt_token, 'role': user_role, 'username':username, 'userId':user_id})
+    return jsonify({'token': tokens['access_token'], 'refresh_token': tokens['refresh_token'],'role': user_role, 'username':username, 'userId':user_id})
 
 @auth_bp.route('/mobile-google-login', methods=['POST'])
 def mobile_auth_google():
@@ -70,10 +74,10 @@ def mobile_auth_google():
     if auth_result[0] is None:
         return jsonify({"error": auth_result[1]}), 401
 
-    user_id, user_data, user_role, api_key = auth_result
+    user_id, user_data, user_role = auth_result
 
     username = f"{user_data.get('firstname')} {user_data.get('lastname')}"
-    jwt_token = JWTUtils.create_jwt_token(user_id, user_role, api_key)
+    jwt_token = JWTUtils.create_jwt_token(user_id, user_role)
 
     return jsonify({'token': jwt_token, 'role': user_role, 'username': username, 'userId': user_id})
 
@@ -122,16 +126,18 @@ def forgot_password():
     """
     data = request.get_json()
     email = data.get('email')
+    redirect_base_url = data.get('redirect_base_url')
+   
 
     if not email:
         return jsonify({'message': 'Email is required'}), 400
 
     # Call the AuthService to handle the password reset process
-    result = AuthService.initiate_password_reset(email)
+    result = AuthService.initiate_password_reset(email,redirect_base_url)
 
     if result.get('error'):
         return jsonify({'message': result['error']}), 400
-
+    
     return jsonify({'message': 'If the email exists, a reset link will be sent'}), 200
 
 @auth_bp.route('/reset-password', methods=['POST'])
@@ -608,9 +614,84 @@ def create_issue():
             'details': str(e)
         }), 500
 
-@auth_bp.route('/test', methods=['GET'])
-def auth_():
-    return jsonify({"success": "require"}), 200
+@auth_bp.route('/mobile-forgot-password', methods=['POST'])
+def mobile_forgot_password():
+    """
+    Generates a 6-digit OTP, stores it in cache, and sends it to the user's email.
+    """
+    data = request.get_json()
+    email = data.get('email')
+    if not email:
+        return jsonify({'message': 'Email is required'}), 400
+
+    # Generate 6-digit OTP
+    otp = str(random.randint(100000, 999999))
+    cache.set(f"otp:{email}", otp, expire=300)  # 5 minutes expiry
+
+    # Send OTP via email
+    subject = "Your OTP Code"
+    message = f"Your OTP code is: {otp}. It is valid for 5 minutes."
+    msg = MIMEText(message)
+    msg['Subject'] = subject
+    msg['From'] = 'noreply@yourdomain.com'
+    msg['To'] = email
+
+    try:
+        with smtplib.SMTP('smtp.gmail.com', 587) as server:
+            server.starttls()
+            server.login('insaf.ahmedh@gmail.com', 'ulge fzkp izhg idwf')
+            server.sendmail('insaf.ahmedh@gmail.com', [email], msg.as_string())
+    except Exception as e:
+        return jsonify({'message': f'Failed to send OTP email: {e}'}), 500
+
+    return jsonify({'message': 'OTP sent to email if it exists'}), 200
+
+@auth_bp.route('/mobile-verify-otp', methods=['POST'])
+def mobile_verify_otp():
+    """
+    Verifies the OTP for the given email.
+    """
+    data = request.get_json()
+    email = data.get('email')
+    otp = data.get('otp')
+    if not email or not otp:
+        return jsonify({'message': 'Email and OTP are required'}), 400
+
+    cached_otp = cache.get(f"otp:{email}")
+    if not cached_otp:
+        return jsonify({'message': 'OTP expired or not found'}), 400
+    if str(cached_otp) != str(otp):
+        return jsonify({'message': 'Invalid OTP'}), 400
+
+    # Optionally, delete OTP after successful verification
+    cache.delete(f"otp:{email}")
+    # Mark as verified for password reset (optional)
+    cache.set(f"otp_verified:{email}", True, expire=600)  # 10 min to reset password
+
+    return jsonify({'message': 'OTP verified'}), 200
+
+@auth_bp.route('/mobile-reset-password', methods=['POST'])
+def mobile_reset_password():
+    """
+    Resets the user's password if OTP is verified.
+    """
+    data = request.get_json()
+    email = data.get('email')
+    new_password = data.get('new_password')
+    if not email or not new_password:
+        return jsonify({'message': 'Email and new password are required'}), 400
+
+    verified = cache.get(f"otp_verified:{email}")
+    if not verified:
+        return jsonify({'message': 'OTP not verified or expired'}), 400
+
+    # Call your AuthService to update the password using the email
+    result = AuthService.reset_password_with_email(email, new_password)
+    if not result.get('success'):
+        return jsonify({'message': result.get('error', 'Failed to reset password')}), 400
+
+    cache.delete(f"otp_verified:{email}")
+    return jsonify({'message': 'Password updated successfully'}), 200
     
 
 

@@ -1,11 +1,13 @@
 import os
-import tempfile
 from flask import Blueprint, jsonify, request
 from middleware.auth_middleware import role_required,check_token
 from services.auth_service import AuthService
 from services.mining_owner_service import MLOwnerService
 from utils.jwt_utils import JWTUtils
 from utils.user_utils import UserUtils
+from hashlib import md5
+import time
+import requests
 
 
 # Define the Blueprint for mining_owner
@@ -158,8 +160,12 @@ def ml_detail():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-        
+
+
+
             # Put route for /update-ML
+
+
 @mining_owner_bp.route('/user-detail/<int:user_id>', methods=['GET'])
 @check_token
 @role_required(['MLOwner'])
@@ -314,7 +320,207 @@ def get_mining_license_by_id(issue_id):
         return jsonify({"error": str(e)}), 500
 
 
+@mining_owner_bp.route('/get-mining-license-refined', methods=['GET'])
+@check_token
+@role_required(['MLOwner'])
+def get_mining_license_refined():
+    try:
+        token = request.headers.get('Authorization')
+        if not token:
+            return jsonify({"error": "Authorization token is missing"}), 400
 
+        summaries, error = MLOwnerService.get_mining_license_summary(token)
+        if error:
+            return jsonify({"error": error}), 500
+
+        return jsonify({"success": True, "data": summaries}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# @mining_owner_bp.route('/update-royalty', methods=['POST'])
+# # @check_token
+# # @role_required(['MLOwner'])
+# def update_royalty_amount():
+#     try:
+#         data = request.json
+#         token = request.headers.get('Authorization')
+
+#         issue_id = data.get("issue_id")
+#         royalty_amount = data.get("royalty_amount")
+
+#         if not issue_id or royalty_amount is None:
+#             return jsonify({"error": "Missing 'issue_id' or 'royalty_amount'"}), 400
+
+#         success, error = MLOwnerService.update_royalty_field(token, issue_id, royalty_amount)
+
+#         if error:
+#             return jsonify({"error": error}), 500
+
+#         return jsonify({"success": True, "message": "Royalty updated successfully"}), 200
+
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
+
+
+@mining_owner_bp.route('/update-royalty', methods=['POST'])
+def handle_payhere_ipn():
+    try:
+        # 1. Get PayHere IPN data (form-urlencoded)
+        data = request.form
+
+        # 2. Required fields
+        required_fields = [
+            'merchant_id', 'order_id', 'payhere_amount',
+            'payhere_currency', 'status_code', 'md5sig'
+        ]
+        if not all(field in data for field in required_fields):
+            return jsonify({"error": "Missing required fields"}), 400
+
+        # 3. Verify PayHere signature
+        merchant_secret = os.getenv("MERCHANT_SECRET")
+        hashed_secret = md5(merchant_secret.encode()).hexdigest().upper()
+        base_string = (
+            f"{data['merchant_id']}{data['order_id']}{data['payhere_amount']}"
+            f"{data['payhere_currency']}{data['status_code']}{hashed_secret}"
+        )
+        calculated_sig = md5(base_string.encode()).hexdigest().upper()
+
+        if calculated_sig != data['md5sig']:
+            return jsonify({"error": "Invalid signature"}), 403
+
+        # 4. Only process successful payments
+        if data['status_code'] != "2":
+            return jsonify({"message": f"Ignoring non-successful payment status: {data['status_code']}"}), 200
+
+        # 5. Extract issue ID from custom_1
+        issue_id = data.get('custom_1')
+        if not issue_id:
+            return jsonify({"error": "Missing issue_id in custom_1"}), 400
+
+        # 6. Redmine credentials
+        redmine_url = os.getenv("REDMINE_URL")
+        api_key = os.getenv("REDMINE_ADMIN_API_KEY")
+        if not redmine_url or not api_key:
+            return jsonify({"error": "Server configuration error"}), 500
+
+        issue_url = f"{redmine_url}/issues/{issue_id}.json"
+        headers = {
+            "X-Redmine-API-Key": api_key,
+            "Content-Type": "application/json"
+        }
+
+        # 7. Fetch current issue
+        response = requests.get(issue_url, headers=headers)
+        if response.status_code != 200:
+            return jsonify({"error": f"Failed to fetch issue: {response.text}"}), 400
+
+        current_royalty = 0
+        for field in response.json().get('issue', {}).get('custom_fields', []):
+            if field.get('id') == 18:  # Royalty field ID
+                try:
+                    # Convert to float first, then to int to handle strings with decimals
+                    current_royalty = int(float(field.get('value', 0)))
+                except (ValueError, TypeError):
+                    current_royalty = 0
+                break
+
+        # 8. Add royalty (convert amount to integer)
+        try:
+            amount = int(round(float(data['payhere_amount'])))  # Convert to integer
+        except ValueError:
+            return jsonify({"error": "Invalid amount format"}), 400
+
+        new_royalty = current_royalty + amount
+
+        # 9. Update Redmine issue with integer value
+        update_response = requests.put(
+            issue_url,
+            headers=headers,
+            json={
+                "issue": {
+                    "custom_fields": [{
+                        "id": 18,
+                        "value": str(new_royalty)  # Store as string but without decimals
+                    }]
+                }
+            }
+        )
+
+        if update_response.status_code != 204:
+            return jsonify({"error": f"Failed to update Redmine: {update_response.text}"}), 400
+
+        # 10. Success response
+        print(f"✅ Royalty updated for issue {issue_id}. New amount: {new_royalty}")
+        return jsonify({
+            "success": True,
+            "message": f"Royalty updated to LKR {new_royalty}",
+            "issue_id": issue_id,
+            "payment_id": data.get('payment_id')
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "error": "Internal server error",
+            "details": str(e)
+        }), 500
+    
+@mining_owner_bp.route('/create-payhere-session', methods=['POST'])
+@check_token
+@role_required(['MLOwner'])
+def create_payhere_session():
+    try:
+        data = request.json
+        issue_id = data.get('issue_id')
+        amount = data.get('amount')
+        license_number = data.get('license_number')
+
+        if not issue_id or not amount:
+            return jsonify({"error": "Missing issue_id or amount"}), 400
+
+        try:
+            amount_float = float(amount)
+            if amount_float <= 0:
+                return jsonify({"error": "Amount must be positive"}), 400
+        except ValueError:
+            return jsonify({"error": "Invalid amount format"}), 400
+
+        merchant_id = os.getenv("MERCHANT_ID")  # PayHere sandbox merchant ID
+        merchant_secret = os.getenv("MERCHANT_SECRET")  # Sandbox secret
+        order_id = f"ROYALTY_{issue_id}_{int(time.time())}"
+
+        # Generate correct PayHere hash
+        def generate_payhere_hash():
+            hashed_secret = md5(merchant_secret.encode()).hexdigest().upper()
+            base_string = f"{merchant_id}{order_id}{amount_float:.2f}LKR{hashed_secret}"
+            return md5(base_string.encode()).hexdigest().upper()
+
+        payment_config = {
+            "sandbox": True,  # Set to False in production
+            "merchant_id": merchant_id,
+            "return_url": "http://localhost:3000/payment-success",
+            "cancel_url": "http://localhost:3000/payment-canceled",
+            "notify_url": "https://slt.aasait.lk/mining-owner/update-royalty",
+            "order_id": order_id,
+            "items": f"Mining Royalty for license {license_number}",
+            "amount": f"{amount_float:.2f}",
+            "currency": "LKR",
+            "custom_1": issue_id,
+            "hash": generate_payhere_hash(),
+            "first_name": "Mining",
+            "last_name": "Operator",
+            "email": "mining@example.com",
+            "phone": "0771234567",
+            "address": "No.1, Mine Street",
+            "city": "Colombo",
+            "country": "Sri Lanka"
+        }
+
+        return jsonify({"paymentConfig": payment_config})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 

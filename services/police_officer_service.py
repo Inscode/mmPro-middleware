@@ -84,6 +84,8 @@ class PoliceOfficerService:
                 "Route_02": next((cf["value"] for cf in valid_tpl_license["custom_fields"] if cf["id"] == 56), None),
                 "Route_03": next((cf["value"] for cf in valid_tpl_license["custom_fields"] if cf["id"] == 57), None),
                 "IsValid": is_valid,
+                "Assignee": valid_tpl_license["assigned_to"]["name"] if isinstance(valid_tpl_license.get("assigned_to"), dict) else str(valid_tpl_license.get("assigned_to")),
+
                 
             }
 

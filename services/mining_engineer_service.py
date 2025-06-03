@@ -873,3 +873,78 @@ class MiningEnginerService:
             return False, f"Server error: {str(e)}"
 
 
+    @staticmethod
+    def get_me_hold_licenses(token):  
+        try:
+            REDMINE_URL = os.getenv("REDMINE_URL")
+            API_KEY = JWTUtils.get_api_key_from_token(token)
+
+            if not REDMINE_URL or not API_KEY:
+                return None, "Redmine URL or API Key is missing"
+
+            user_id, error = MLOUtils.get_user_info_from_token(token)
+            if not user_id:
+                return None, error
+
+            params = {
+                "project_id": 1,
+                "tracker_id": 4,
+                "status_id": 39  # status_id = 39 means "Hold"
+            }
+
+            headers = {
+                "X-Redmine-API-Key": API_KEY
+            }
+
+            limit = LimitUtils.get_limit()
+            response = requests.get(
+                f"{REDMINE_URL}/projects/mmpro-gsmb/issues.json?offset=0&limit={limit}",
+                params=params,
+                headers=headers
+            )
+
+            if response.status_code != 200:
+                error_msg = f"Redmine API error: {response.status_code}"
+                if response.text:
+                    error_msg += f" - {response.text[:200]}"
+                return None, error_msg
+
+            data = response.json()
+            issues = data.get("issues", [])
+
+            processed_issues = []
+            for issue in issues:
+                custom_fields = {field['id']: field['value']
+                                for field in issue.get('custom_fields', [])
+                                if field.get('value') and str(field.get('value')).strip()}
+
+                attachment_urls = MiningEnginerService.get_attachment_urls(API_KEY, REDMINE_URL, issue.get("custom_fields", []))
+
+                processed_issues.append({
+                    "id": issue.get("id"),
+                    "subject": issue.get("subject"),
+                    "status": issue.get("status", {}).get("name"),
+                    "assigned_to": issue.get("assigned_to", {}).get("name"),
+                    "exploration_license_no": custom_fields.get(19),
+                    "Land_Name": custom_fields.get(28),
+                    "Land_owner_name": custom_fields.get(29),
+                    "Name_of_village": custom_fields.get(30),
+                    "Grama_Niladhari": custom_fields.get(31),
+                    "Divisional_Secretary_Division": custom_fields.get(32),
+                    "administrative_district": custom_fields.get(33),
+                    "Capacity": custom_fields.get(34),
+                    "Mobile_Numbe": custom_fields.get(66),
+                    "Google_location": custom_fields.get(92),
+                    "Mining_license_Number": custom_fields.get(101),
+                    "hold": custom_fields.get(106),
+                    "Detailed_Plan": attachment_urls.get("Detailed Mine Restoration Plan") or custom_fields.get(72),
+                    "Payment_Receipt": attachment_urls.get("Payment Receipt") or custom_fields.get(80),
+                    "Deed_Plan": attachment_urls.get("Deed and Survey Plan") or custom_fields.get(90),
+                })
+
+            return processed_issues, None
+
+        except Exception as e:
+            return None, f"Server error: {str(e)}"
+
+

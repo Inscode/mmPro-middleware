@@ -11,6 +11,7 @@ from flask import request
 from utils.limit_utils import LimitUtils
 from werkzeug.utils import secure_filename
 import time
+from hashlib import md5
 
 load_dotenv()
 
@@ -376,6 +377,7 @@ class MLOwnerService:
                         royalty = custom_fields_dict.get("Royalty", "N/A")
 
                         relevant_issues.append({
+                            "Issue ID": issue.get("id", "N/A"),
                             "License Number": license_number,
                             "Divisional Secretary Division": divisional_secretary,
                             "Owner Name": owner_name,
@@ -385,6 +387,7 @@ class MLOwnerService:
                             "Remaining Cubes": remaining_cubes,
                             "Royalty": royalty
                         })
+
 
             return relevant_issues, None
 
@@ -1313,3 +1316,133 @@ class MLOwnerService:
 
         except Exception as e:
             return None, f"Server error: {str(e)}"
+
+    @staticmethod
+    def get_mining_license_summary(token):
+        try:
+            user_api_key = JWTUtils.get_api_key_from_token(token)
+            if not user_api_key:
+                return None, "Invalid or missing API key in the token"
+
+            user_response = JWTUtils.decode_jwt_and_get_user_id(token)
+            user_id = user_response.get("user_id")
+            if not user_id:
+                return None, "Failed to extract user ID"
+
+            REDMINE_URL = os.getenv("REDMINE_URL")
+            if not REDMINE_URL:
+                return None, "Environment variable 'REDMINE_URL' is not set"
+
+            ml_issues_url = f"{REDMINE_URL}/issues.json?tracker_id=4&project_id=1&status_id=!7"
+            response = requests.get(
+                ml_issues_url,
+                headers={
+                    "X-Redmine-API-Key": user_api_key,
+                    "Content-Type": "application/json"
+                }
+            )
+
+            if response.status_code != 200:
+                return None, f"Failed to fetch ML issues: {response.status_code} - {response.text}"
+
+            issues = response.json().get("issues", [])
+            summary_list = []
+
+            for issue in issues:
+                assigned_to = issue.get("assigned_to", {})
+                assigned_to_id = assigned_to.get("id")
+
+                # Filter: only issues assigned to current user
+                if assigned_to_id != user_id:
+                    continue
+
+                custom_fields = issue.get("custom_fields", [])
+
+                summary = {
+                    "id": issue.get("id"),
+                    "subject": issue.get("subject"),
+                    "assigned_to": assigned_to.get("name"),
+                    "mobile": MLOwnerService.get_custom_field_value(custom_fields, "Mobile Number"),
+                    "district": MLOwnerService.get_custom_field_value(custom_fields, "Administrative District"),
+                    "date_created": issue.get("created_on"),
+                    "status": issue.get("status", {}).get("name"),
+                }
+
+                summary_list.append(summary)
+
+            return summary_list, None
+
+        except Exception as e:
+            return None, f"Server error: {str(e)}"
+        
+    @staticmethod
+    def update_royalty_field(token, issue_id, royalty_amount):
+        try:
+            user_api_key = JWTUtils.get_api_key_from_token(token)
+            if not user_api_key:
+                return False, "Invalid or missing API key in token"
+
+            REDMINE_URL = os.getenv("REDMINE_URL")
+            if not REDMINE_URL:
+                return False, "Environment variable 'REDMINE_URL' is not set"
+
+            issue_url = f"{REDMINE_URL}/issues/{issue_id}.json"
+
+            # Step 1: Fetch current issue to read existing royalty value
+            get_response = requests.get(
+                issue_url,
+                headers={
+                    "X-Redmine-API-Key": user_api_key,
+                    "Content-Type": "application/json"
+                }
+            )
+
+            if get_response.status_code != 200:
+                return False, f"Failed to fetch issue: {get_response.status_code} - {get_response.text}"
+
+            issue_data = get_response.json().get("issue", {})
+            custom_fields = issue_data.get("custom_fields", [])
+
+            # Find existing royalty value
+            existing_royalty = 0
+            for field in custom_fields:
+                if field.get("id") == 18:  # Royalty field ID
+                    try:
+                        existing_royalty = int(field.get("value", 0)) if field.get("value") else 0
+                    except ValueError:
+                        existing_royalty = 0
+                    break
+
+            # Step 2: Add new royalty to existing as integer
+            new_total_royalty = existing_royalty + int(royalty_amount)
+
+            # Step 3: Update the issue with new total
+            payload = {
+                "issue": {
+                    "custom_fields": [
+                        {
+                            "id": 18,
+                            "value": str(new_total_royalty)
+                        }
+                    ]
+                }
+            }
+
+            update_response = requests.put(
+                issue_url,
+                headers={
+                    "X-Redmine-API-Key": user_api_key,
+                    "Content-Type": "application/json"
+                },
+                json=payload
+            )
+
+            if update_response.status_code != 204:
+                return False, f"Failed to update issue: {update_response.status_code} - {update_response.text}"
+
+            return True, None
+
+        except Exception as e:
+            return False, f"Server error: {str(e)}"
+
+
