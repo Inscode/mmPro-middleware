@@ -1179,6 +1179,7 @@ class GsmbOfficerService:
                     "id": issue.get("id"),
                     "subject": issue.get("subject"),
                     "assigned_to": assigned_to.get("name"),
+                    "assigned_to_id": assigned_to.get("id"),
                     "mobile": GsmbOfficerService.get_custom_field_value(custom_fields, "Mobile Number"),
                     "district": GsmbOfficerService.get_custom_field_value(custom_fields, "Administrative District"),
                     "date_created": issue.get("created_on"),
