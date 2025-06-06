@@ -501,7 +501,7 @@ def create_payhere_session():
             "merchant_id": merchant_id,
             "return_url": "http://localhost:3000/payment-success",
             "cancel_url": "http://localhost:3000/payment-canceled",
-            "notify_url": "http://slt.aasait.lk/mining-owner/update-royalty",
+            "notify_url": "https://slt.aasait.lk/mining-owner/update-royalty",
             "order_id": order_id,
             "items": f"Mining Royalty for license {license_number}",
             "amount": f"{amount_float:.2f}",

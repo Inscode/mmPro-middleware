@@ -49,5 +49,5 @@ jobs:
           ssh -o StrictHostKeyChecking=no insaf@${{ secrets.SERVER_IP }} "
             cd /opt/mmPro-middleware &&
             pkill -HUP gunicorn || 
-            nohup venv/bin/gunicorn --bind 0.0.0.0:5000 app:app --workers 4 >/dev/null 2>&1 &
+            nohup venv/bin/gunicorn --bind 0.0.0.0:5000 'app:create_app()' --workers 4 --timeout 120 --access-logfile - >/dev/null 2>&1 &
           "
