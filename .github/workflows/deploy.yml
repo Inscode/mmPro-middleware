@@ -1,53 +1,53 @@
-name: Deploy mmPro Middleware
+# name: Deploy mmPro Middleware
 
-on:
-  push:
-    branches: [main]
-    paths:
-      - 'app.py'            # Watch main app file
-      - 'config.py'         # Watch config
-      - 'requirements.txt'  # Watch dependencies
-      - 'controllers/**'    # Watch controllers
-      - 'services/**'       # Watch services
-      - 'utils/**'          # Watch utils
+# on:
+#   push:
+#     branches: [main]
+#     paths:
+#       - 'app.py'            # Watch main app file
+#       - 'config.py'         # Watch config
+#       - 'requirements.txt'  # Watch dependencies
+#       - 'controllers/**'    # Watch controllers
+#       - 'services/**'       # Watch services
+#       - 'utils/**'          # Watch utils
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
 
-      - name: Install Rsync
-        run: sudo apt-get install -y rsync
+#       - name: Install Rsync
+#         run: sudo apt-get install -y rsync
 
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.7.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+#       - name: Setup SSH
+#         uses: webfactory/ssh-agent@v0.7.0
+#         with:
+#           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Deploy Files
-        run: |
-          rsync -avz \
-          -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
-            --exclude='.git/' \
-            --exclude='.github/' \
-            --exclude='.env' \
-            ./ insaf@${{ secrets.SERVER_IP }}:/opt/mmPro-middleware/
+#       - name: Deploy Files
+#         run: |
+#           rsync -avz \
+#           -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
+#             --exclude='.git/' \
+#             --exclude='.github/' \
+#             --exclude='.env' \
+#             ./ insaf@${{ secrets.SERVER_IP }}:/opt/mmPro-middleware/
 
-      - name: Install Dependencies
-        run: |
-          ssh -o StrictHostKeyChecking=no insaf@${{ secrets.SERVER_IP }} "
-            cd /opt/mmPro-middleware &&
-            source venv/bin/activate &&
-            pip install -r requirements.txt
-          "
+#       - name: Install Dependencies
+#         run: |
+#           ssh -o StrictHostKeyChecking=no insaf@${{ secrets.SERVER_IP }} "
+#             cd /opt/mmPro-middleware &&
+#             source venv/bin/activate &&
+#             pip install -r requirements.txt
+#           "
 
-      - name: Restart Gunicorn
-        run: |
-          ssh -o StrictHostKeyChecking=no insaf@${{ secrets.SERVER_IP }} "
-            cd /opt/mmPro-middleware &&
-            pkill -HUP gunicorn || 
-            nohup venv/bin/gunicorn --bind 0.0.0.0:5000 'app:create_app()' --workers 4 --timeout 120 --access-logfile - >/dev/null 2>&1 &
-          "
+#       - name: Restart Gunicorn
+#         run: |
+#           ssh -o StrictHostKeyChecking=no insaf@${{ secrets.SERVER_IP }} "
+#             cd /opt/mmPro-middleware &&
+#             pkill -HUP gunicorn || 
+#             nohup venv/bin/gunicorn --bind 0.0.0.0:5000 'app:create_app()' --workers 4 --timeout 120 --access-logfile - >/dev/null 2>&1 &
+#           "

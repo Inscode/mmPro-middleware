@@ -250,11 +250,16 @@ class MLOwnerService:
             if not used_field or not remaining_field or not royalty_field:
                 return None, "Required fields (Used, Remaining, or Royalty) not found in the mining license issue"
             
-            current_used = int(used_field.get("value", 0))
-            current_remaining = int(remaining_field.get("value", 0))
-            current_royalty = int(royalty_field.get("value", 0))
+            def safe_int(val, default=0):
+                try:
+                    return int(val)
+                except (TypeError, ValueError):
+                    return default
 
-            cubes = int(data.get("cubes", 0))
+            current_used = safe_int(used_field.get("value"))
+            current_remaining = safe_int(remaining_field.get("value"))
+            current_royalty = safe_int(royalty_field.get("value"))
+            cubes = safe_int(data.get("cubes"))
 
             # Calculate TPL cost (500 per cube)
             tpl_cost = cubes * 500
