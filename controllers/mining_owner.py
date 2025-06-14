@@ -116,7 +116,7 @@ def mining_home():
         token = auth_header.split(' ')[1]
         # Validate the token (for now, we simply check if it's present, but you can add further validation logic)
         if not token:
-            return jsonify({"error": "Invalid or missing token"}), 401
+            return jsonify({"error": "Invalid token"}), 401
 
         # If the token is valid, proceed with the mining_licenses logic
         issues, error = MLOwnerService.mining_homeLicenses(token) # Pass token here
@@ -143,8 +143,11 @@ def ml_detail():
 
         # Extract the Authorization token
         auth_header = request.headers.get('Authorization')
-        if not auth_header or not auth_header.startswith('Bearer '):
-            return jsonify({"error": "Invalid or missing Authorization token"}), 401
+        if not auth_header:
+            return jsonify({"error": "Authorization token is missing"}), 403
+    
+        if not auth_header.startswith('Bearer '):
+            return jsonify({"error": "Invalid token format. Expected 'Bearer <token>'"}), 403
 
         # Extract only the token value
         token = auth_header.split(' ')[1]
@@ -153,7 +156,8 @@ def ml_detail():
         issue, error = MLOwnerService.ml_detail(l_number, auth_header)
 
         if error:
-            return jsonify({"error": error}), 500
+            status_code = 404 if error == "License not found" else 500
+            return jsonify({"error": error}), status_code
 
         return jsonify({"ml_detail": issue})
 

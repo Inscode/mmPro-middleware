@@ -3,6 +3,7 @@ from unittest.mock import patch, MagicMock
 from utils.jwt_utils import JWTUtils
 from flask import jsonify
 
+
 @pytest.fixture
 def valid_token():
     tokens = JWTUtils.create_jwt_token(user_id=1, user_role='GSMBManagement')
@@ -418,5 +419,6 @@ def test_activate_officer_invalid_id(client, valid_token):
     response = client.put('/gsmb-management/active-gsmb-officers/abc',
                         headers={"Authorization": valid_token})
     assert response.status_code == 404
+
 
 
