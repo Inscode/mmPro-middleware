@@ -3,9 +3,9 @@ from middleware.auth_middleware import role_required,check_token
 from services.gsmb_managemnt_service import GsmbManagmentService
 
 
-# Define the Blueprint
 gsmb_management_bp = Blueprint('gsmb_management', __name__) 
-#(Done)
+
+
 @gsmb_management_bp.route('/monthly-total-sand', methods=['GET']) 
 @check_token                     
 @role_required(['GSMBManagement'])         
