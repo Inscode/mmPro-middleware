@@ -65,16 +65,9 @@ def create_tpl():
 def view_tpl_by_license_number():
     try:
         # Check if the Authorization token is present in the request
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
+        token = request.headers.get('Authorization')
+        if not token:
             return jsonify({"error": "Authorization token is missing"}), 401
-        
-        # Check if the token starts with 'Bearer ' (you can also validate it further here if needed)
-        if not auth_header.startswith('Bearer '):
-            return jsonify({"error": "Invalid token format. Expected 'Bearer <token>'"}), 401
-        
-        # Extract the token from the header
-        token = auth_header.split(' ')[1]
 
         # Get the mining_license_number from the query parameters
         mining_license_number = request.args.get('mining_license_number')
