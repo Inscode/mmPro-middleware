@@ -709,116 +709,235 @@ class MLOwnerService:
             return None, f"Server error: {str(e)}"
      
 
+    # @staticmethod
+    # def view_tpls(token: str, mining_license_number: str) -> Tuple[Optional[List[Dict]], Optional[str]]:
+    #     try:
+        
+
+    #         if not mining_license_number or not mining_license_number.strip():
+    #             return None, "Valid mining license number is required"
+
+    #         mining_license_number = mining_license_number.strip() # Strip once upfront
+
+    #         # --- Configuration ---
+    #         REDMINE_URL = os.getenv("REDMINE_URL")
+
+    #         API_KEY = JWTUtils.get_api_key_from_token(token)
+
+
+    #         if not REDMINE_URL or not API_KEY:
+    #             return None, "System configuration error - missing Redmine URL or API Key"
+
+    #         # --- Authentication/User Info (Optional but kept from original) ---
+    #         # Assuming MLOUtils has a method like this
+    #         result = JWTUtils.decode_jwt_and_get_user_id(token)
+    #         if not result['success']:
+    #             return None, result['message']
+
+    #         user_id = result['user_id']
+
+    #         # Get all TPL issues (tracker_id=5) without filtering by custom field in params
+    #         params = {
+    #             "project_id": 1,
+    #             "tracker_id": 5,
+    #         }
+
+    #         headers = {
+    #             "Content-Type": "application/json",
+    #             "X-Redmine-API-Key": API_KEY
+    #         }
+
+    #         # Assuming LimitUtils has a method like this
+    #         limit = LimitUtils.get_limit() if LimitUtils.get_limit() else 100 # Use a default if needed
+            
+    #         api_url = f"{REDMINE_URL}/issues.json" # Simplified URL, project filter is in params
+           
+
+    #         response = requests.get(
+    #             api_url,
+    #             params={**params, "limit": limit, "offset": 0}, # Combine params
+    #             headers=headers,
+    #             timeout=30 # Add a timeout
+    #         )
+
+            
+
+    #         if response.status_code != 200:
+    #             error_msg = f"Redmine API error ({response.status_code}): {response.text}"
+             
+    #             return None, error_msg
+
+    #         # --- Process Results ---
+    #         try:
+    #             response_data = response.json()
+    #             issues = response_data.get("issues", [])
+                
+    #         except ValueError: # Handle cases where response is not valid JSON
+    #              error_msg = f"Redmine API error: Invalid JSON response. Status: {response.status_code}, Body: {response.text}"
+                 
+    #              return None, "Failed to parse response from Redmine"
+
+
+    #         tpl_list = []
+    #         current_datetime = datetime.now() # Consider timezone if needed
+
+    #         for issue in issues:
+    #             try:
+    #                 # Get all custom fields for this issue
+    #                 custom_fields = issue.get("custom_fields", [])
+                    
+    #                 # Find the Mining issue id (custom field 59)
+    #                 mining_issue_id = None
+    #                 for field in custom_fields:
+    #                     if field.get("id") == 59:
+    #                         mining_issue_id = field.get("value")
+    #                         break
+                    
+    #                 # Skip if this TPL doesn't belong to our mining license
+    #                 if not mining_issue_id or mining_issue_id != mining_license_number.strip():
+    #                     continue
+
+    #                 # Convert custom fields to dictionary for easier access
+    #                 custom_fields_dict = {
+    #                     field["name"]: field["value"] 
+    #                     for field in custom_fields
+    #                 }
+
+    #                 # --- Calculate Status ---
+    #                 created_date_str = issue.get("created_on")
+    #                 estimated_hours_str = issue.get("estimated_hours")  # Keep as string initially
+    #                 status = "Undetermined"  # Default status
+
+    #                 if created_date_str and estimated_hours_str is not None:
+    #                     try:
+    #                         created_date = datetime.strptime(created_date_str, "%Y-%m-%dT%H:%M:%SZ")
+    #                         estimated_hours = float(estimated_hours_str)
+                            
+    #                         expiration_datetime = created_date + timedelta(hours=estimated_hours)
+    #                         status = "Active" if current_datetime < expiration_datetime else "Expired"
+
+    #                     except ValueError as e:
+                           
+    #                         continue  # Skip to next issue on error
+
+    #                 tpl_data = {
+    #                     "tpl_id": issue.get("id"),
+    #                     "license_number": mining_license_number,
+    #                     "subject": issue.get("subject", ""),
+    #                     "status": status,
+    #                     "lorry_number": custom_fields_dict.get("Lorry Number"),
+    #                     "driver_contact": custom_fields_dict.get("Driver Contact"),
+    #                     "destination": custom_fields_dict.get("Destination"),
+    #                     "Route_01": custom_fields_dict.get("Route 01"),
+    #                     "Route_02": custom_fields_dict.get("Route 02"),
+    #                     "Route_03": custom_fields_dict.get("Route 03"),
+    #                     "cubes": custom_fields_dict.get("Cubes"),  
+    #                     "Create_Date": issue.get("created_on", ""),
+    #                     "Estimated Hours": estimated_hours_str,
+    #                 }
+
+    #                 tpl_list.append(tpl_data)
+
+    #             except Exception as e:
+    #                 print(f"Error processing issue {issue.get('id', 'N/A')}: {str(e)}")
+    #                 continue
+
+    #         print(f"Finished processing. Returning {len(tpl_list)} TPLs.")  # Debugging
+    #         return tpl_list, None
+
+
+    #     except requests.exceptions.RequestException as e:
+    #         error_msg = f"Network error connecting to Redmine: {str(e)}"
+    #         return None, error_msg
+    #     except Exception as e:
+    #         print(f"Unexpected error: {str(e)}")
+    #         return None, f"Processing error: {str(e)}"
+    
+
     @staticmethod
     def view_tpls(token: str, mining_license_number: str) -> Tuple[Optional[List[Dict]], Optional[str]]:
         try:
-        
-
             if not mining_license_number or not mining_license_number.strip():
                 return None, "Valid mining license number is required"
 
-            mining_license_number = mining_license_number.strip() # Strip once upfront
+            mining_license_number = mining_license_number.strip()
 
             # --- Configuration ---
             REDMINE_URL = os.getenv("REDMINE_URL")
-
             API_KEY = JWTUtils.get_api_key_from_token(token)
-
 
             if not REDMINE_URL or not API_KEY:
                 return None, "System configuration error - missing Redmine URL or API Key"
 
-            # --- Authentication/User Info (Optional but kept from original) ---
-            # Assuming MLOUtils has a method like this
-            user_id, error = MLOUtils.get_user_info_from_token(token) 
-            if not user_id:
-                return None, f"Authentication error: {error}"
+            # --- Decode user ID from token ---
+            result = JWTUtils.decode_jwt_and_get_user_id(token)
+            if not result['success']:
+                return None, result['message']
+            
+            user_id = result['user_id']
 
-            # Get all TPL issues (tracker_id=5) without filtering by custom field in params
-            params = {
-                "project_id": 1,
-                "tracker_id": 5,
-            }
-
+            # --- Prepare headers ---
             headers = {
                 "Content-Type": "application/json",
                 "X-Redmine-API-Key": API_KEY
             }
 
-            # Assuming LimitUtils has a method like this
-            limit = LimitUtils.get_limit() if LimitUtils.get_limit() else 100 # Use a default if needed
-            
-            api_url = f"{REDMINE_URL}/issues.json" # Simplified URL, project filter is in params
-           
-
-            response = requests.get(
-                api_url,
-                params={**params, "limit": limit, "offset": 0}, # Combine params
-                headers=headers,
-                timeout=30 # Add a timeout
+            # --- Direct Redmine API call with query parameters ---
+            limit = 100
+            tpl_url = (
+                f"{REDMINE_URL}/issues.json?"
+                f"project_id=1&tracker_id=5&assigned_to_id={user_id}&limit={limit}&offset=0"
             )
 
-            
+            response = requests.get(tpl_url, headers=headers, timeout=30)
 
             if response.status_code != 200:
                 error_msg = f"Redmine API error ({response.status_code}): {response.text}"
-             
                 return None, error_msg
 
-            # --- Process Results ---
+            # --- Parse JSON response ---
             try:
-                response_data = response.json()
-                issues = response_data.get("issues", [])
-                
-            except ValueError: # Handle cases where response is not valid JSON
-                 error_msg = f"Redmine API error: Invalid JSON response. Status: {response.status_code}, Body: {response.text}"
-                 
-                 return None, "Failed to parse response from Redmine"
-
+                issues = response.json().get("issues", [])
+            except ValueError:
+                return None, "Failed to parse response from Redmine"
 
             tpl_list = []
-            current_datetime = datetime.now() # Consider timezone if needed
+            current_datetime = datetime.now()
 
+            # --- Process each issue ---
             for issue in issues:
                 try:
-                    # Get all custom fields for this issue
                     custom_fields = issue.get("custom_fields", [])
-                    
-                    # Find the Mining issue id (custom field 59)
-                    mining_issue_id = None
-                    for field in custom_fields:
-                        if field.get("id") == 59:
-                            mining_issue_id = field.get("value")
-                            break
-                    
-                    # Skip if this TPL doesn't belong to our mining license
-                    if not mining_issue_id or mining_issue_id != mining_license_number.strip():
-                        continue
 
-                    # Convert custom fields to dictionary for easier access
+                    # Match Mining License Number (custom field ID = 59)
+                    mining_issue_id = next(
+                        (field.get("value") for field in custom_fields if field.get("id") == 59), None
+                    )
+
+                    if not mining_issue_id or mining_issue_id != mining_license_number:
+                        continue  # Skip if not related to the provided license
+
+                    # Build a dictionary for quick lookup of custom fields
                     custom_fields_dict = {
-                        field["name"]: field["value"] 
+                        field["name"]: field["value"]
                         for field in custom_fields
                     }
 
-                    # --- Calculate Status ---
+                    # Calculate Status (Active / Expired)
                     created_date_str = issue.get("created_on")
-                    estimated_hours_str = issue.get("estimated_hours")  # Keep as string initially
-                    status = "Undetermined"  # Default status
+                    estimated_hours_str = issue.get("estimated_hours")
+                    status = "Undetermined"
 
                     if created_date_str and estimated_hours_str is not None:
                         try:
                             created_date = datetime.strptime(created_date_str, "%Y-%m-%dT%H:%M:%SZ")
                             estimated_hours = float(estimated_hours_str)
-                            
                             expiration_datetime = created_date + timedelta(hours=estimated_hours)
                             status = "Active" if current_datetime < expiration_datetime else "Expired"
+                        except ValueError:
+                            pass  # Leave as "Undetermined" if parsing fails
 
-                        except ValueError as e:
-                           
-                            continue  # Skip to next issue on error
-
-                    tpl_data = {
+                    tpl_list.append({
                         "tpl_id": issue.get("id"),
                         "license_number": mining_license_number,
                         "subject": issue.get("subject", ""),
@@ -829,28 +948,23 @@ class MLOwnerService:
                         "Route_01": custom_fields_dict.get("Route 01"),
                         "Route_02": custom_fields_dict.get("Route 02"),
                         "Route_03": custom_fields_dict.get("Route 03"),
-                        "cubes": custom_fields_dict.get("Cubes"),  
-                        "Create_Date": issue.get("created_on", ""),
+                        "cubes": custom_fields_dict.get("Cubes"),
+                        "Create_Date": created_date_str,
                         "Estimated Hours": estimated_hours_str,
-                    }
-
-                    tpl_list.append(tpl_data)
+                    })
 
                 except Exception as e:
                     print(f"Error processing issue {issue.get('id', 'N/A')}: {str(e)}")
                     continue
 
-            print(f"Finished processing. Returning {len(tpl_list)} TPLs.")  # Debugging
+            print(f"Finished processing. Returning {len(tpl_list)} TPLs.")
             return tpl_list, None
 
-
         except requests.exceptions.RequestException as e:
-            error_msg = f"Network error connecting to Redmine: {str(e)}"
-            return None, error_msg
+            return None, f"Network error connecting to Redmine: {str(e)}"
         except Exception as e:
             print(f"Unexpected error: {str(e)}")
             return None, f"Processing error: {str(e)}"
-    
 
 
     @staticmethod
