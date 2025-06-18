@@ -20,16 +20,10 @@ mining_owner_bp = Blueprint('mining_owner', __name__)
 def get_mining_licenses():
     try:
         # Extract token from the request headers
-        auth_header = request.headers.get("Authorization")
-        
-        if not auth_header:
-            return {"error": "Authorization token is missing"}, 400
-        
-        # Remove the "Bearer " prefix if it exists
-        token = auth_header.replace("Bearer ", "")
+        token = request.headers.get("Authorization")
         
         if not token:
-            return {"error": "Authorization token is invalid"}, 400
+            return {"error": "Authorization token is missing"}, 400
         
         # Call the mining_licenses method with the token
         issues, error = MLOwnerService.mining_licenses(token)
