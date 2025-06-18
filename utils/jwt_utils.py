@@ -182,7 +182,6 @@ class JWTUtils:
 
     @staticmethod
     def get_api_key_from_token(token):
-
         try:
             # Handle tokens with 'Bearer ' prefix
             token = token.split(" ")[1] if " " in token else token
