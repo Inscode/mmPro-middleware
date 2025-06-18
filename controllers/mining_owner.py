@@ -119,18 +119,12 @@ def ml_detail():
             return jsonify({"error": "Missing 'l_number' query parameter"}), 400
 
         # Extract the Authorization token
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
+        token = request.headers.get('Authorization')
+        if not token:
             return jsonify({"error": "Authorization token is missing"}), 403
-    
-        if not auth_header.startswith('Bearer '):
-            return jsonify({"error": "Invalid token format. Expected 'Bearer <token>'"}), 403
-
-        # Extract only the token value
-        token = auth_header.split(' ')[1]
 
         # Call the service function with l_number and token
-        issue, error = MLOwnerService.ml_detail(l_number, auth_header)
+        issue, error = MLOwnerService.ml_detail(l_number, token)
 
         if error:
             status_code = 404 if error == "License not found" else 500
