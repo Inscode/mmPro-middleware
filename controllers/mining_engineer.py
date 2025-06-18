@@ -297,9 +297,9 @@ def get_me_appointments():
         if not token:
             return jsonify({"error": "Authorization header missing"}), 401
 
-        result = MiningEnginerService.get_me_appointments(token)
+        result, error = MiningEnginerService.get_me_appointments(token)
         
-        if "error" in result:
+        if error:
             status_code = 500 if "Server error" in result["error"] else 400
             return jsonify({"error": result["error"]}), status_code
             
@@ -321,7 +321,7 @@ def get_me_approve_license():
         if not token:
             return jsonify({"error": "Authorization header missing"}), 401
 
-        result = MiningEnginerService.get_me_approve_license(token)
+        result, error = MiningEnginerService.get_me_approve_license(token)
         
         if "error" in result:
             status_code = 500 if "Server error" in result["error"] else 400
@@ -344,7 +344,7 @@ def get_me_approve_single_license(issue_id):
         if not token:
             return jsonify({"error": "Authorization header missing"}), 401
 
-        result = MiningEnginerService.get_me_approve_single_license(token,issue_id=issue_id,)
+        result, error = MiningEnginerService.get_me_approve_single_license(token,issue_id=issue_id,)
         
         if "error" in result:
             status_code = 500 if "Server error" in result["error"] else 400
