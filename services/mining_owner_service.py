@@ -29,29 +29,26 @@ class MLOwnerService:
             if not REDMINE_URL or not API_KEY:
                 return None, "Redmine URL or API Key is missing"
 
-            # Step 1: Extract user_id from the token
-            user_id, error = MLOUtils.get_user_info_from_token(token)
-            if not user_id:
-                return None, error
+            # Decode token to get user ID
+            result = JWTUtils.decode_jwt_and_get_user_id(token)
+            if not result['success']:
+                return None, result['message']
 
-            # Step 2: Define query parameters
-            params = {
-                "project_id": 1,
-                "tracker_id": 4,  # ML tracker ID
-                "status_id": 7
-            }
+            user_id = result['user_id']
 
             headers = {
-                "X-Redmine-API-Key": API_KEY
+                "X-Redmine-API-Key": API_KEY,
+                "Content-Type": "application/json"
             }
 
-            # Step 3: Fetch issues
-            limit = LimitUtils.get_limit()
-            response = requests.get(
-                f"{REDMINE_URL}/projects/mmpro-gsmb/issues.json?offset=0&limit={limit}",
-                params=params,
-                headers=headers
+            # Build URL with query parameters directly
+            ml_licenses_url = (
+                f"{REDMINE_URL}/issues.json?"
+                f"project_id=1&tracker_id=4&status_id=7"
+                f"&assigned_to_id={user_id}&limit=50&offset=0"
             )
+
+            response = requests.get(ml_licenses_url, headers=headers)
 
             if response.status_code != 200:
                 return None, f"Failed to fetch issues: {response.status_code} - {response.text}"
@@ -61,47 +58,44 @@ class MLOwnerService:
 
             for issue in issues:
                 assigned_to = issue.get("assigned_to", {})
-                assigned_user_id = assigned_to.get("id", None)
+                custom_fields = issue.get("custom_fields", [])
+                custom_fields_dict = {field["name"]: field["value"] for field in custom_fields}
 
-                if assigned_user_id == user_id:
-                    custom_fields = issue.get("custom_fields", [])
-                    custom_fields_dict = {field["name"]: field["value"] for field in custom_fields}
+                owner_name = assigned_to.get("name", "N/A")
+                license_number = custom_fields_dict.get("Mining License Number", "N/A")
+                divisional_secretary = custom_fields_dict.get("Divisional Secretary Division", "N/A")
+                location = custom_fields_dict.get("Name of village ", "N/A")
+                start_date = issue.get("start_date", "N/A")
+                due_date = issue.get("due_date", "N/A")
 
-                    owner_name = assigned_to.get("name", "N/A")
-                    license_number = custom_fields_dict.get("Mining License Number", "N/A")
-                    divisional_secretary = custom_fields_dict.get("Divisional Secretary Division", "N/A")
-                    location = custom_fields_dict.get("Name of village ", "N/A")
-                    start_date = issue.get("start_date", "N/A")
-                    due_date = issue.get("due_date", "N/A")
+                # Handle remaining cubes safely
+                remaining_str = custom_fields_dict.get("Remaining", "0")
+                try:
+                    remaining_cubes = int(remaining_str.strip()) if remaining_str.strip() else 0
+                except ValueError:
+                    remaining_cubes = 0
 
-                    # Handle remaining cubes safely
-                    remaining_str = custom_fields_dict.get("Remaining", "0")
-                    try:
-                        remaining_cubes = int(remaining_str) if remaining_str.strip() else 0
-                    except ValueError:
-                        remaining_cubes = 0
+                royalty = custom_fields_dict.get("Royalty", "N/A")
 
-                    royalty = custom_fields_dict.get("Royalty", "N/A")
+                status = issue.get("status", {}).get("name", "Unknown")
 
-                    # Get status from issue object
-                    status = issue.get("status", {}).get("name", "Unknown")
-
-                    relevant_issues.append({
-                        "License Number": license_number,
-                        "Divisional Secretary Division": divisional_secretary,
-                        "Owner Name": owner_name,
-                        "Location": location,
-                        "Start Date": start_date,
-                        "Due Date": due_date,
-                        "Remaining Cubes": remaining_cubes,
-                        "Royalty": royalty,
-                        "Status": status
-                    })
+                relevant_issues.append({
+                    "License Number": license_number,
+                    "Divisional Secretary Division": divisional_secretary,
+                    "Owner Name": owner_name,
+                    "Location": location,
+                    "Start Date": start_date,
+                    "Due Date": due_date,
+                    "Remaining Cubes": remaining_cubes,
+                    "Royalty": royalty,
+                    "Status": status
+                })
 
             return relevant_issues, None
 
         except Exception as e:
             return None, f"Server error: {str(e)}"
+
 
 
     # @staticmethod
