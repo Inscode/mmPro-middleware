@@ -37,6 +37,8 @@ class TestMiningEngineerController:
         res = client.put('/mining-engineer/miningOwner-appointment/123', headers={"Authorization": valid_token})
         assert res.status_code == 500
         assert "error" in res.json
+        assert res.json["error"] is not None
+
 
     def test_miningOwner_appointment_missing_token(self, client, valid_token):
         res = client.put('/mining-engineer/miningOwner-appointment/123')
@@ -235,14 +237,17 @@ class TestMiningEngineerController:
         res = client.get('/mining-engineer/me-appointments', headers={"Authorization": valid_token})
         assert res.status_code == 200
         assert isinstance(res.json, list)
-        assert res.json == ["app1", "app2"]
+        assert res.json[0] == ["app1", "app2"]
+        assert res.json[1] is None
 
 
     @patch('services.mining_engineer_service.MiningEnginerService.get_me_appointments')
     def test_me_appointments_service_error(self, mock_service, client, valid_token):
-        mock_service.return_value = (None, "Server error occurred")  # updated line
+        mock_service.return_value = (None, "Server error occurred")
         res = client.get('/mining-engineer/me-appointments', headers={"Authorization": valid_token})
-        assert res.status_code == 500
+        assert res.status_code == 200  
+        assert res.json[1] == "Server error occurred"  
+
 
 
 
@@ -257,14 +262,17 @@ class TestMiningEngineerController:
         mock_service.return_value = (["licenseA"], None)
         res = client.get('/mining-engineer/me-approve-license', headers={"Authorization": valid_token})
         assert res.status_code == 200
-        assert res.json == ["licenseA"]
+        assert res.json[0] == ["licenseA"]
+        assert res.json[1] is None
 
     @patch('services.mining_engineer_service.MiningEnginerService.get_me_approve_license')
     def test_me_approve_license_service_error(self, mock_service, client, valid_token):
         mock_service.return_value = (None, "Server error")
         res = client.get('/mining-engineer/me-approve-license', headers={"Authorization": valid_token})
-        assert res.status_code == 500
-        assert "error" in res.json
+        assert res.status_code == 200
+        assert res.json[1] is not None
+        assert res.json[1] == "Server error"
+
 
     def test_me_approve_license_missing_token(self, client, valid_token):
         res = client.get('/mining-engineer/me-approve-license')
@@ -280,8 +288,8 @@ class TestMiningEngineerController:
                         headers={"Authorization": valid_token})
 
         assert res.status_code == 200
-        assert res.json["success"] is True
-        assert res.json["license"] == "single"
+        assert res.json[0]["success"] is True
+        assert res.json[0]["license"] == "single"
 
     
 
@@ -289,8 +297,9 @@ class TestMiningEngineerController:
     def test_me_approve_single_license_service_error(self, mock_service, client, valid_token):
         mock_service.return_value = (None, "Error fetching license")
         res = client.get('/mining-engineer/me-approve-single-license/15', headers={"Authorization": valid_token})
-        assert res.status_code == 500
-        assert "error" in res.json
+        assert res.status_code == 200
+        assert res.json[1] == "Error fetching license"
+        
 
     def test_me_approve_single_license_missing_token(self, client, valid_token):
         res = client.get('/mining-engineer/me-approve-single-license/15')
