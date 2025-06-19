@@ -298,7 +298,7 @@ class AuthService:
             reset_link = f"{redirect_base_url}?token={reset_token}"
         else:
 
-            reset_link = f"http://localhost:5173/reset-password?token={reset_token}"
+            reset_link = f"https://mmpro.aasait.lk/reset-password?token={reset_token}"
         AuthService.send_reset_email(email, reset_link)
 
         return {'message': 'Password reset initiated'} 
@@ -593,37 +593,37 @@ class AuthService:
         else:
             return None  # Handle failed upload
 
-    @staticmethod
-    def register_company(login, first_name, last_name, email, password, custom_fields):
-        """
-        Registers a mining license company in Redmine.
-        """
-        REDMINE_URL = os.getenv("REDMINE_URL")
-        admin_api_key = os.getenv("REDMINE_ADMIN_API_KEY")
+    # @staticmethod
+    # def register_company(login, first_name, last_name, email, password, custom_fields):
+    #     """
+    #     Registers a mining license company in Redmine.
+    #     """
+    #     REDMINE_URL = os.getenv("REDMINE_URL")
+    #     admin_api_key = os.getenv("REDMINE_ADMIN_API_KEY")
 
-        url = f"{REDMINE_URL}/users.json"
-        headers = {
-            "X-Redmine-API-Key": admin_api_key,
-            "Content-Type": "application/json"
-        }
+    #     url = f"{REDMINE_URL}/users.json"
+    #     headers = {
+    #         "X-Redmine-API-Key": admin_api_key,
+    #         "Content-Type": "application/json"
+    #     }
 
-        payload = {
-            "user": {
-                "login": login,
-                "firstname": first_name,
-                "lastname": last_name,
-                "mail": email,
-                "password": password,
-                "custom_fields": custom_fields
-            }
-        }
+    #     payload = {
+    #         "user": {
+    #             "login": login,
+    #             "firstname": first_name,
+    #             "lastname": last_name,
+    #             "mail": email,
+    #             "password": password,
+    #             "custom_fields": custom_fields
+    #         }
+    #     }
 
-        response = requests.post(url, headers=headers, json=payload)
+    #     response = requests.post(url, headers=headers, json=payload)
 
-        if response.status_code in [200, 201]:
-            return response.json(), None
-        else:
-            return None, response.json()
+    #     if response.status_code in [200, 201]:
+    #         return response.json(), None
+    #     else:
+    #         return None, response.json()
         
     @staticmethod
     def reset_password_with_email(email, new_password):

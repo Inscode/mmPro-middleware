@@ -5,6 +5,11 @@ from unittest.mock import patch, Mock
 from services.auth_service import AuthService
 from unittest.mock import patch, MagicMock, ANY
 import requests
+import io
+
+REDMINE_URL = "http://test.redmine.url"
+REDMINE_API_KEY = "test_api_key"
+REDMINE_ADMIN_API_KEY = "test_admin_api_key"
 
 def test_authenticate_user_success():
     mock_response = Mock()
@@ -323,3 +328,252 @@ def test_send_reset_email_failure():
         
         # This should not raise an exception
         AuthService.send_reset_email('test@example.com', 'http://reset.link')
+
+@pytest.fixture
+def mock_env(monkeypatch):
+    monkeypatch.setenv("REDMINE_URL", REDMINE_URL)
+    monkeypatch.setenv("REDMINE_API_KEY", REDMINE_API_KEY)
+    monkeypatch.setenv("REDMINE_ADMIN_API_KEY", REDMINE_ADMIN_API_KEY)
+
+def test_register_police_officer_success(mock_env):
+    mock_response = Mock()
+    mock_response.status_code = 201
+    mock_response.json.return_value = {
+        "user": {
+            "id": 1,
+            "login": "police1",
+            "status": 3
+        }
+    }
+    
+    with patch('services.auth_service.requests.post', return_value=mock_response):
+        result, error = AuthService.register_police_officer(
+            "police1", "John", "Doe", "john@example.com", "password", []
+        )
+        
+        assert result["user"]["id"] == 1
+        assert error is None
+
+def test_register_police_officer_failure(mock_env):
+    mock_response = Mock()
+    mock_response.status_code = 400
+    mock_response.json.return_value = {
+        "errors": ["Login already taken"]
+    }
+    
+    with patch('services.auth_service.requests.post', return_value=mock_response):
+        result, error = AuthService.register_police_officer(
+            "police1", "John", "Doe", "john@example.com", "password", []
+        )
+        
+        assert result is None
+        assert "Login already taken" in error["errors"]
+
+def test_register_gsmb_officer_success(mock_env):
+    mock_response = Mock()
+    mock_response.status_code = 201
+    mock_response.json.return_value = {
+        "user": {
+            "id": 2,
+            "login": "gsmb1",
+            "status": 3
+        }
+    }
+    
+    with patch('services.auth_service.requests.post', return_value=mock_response):
+        result, error = AuthService.register_gsmb_officer(
+            "gsmb1", "Jane", "Smith", "jane@example.com", "password", []
+        )
+        
+        assert result["user"]["id"] == 2
+        assert error is None
+
+def test_register_mining_engineer_success(mock_env):
+    mock_response = Mock()
+    mock_response.status_code = 201
+    mock_response.json.return_value = {
+        "user": {
+            "id": 3,
+            "login": "engineer1",
+            "status": 3
+        }
+    }
+    
+    with patch('services.auth_service.requests.post', return_value=mock_response):
+        result, error = AuthService.register_mining_engineer(
+            "engineer1", "Bob", "Builder", "bob@example.com", "password", []
+        )
+        
+        assert result["user"]["id"] == 3
+        assert error is None
+
+def test_assign_role_success(mock_env):
+    mock_response = Mock()
+    mock_response.status_code = 201
+    mock_response.json.return_value = {
+        "membership": {
+            "id": 1,
+            "user_id": 1,
+            "role_ids": [7]
+        }
+    }
+    
+    with patch('services.auth_service.requests.post', return_value=mock_response):
+        result, error = AuthService.assign_role(1, "PoliceOfficer")
+        
+        assert result["membership"]["id"] == 1
+        assert error is None
+
+def test_assign_role_invalid_role(mock_env):
+    result, error = AuthService.assign_role(1, "InvalidRole")
+    
+    assert result is None
+    assert "Role 'InvalidRole' not found" in error
+
+def test_assign_role_failure(mock_env):
+    mock_response = Mock()
+    mock_response.status_code = 400
+    mock_response.json.return_value = {
+        "errors": ["Project not found"]
+    }
+    
+    with patch('services.auth_service.requests.post', return_value=mock_response):
+        result, error = AuthService.assign_role(1, "PoliceOfficer")
+        
+        assert result is None
+        assert "Failed to create membership" in error
+
+def test_register_mlowner_success(mock_env):
+    mock_user_response = Mock()
+    mock_user_response.status_code = 201
+    mock_user_response.json.return_value = {
+        "user": {
+            "id": 4,
+            "login": "mlowner1",
+            "status": 3
+        }
+    }
+    
+    with patch('services.auth_service.requests.post', return_value=mock_user_response):
+        result, error = AuthService.register_mlowner(
+            "mlowner1", "Mike", "Owner", "mike@example.com", "password", [], None
+        )
+        
+        assert result["user"]["id"] == 4
+        assert error is None
+
+def test_register_mlowner_with_attachments(mock_env):  # mock_env fixture applies env vars
+    mock_user_response = Mock()
+    mock_user_response.status_code = 201
+    mock_user_response.json.return_value = {
+        "user": {
+            "id": 5,
+            "login": "mlowner2",
+            "status": 3
+        }
+    }
+
+    mock_upload_response = Mock()
+    mock_upload_response.status_code = 201
+    mock_upload_response.json.return_value = {
+        "upload": {
+            "token": "abc123"
+        }
+    }
+
+    mock_file = io.BytesIO(b"test content")
+    mock_file.name = "testfile.txt"
+
+    with patch('services.auth_service.requests.post') as mock_post, \
+         patch('services.auth_service.requests.put') as mock_put, \
+         patch('services.auth_service.open', return_value=mock_file, create=True):
+
+        def post_side_effect(url, **kwargs):
+            if 'uploads.json' in url:
+                return mock_upload_response
+            return mock_user_response
+
+        mock_post.side_effect = post_side_effect
+
+        result, error = AuthService.register_mlowner(
+            "mlowner2", "Mike", "Owner", "mike@example.com", "password",
+            [], {"1": "testfile.txt"}
+        )
+
+        assert result is not None
+        assert result["user"]["id"] == 5
+        assert error is None
+
+def test_upload_file_to_redmine_success(mock_env):
+    mock_response = Mock()
+    mock_response.status_code = 201
+    mock_response.json.return_value = {
+        "upload": {
+            "id": 123
+        }
+    }
+    
+    mock_file = Mock()
+    mock_file.filename = "test.txt"
+    mock_file.stream = b"test content"
+    
+    with patch('services.auth_service.requests.post', return_value=mock_response):
+        result = AuthService.upload_file_to_redmine(mock_file)
+        
+        assert result == 123
+
+def test_upload_file_to_redmine_failure(mock_env):
+    mock_response = Mock()
+    mock_response.status_code = 400
+    
+    mock_file = Mock()
+    mock_file.filename = "test.txt"
+    mock_file.stream = b"test content"
+    
+    with patch('services.auth_service.requests.post', return_value=mock_response):
+        result = AuthService.upload_file_to_redmine(mock_file)
+        
+        assert result is None
+
+def test_reset_password_with_email_success(mock_env):
+    mock_users_response = Mock()
+    mock_users_response.status_code = 200
+    mock_users_response.json.return_value = {
+        "users": [{"id": 1, "mail": "user@example.com"}]
+    }
+    
+    mock_update_response = Mock()
+    mock_update_response.status_code = 200
+    
+    with patch('services.auth_service.requests.get', return_value=mock_users_response):
+        with patch('services.auth_service.requests.put', return_value=mock_update_response):
+            result = AuthService.reset_password_with_email("user@example.com", "newpass")
+            
+            assert result['success'] is True
+
+def test_reset_password_with_email_user_not_found(mock_env):
+    mock_response = Mock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "users": []
+    }
+    
+    with patch('services.auth_service.requests.get', return_value=mock_response):
+        result = AuthService.reset_password_with_email("nonexistent@example.com", "newpass")
+        
+        assert result['success'] is False
+        assert 'User not found' in result['error']
+
+def test_reset_password_with_email_failure(mock_env):
+    mock_response = Mock()
+    mock_response.status_code = 500
+    mock_response.json.return_value = {
+        "error": "Server error"
+    }
+    mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError("Server error")
+
+    with patch('services.auth_service.requests.get', return_value=mock_response):
+        result = AuthService.reset_password_with_email("user@example.com", "newpass")
+        
+        assert result['success'] is False
+        assert 'Failed to fetch user details' in result['error']

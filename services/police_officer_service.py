@@ -19,7 +19,7 @@ class PoliceOfficerService:
                 return None, "Redmine URL or API Key is missing"
 
             headers = {"X-Redmine-API-Key": API_KEY}
-            current_time_utc = datetime.utcnow().replace(tzinfo=timezone.utc)
+            current_time_utc = datetime.now(timezone.utc)
 
             # Fetch all TPL licenses (tracker_id = 5)
             tpl_params = {"tracker_id": 5}

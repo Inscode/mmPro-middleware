@@ -20,16 +20,10 @@ mining_owner_bp = Blueprint('mining_owner', __name__)
 def get_mining_licenses():
     try:
         # Extract token from the request headers
-        auth_header = request.headers.get("Authorization")
-        
-        if not auth_header:
-            return {"error": "Authorization token is missing"}, 400
-        
-        # Remove the "Bearer " prefix if it exists
-        token = auth_header.replace("Bearer ", "")
+        token = request.headers.get("Authorization")
         
         if not token:
-            return {"error": "Authorization token is invalid"}, 400
+            return {"error": "Authorization token is missing"}, 400
         
         # Call the mining_licenses method with the token
         issues, error = MLOwnerService.mining_licenses(token)
@@ -71,16 +65,9 @@ def create_tpl():
 def view_tpl_by_license_number():
     try:
         # Check if the Authorization token is present in the request
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
+        token = request.headers.get('Authorization')
+        if not token:
             return jsonify({"error": "Authorization token is missing"}), 401
-        
-        # Check if the token starts with 'Bearer ' (you can also validate it further here if needed)
-        if not auth_header.startswith('Bearer '):
-            return jsonify({"error": "Invalid token format. Expected 'Bearer <token>'"}), 401
-        
-        # Extract the token from the header
-        token = auth_header.split(' ')[1]
 
         # Get the mining_license_number from the query parameters
         mining_license_number = request.args.get('mining_license_number')
@@ -104,20 +91,10 @@ def view_tpl_by_license_number():
 def mining_home():
     try:
         # Check if the Authorization token is present in the request
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
+        token = request.headers.get('Authorization')
+        if not token:
             return jsonify({"error": "Authorization token is missing"}), 401
         
-        # Check if the token starts with 'Bearer ' (you can also validate it further here if needed)
-        if not auth_header.startswith('Bearer '):
-            return jsonify({"error": "Invalid token format. Expected 'Bearer <token>'"}), 401
-        
-        # Extract the token from the header
-        token = auth_header.split(' ')[1]
-        # Validate the token (for now, we simply check if it's present, but you can add further validation logic)
-        if not token:
-            return jsonify({"error": "Invalid or missing token"}), 401
-
         # If the token is valid, proceed with the mining_licenses logic
         issues, error = MLOwnerService.mining_homeLicenses(token) # Pass token here
         
@@ -142,18 +119,16 @@ def ml_detail():
             return jsonify({"error": "Missing 'l_number' query parameter"}), 400
 
         # Extract the Authorization token
-        auth_header = request.headers.get('Authorization')
-        if not auth_header or not auth_header.startswith('Bearer '):
-            return jsonify({"error": "Invalid or missing Authorization token"}), 401
-
-        # Extract only the token value
-        token = auth_header.split(' ')[1]
+        token = request.headers.get('Authorization')
+        if not token:
+            return jsonify({"error": "Authorization token is missing"}), 403
 
         # Call the service function with l_number and token
-        issue, error = MLOwnerService.ml_detail(l_number, auth_header)
+        issue, error = MLOwnerService.ml_detail(l_number, token)
 
         if error:
-            return jsonify({"error": error}), 500
+            status_code = 404 if error == "License not found" else 500
+            return jsonify({"error": error}), status_code
 
         return jsonify({"ml_detail": issue})
 
