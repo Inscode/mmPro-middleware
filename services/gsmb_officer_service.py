@@ -510,13 +510,98 @@ class GsmbOfficerService:
         except Exception as e:
             return None, str(e)
 
+    # @staticmethod
+    # def get_attachment_urls(api_key, redmine_url, custom_fields):
+    #     try:
+    #         # Only process fields that represent actual file uploads
+    #         upload_field_names = {
+    #             "Economic Viability Report",
+    #             # "License fee receipt",
+    #             "Detailed Mine Restoration Plan",
+    #             "Professional",
+    #             "Deed and Survey Plan",
+    #             "License Boundary Survey",
+    #             "Payment Receipt"
+    #         }
+
+    #         file_urls = {}
+
+    #         for field in custom_fields:
+    #             field_name = field.get("name")
+    #             raw_value = field.get("value")
+
+    #             if field_name not in upload_field_names:
+    #                 continue  # Skip irrelevant fields
+
+    #             attachment_id = str(raw_value).strip() if raw_value else ""
+               
+
+    #             if attachment_id.isdigit():
+    #                 attachment_url = f"{redmine_url}/attachments/{attachment_id}.json"
+    #                 response = requests.get(
+    #                     attachment_url,
+    #                     headers={"X-Redmine-API-Key": api_key, "Content-Type": "application/json"}
+    #                 )
+
+    #                 if response.status_code == 200:
+    #                     attachment_data = response.json().get("attachment", {})
+    #                     file_urls[field_name] = attachment_data.get("content_url", "")
+    #                 else:
+                       
+    #                     file_urls[field_name] = None
+
+    #         return file_urls
+
+    #     except Exception as e:
+    #         print(f"[EXCEPTION] Failed to get attachment URLs: {str(e)}")
+    #         return {}
+
+# WORKING BY USING API KEY IN THE URL
+    # @staticmethod
+    # def get_attachment_urls(api_key, redmine_url, custom_fields):
+    #     try:
+    #         upload_field_names = {
+    #             "Economic Viability Report",
+    #             "Detailed Mine Restoration Plan",
+    #             "Professional",
+    #             "Deed and Survey Plan",
+    #             "License Boundary Survey",
+    #             "Payment Receipt"
+    #         }
+
+    #         file_urls = {}
+
+    #         for field in custom_fields:
+    #             field_name = field.get("name")
+    #             raw_value = field.get("value")
+
+    #             if field_name not in upload_field_names:
+    #                 continue
+
+    #             if not raw_value:
+    #                 file_urls[field_name] = None
+    #                 continue
+
+    #             attachment_id = str(raw_value).strip()
+    #             if attachment_id.isdigit():
+    #                 # Create authenticated download URL
+    #                 file_urls[field_name] = (
+    #                     f"{redmine_url}/attachments/download/{attachment_id}?key={api_key}"
+    #                 )
+    #             else:
+    #                 file_urls[field_name] = None
+
+    #         return file_urls
+
+    #     except Exception as e:
+    #         print(f"[ERROR] Failed to get attachment URLs: {str(e)}")
+    #         return {}
+
     @staticmethod
     def get_attachment_urls(api_key, redmine_url, custom_fields):
         try:
-            # Only process fields that represent actual file uploads
             upload_field_names = {
                 "Economic Viability Report",
-                # "License fee receipt",
                 "Detailed Mine Restoration Plan",
                 "Professional",
                 "Deed and Survey Plan",
@@ -531,31 +616,20 @@ class GsmbOfficerService:
                 raw_value = field.get("value")
 
                 if field_name not in upload_field_names:
-                    continue  # Skip irrelevant fields
+                    continue
 
-                attachment_id = str(raw_value).strip() if raw_value else ""
-               
+                if not raw_value:
+                    file_urls[field_name] = None
+                    continue
 
-                if attachment_id.isdigit():
-                    attachment_url = f"{redmine_url}/attachments/{attachment_id}.json"
-                    response = requests.get(
-                        attachment_url,
-                        headers={"X-Redmine-API-Key": api_key, "Content-Type": "application/json"}
-                    )
-
-                    if response.status_code == 200:
-                        attachment_data = response.json().get("attachment", {})
-                        file_urls[field_name] = attachment_data.get("content_url", "")
-                    else:
-                       
-                        file_urls[field_name] = None
+                attachment_id = str(raw_value).strip()
+                file_urls[field_name] = int(attachment_id) if attachment_id.isdigit() else None
 
             return file_urls
 
         except Exception as e:
-            print(f"[EXCEPTION] Failed to get attachment URLs: {str(e)}")
+            print(f"[ERROR] Failed to get attachment IDs: {str(e)}")
             return {}
-
 
 
     @staticmethod
