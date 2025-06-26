@@ -66,7 +66,8 @@ pipeline {
                         git config user.email "jenkins@example.com"
                         git add ${DEPLOYMENT_FILE}
                         git commit -m "Update image to ${IMAGE_NAME}:${IMAGE_TAG}"
-                        git push https://${GIT_USER}:${GIT_PASS}@github.com/your-username/mmpro-deployment.git HEAD:main
+                        git push https://${GIT_USER}:${GIT_PASS}@github.com/Inscode/mmPro-middleware.git HEAD:main
+
                     '''
                 }
             }
