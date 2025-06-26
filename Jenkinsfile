@@ -22,17 +22,19 @@ pipeline {
             steps {
                 sh '''
                     set -e
-                    python3 -m venv venv
-                    . venv/bin/activate
-                    pip install --upgrade pip
-                    pip install -r requirements.txt
+                    # Explicitly use python3.11 binary
+                    /usr/bin/python3.11 -m venv venv --clear
+                    ./venv/bin/pip install --upgrade pip
+                    ./venv/bin/pip install -r requirements.txt
                     mkdir -p .cache
                     export DISKCACHE_DIR=.cache
-                    python -m pytest
+        
+                    # Verify Python version
+                    echo "🐍 Python version:" && ./venv/bin/python --version
+                    ./venv/bin/python -m pytest
                 '''
             }
         }
-
 
 
         stage('Build Docker Image') {

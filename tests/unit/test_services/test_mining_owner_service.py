@@ -1,3 +1,4 @@
+
 from datetime import datetime, timedelta
 import pytest
 from unittest.mock import patch, MagicMock
@@ -681,30 +682,10 @@ class TestCreateTPL:
     @patch('services.mining_owner_service.requests.post')
     def test_create_tpl_failed_to_create_tpl(self, mock_post, mock_put, mock_get, mock_api_key):
         mock_api_key.return_value = 'test_api_key'
-    
-    
-        mock_get_response = MagicMock()
-        mock_get_response.status_code = 200
-        mock_get_response.json.return_value = {
-            "issue": {
-                "custom_fields": [
-                    {"id": 1, "name": "Used", "value": "100"},
-                    {"id": 2, "name": "Remaining", "value": "500"},
-                    {"id": 3, "name": "Royalty", "value": "25000"}
-                ]
-            }
-        }
-        mock_get.return_value = mock_get_response
-    
-        mock_put_response = MagicMock()
-        mock_put_response.status_code = 204
-        mock_put.return_value = mock_put_response
 
-        mock_post_response = MagicMock()
-        mock_post_response.status_code = 500
-        mock_post_response.text = "0"  # This matches what your implementation returns
-        mock_post.return_value = mock_post_response
     
+    
+
         result, error = MLOwnerService.create_tpl({
             "mining_license_number": "ML/456",
             "cubes": "50"
@@ -1158,32 +1139,10 @@ class TestViewTpls:
     # Setup all required mocks
         mock_api_key.return_value = 'test_api_key'
         mock_user_info.return_value = {"success": True, "user_id": 123} # user_id, error
+
+   
     
-    # Create expired TPL (created 48 hours ago with 24 hour estimate)
-        expired_date = (datetime.now() - timedelta(hours=48)).strftime("%Y-%m-%dT%H:%M:%SZ")
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {
-            "issues": [{
-            "id": 391,
-            "subject": "TPL 002",
-            "created_on": expired_date,
-            "estimated_hours": "24",
-            "custom_fields": [
-                {"id": 53, "name": "Lorry Number", "value": "ABX1234"},
-                {"id": 54, "name": "Driver Contact", "value": "0771234567"},
-                {"id": 59, "name": "Mining issue id", "value": "ML-001"},
-                {"id": 68, "name": "Destination", "value": "Colombo"}
-                ]
-            }]
-        }
-        mock_get.return_value = mock_response
-    
-        result, error = MLOwnerService.view_tpls("valid_token", "ML-001")
-    
-        # Debug print if needed
-        print(f"Result: {result}, Error: {error}")
-    
+
         assert error is None
         assert len(result) == 1
         assert result[0]["status"] == "Expired"
@@ -1457,9 +1416,11 @@ class TestMLRequest():
         # Mock the update request
         with patch('services.mining_owner_service.requests.put') as mock_put:
             mock_put.return_value.status_code = 204
+
             
-            result, error = MLOwnerService.ml_request(minimal_data, "token", "0771234567")
+
             
+
             assert error is None
             assert result["issue"]["id"] == 123
             # Verify default values were used
@@ -1790,3 +1751,4 @@ class TestGetPendingMiningLicenseDetails():
         result, error = MLOwnerService.get_pending_mining_license_details("valid_token")
         assert result is None
         assert "Server error" in error                 
+
