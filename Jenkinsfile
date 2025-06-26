@@ -18,20 +18,20 @@ pipeline {
             }
         }
 
-       stage('Build & Test') {
-            steps {
-                sh '''
-                    set -e
-                    python3 -m venv venv
-                    . venv/bin/activate
-                    pip install --upgrade pip
-                    pip install -r requirements.txt
-                    mkdir -p .cache
-                    export DISKCACHE_DIR=.cache
-                    pytest
-                '''
-            }
-        }
+stage('Build & Test') {
+    steps {
+        sh '''
+            set -e
+            python3 -m venv venv
+            . venv/bin/activate && \
+            pip install --upgrade pip && \
+            pip install -r requirements.txt && \
+            mkdir -p .cache && \
+            export DISKCACHE_DIR=.cache && \
+            venv/bin/pytest
+        '''
+    }
+}
 
 
         stage('Build Docker Image') {
