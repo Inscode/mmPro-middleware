@@ -18,11 +18,12 @@ pipeline {
             }
         }
 
-        stage('Build & Test') {
+       stage('Build & Test') {
             steps {
                 sh '''
+                    set -e
                     python3 -m venv venv
-                    source venv/bin/activate
+                    . venv/bin/activate
                     pip install --upgrade pip
                     pip install -r requirements.txt
                     mkdir -p .cache
@@ -31,6 +32,7 @@ pipeline {
                 '''
             }
         }
+
 
         stage('Build Docker Image') {
             steps {
