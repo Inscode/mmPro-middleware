@@ -1,32 +1,32 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: middleware-deployment
+  name: mmpro-deployment
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: middleware
+      app: mmpro
   template:
     metadata:
       labels:
-        app: middleware
+        app: mmpro
     spec:
-      securityContext:
-        fsGroup: 1000 # Ensures writable volumes
       containers:
-        - name: middleware
-          image: middleware:latest # Using your local image
-          imagePullPolicy: Never
+        - name: mmpro
+          image: inscodelk/mmpro:latest
           ports:
             - containerPort: 5000
+          env:
+            - name: ENVIRONMENT
+              value: development
+            - name: FLASK_APP
+              value: app.py
+            - name: FLASK_DEBUG
+              value: "0"
           volumeMounts:
             - name: otp-cache
               mountPath: /app/otp_cache
-            - name: logs
-              mountPath: /app/logs
       volumes:
         - name: otp-cache
-          emptyDir: {}
-        - name: logs
           emptyDir: {}
