@@ -27,10 +27,15 @@ pipeline {
                     ./venv/bin/pip install -r requirements.txt
                     mkdir -p .cache
                     export DISKCACHE_DIR=.cache
+        
+                    echo "🐍 Python version:" && ./venv/bin/python --version
+                    echo "🐍 Pytest version:" && ./venv/bin/python -m pytest --version
+        
                     ./venv/bin/python -m pytest
                 '''
             }
         }
+
 
 
         stage('Build Docker Image') {
