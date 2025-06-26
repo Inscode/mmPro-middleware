@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: mmpro
-          image: inscodelk/mmpro:latest
+          image: inscodelk/mmpro:v15
           ports:
             - containerPort: 5000
           env:
