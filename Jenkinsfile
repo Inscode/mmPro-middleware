@@ -2,41 +2,62 @@ pipeline {
     agent any
 
     environment {
+        // Docker Configuration
         DOCKER_HUB_REPO = 'inscodelk/mmpro'
         IMAGE_NAME = "${DOCKER_HUB_REPO}"
         REGISTRY_CREDENTIALS = 'dockerhub-creds'
-        GIT_REPO = 'https://github.com/Inscode/mmPro-middleware'
+        
+        // Git Configuration
+        GIT_REPO = 'git@github.com:Inscode/mmPro-middleware.git'
         GIT_CREDENTIALS = 'git-creds'
+        GIT_BRANCH = 'main'
+        
+        // Kubernetes Manifests
         DEPLOYMENT_FILE = 'deployment.yaml'
+        SERVICE_FILE = 'service.yaml'
+        ARGOCD_APP_FILE = 'argocd-app.yaml'
+        
+        // ArgoCD Configuration
+        ARGOCD_SERVER = 'argocd.yourdomain.com' // Update with your ArgoCD URL
+        ARGOCD_APP_NAME = 'mmpro-application'
+        
+        // Versioning
         IMAGE_TAG = "v${env.BUILD_NUMBER}"
     }
 
     stages {
+        // Stage 1: Checkout Code
         stage('Checkout Code') {
             steps {
-                git branch: 'main', url: "${GIT_REPO}", credentialsId: "${GIT_CREDENTIALS}"
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: "${GIT_BRANCH}"]],
+                    extensions: [],
+                    userRemoteConfigs: [[
+                        credentialsId: "${GIT_CREDENTIALS}",
+                        url: "${GIT_REPO}"
+                    ]]
+                ])
             }
         }
 
+        // Stage 2: Build & Test
         stage('Build & Test') {
             steps {
                 sh '''
                     set -e
-                    # Explicitly use python3.11 binary
                     /usr/bin/python3.11 -m venv venv --clear
                     ./venv/bin/pip install --upgrade pip
                     ./venv/bin/pip install -r requirements.txt
                     mkdir -p .cache
                     export DISKCACHE_DIR=.cache
-        
-                    # Verify Python version
                     echo "🐍 Python version:" && ./venv/bin/python --version
                     ./venv/bin/python -m pytest
                 '''
             }
         }
 
-
+        // Stage 3: Build Docker Image
         stage('Build Docker Image') {
             steps {
                 script {
@@ -45,6 +66,7 @@ pipeline {
             }
         }
 
+        // Stage 4: Push Docker Image
         stage('Push Docker Image') {
             steps {
                 script {
@@ -55,25 +77,51 @@ pipeline {
             }
         }
 
-        stage('Update Deployment YAML') {
+        // Stage 5: Update Kubernetes Manifests
+        stage('Update Kubernetes Manifests') {
             steps {
                 script {
+                    // Update image tag in deployment.yaml
                     sh "sed -i 's|image: .*|image: ${IMAGE_NAME}:${IMAGE_TAG}|' ${DEPLOYMENT_FILE}"
+                    
+                    // Ensure argocd-app.yaml points to the correct branch
+                    sh "sed -i 's|targetRevision: .*|targetRevision: ${GIT_BRANCH}|' ${ARGOCD_APP_FILE}"
                 }
             }
         }
 
-        stage('Push Updated YAML to Git') {
+        // Stage 6: Push Changes to Git
+        stage('Push Changes to Git') {
             steps {
-                withCredentials([usernamePassword(credentialsId: "${GIT_CREDENTIALS}", usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
+                withCredentials([usernamePassword(
+                    credentialsId: "${GIT_CREDENTIALS}",
+                    usernameVariable: 'GIT_USER',
+                    passwordVariable: 'GIT_PASS'
+                )]) {
                     sh '''
-                        git config user.name "Jenkins"
+                        git config user.name "Jenkins CI"
                         git config user.email "jenkins@example.com"
-                        git add ${DEPLOYMENT_FILE}
-                        git commit -m "Update image to ${IMAGE_NAME}:${IMAGE_TAG}"
-                        git push https://${GIT_USER}:${GIT_PASS}@github.com/Inscode/mmPro-middleware.git HEAD:main
-
+                        git add ${DEPLOYMENT_FILE} ${ARGOCD_APP_FILE}
+                        git commit -m "[CI] Update to ${IMAGE_NAME}:${IMAGE_TAG}"
+                        git push origin ${GIT_BRANCH}
                     '''
+                }
+            }
+        }
+
+        // Stage 7: Trigger ArgoCD Sync (Optional)
+        stage('Trigger ArgoCD Sync') {
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'argocd-api-token', variable: 'ARGOCD_TOKEN')]) {
+                        sh """
+                            curl -sS -X POST \
+                            "https://${ARGOCD_SERVER}/api/v1/applications/${ARGOCD_APP_NAME}/sync" \
+                            -H "Authorization: Bearer ${ARGOCD_TOKEN}" \
+                            -H "Content-Type: application/json" \
+                            --data '{}'
+                        """
+                    }
                 }
             }
         }
@@ -81,11 +129,16 @@ pipeline {
 
     post {
         success {
-            echo "✅ CI/CD Pipeline completed successfully. Argo CD will auto-sync changes."
+            slackSend(
+                color: 'good',
+                message: "✅ Pipeline SUCCESS - ${IMAGE_NAME}:${IMAGE_TAG} deployed via ArgoCD"
+            )
         }
         failure {
-            echo "❌ Pipeline failed. Check Jenkins logs for details."
+            slackSend(
+                color: 'danger',
+                message: "❌ Pipeline FAILED - Check ${env.BUILD_URL}"
+            )
         }
     }
 }
-
