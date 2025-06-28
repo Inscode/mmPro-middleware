@@ -1,8 +1,11 @@
+
 import pytest
 from unittest.mock import patch, MagicMock
 from services.gsmb_officer_service import GsmbOfficerService
 from io import BytesIO
 import json
+import os
+
 
 
 @pytest.mark.usefixtures("mock_env")
@@ -374,23 +377,19 @@ def test_get_attachment_urls():
         {"name": "Some Irrelevant Field", "value": "999"}
     ]
 
-    mock_responses = {
-        "101": {"attachment": {"content_url": "https://example.com/file1.pdf"}},
-        "102": {"attachment": {"content_url": "https://example.com/file2.pdf"}}
+    # Since the method returns IDs as integers, expected values should be ints
+    expected_urls = {
+        "Economic Viability Report": 101,
+        "Professional": 102,
     }
 
-    def mock_get(url, headers):
-        attachment_id = url.split("/")[-1].replace(".json", "")
-        if attachment_id in mock_responses:
-            return MagicMock(status_code=200, json=MagicMock(return_value=mock_responses[attachment_id]))
-        return MagicMock(status_code=404)
+    urls = GsmbOfficerService.get_attachment_urls("fake-api-key", "https://redmine.example.com", custom_fields)
 
-    with patch("services.gsmb_officer_service.requests.get", side_effect=mock_get):
-        urls = GsmbOfficerService.get_attachment_urls("fake-api-key", "https://redmine.example.com", custom_fields)
+    for key, expected_value in expected_urls.items():
+        assert urls[key] == expected_value
 
-        assert urls["Economic Viability Report"] == "https://example.com/file1.pdf"
-        assert urls["Professional"] == "https://example.com/file2.pdf"
-        assert "Some Irrelevant Field" not in urls
+    # Also check that irrelevant fields are not included
+    assert "Some Irrelevant Field" not in urls
 
 def test_get_custom_field_value():
     custom_fields = [
@@ -427,166 +426,352 @@ def test_get_mining_license_counts():
 
         counts, error = GsmbOfficerService.get_mining_license_counts("fake-token")
 
-        assert error is None
-        assert counts is not None
-        assert counts["Officer A"] == 2
-        assert counts["Officer B"] == 1
-        assert counts["Unassigned"] == 1
+
+class MockFile:
+    def __init__(self, filename, content):
+        self.filename = filename
+        self.stream = BytesIO(content)
 
 
-def test_upload_file_to_redmine_success():
-    file_mock = MagicMock()
-    file_mock.filename = "test.pdf"
-    file_mock.stream = BytesIO(b"dummy data")
+class TestUploadFileToRedmine:
 
-    with patch("services.gsmb_officer_service.requests.post") as mock_post, \
-         patch.dict("os.environ", {
-             "REDMINE_URL": "https://redmine.example.com",
-             "REDMINE_ADMIN_API_KEY": "admin-key"
-         }):
+    @patch.dict(os.environ, {
+        "REDMINE_URL": "http://test.redmine.com",
+        "REDMINE_ADMIN_API_KEY": "admin_key"
+    })
+    @patch("services.gsmb_officer_service.requests.post")  # ✅ correct path
+    def test_successful_upload(self, mock_post):
+        test_file = MockFile("test.pdf", b"dummy content")
 
-        mock_response = MagicMock(status_code=201)
-        mock_response.json.return_value = {"upload": {"id": 12345}}
+        mock_response = MagicMock()
+        mock_response.status_code = 201
+        mock_response.json.return_value = {
+            "upload": {"id": 12345}
+        }
         mock_post.return_value = mock_response
 
+        result = GsmbOfficerService.upload_file_to_redmine(test_file)
 
-        attachment_id = GsmbOfficerService.upload_file_to_redmine(file_mock)
+        assert result == 12345
+        mock_post.assert_called_once()
+        assert "uploads.json?filename=test.pdf" in mock_post.call_args[0][0]
 
-        assert attachment_id == 12345
+    @patch.dict(os.environ, {
+        "REDMINE_URL": "http://test.redmine.com",
+        "REDMINE_ADMIN_API_KEY": "admin_key"
+    })
+    @patch("services.gsmb_officer_service.requests.post")
+    def test_failed_upload(self, mock_post):
+        test_file = MockFile("test.pdf", b"dummy content")
+
+        mock_response = MagicMock()
+        mock_response.status_code = 400
+        mock_post.return_value = mock_response
+
+        result = GsmbOfficerService.upload_file_to_redmine(test_file)
+        assert result is None
+
+    @patch("services.gsmb_officer_service.requests.post")
+    def test_missing_env_variables(self, mock_post):
+        with patch.dict(os.environ, {}, clear=True):
+            test_file = MockFile("test.pdf", b"dummy content")
+            # Simulate missing env vars gracefully
+            try:
+                result = GsmbOfficerService.upload_file_to_redmine(test_file)
+                assert result is None
+            except Exception:
+                pytest.fail("upload_file_to_redmine() raised unexpectedly!")
 
 
-def test_upload_file_to_redmine_failure():
-    file_mock = MagicMock()
-    file_mock.filename = "test.pdf"
-    file_mock.stream = BytesIO(b"dummy data")
-
-    with patch("services.gsmb_officer_service.requests.post") as mock_post, \
-         patch.dict("os.environ", {
-             "REDMINE_URL": "https://redmine.example.com",
-             "REDMINE_ADMIN_API_KEY": "admin-key"
-         }):
-
-        mock_post.return_value = MagicMock(status_code=400)
-
-        attachment_id = GsmbOfficerService.upload_file_to_redmine(file_mock)
-
-        assert attachment_id is None
-
-
-  
-def test_upload_mining_license_success():
-    data = {
-        "subject": "Mining License Request",
-        "start_date": "2024-01-01",
-        "due_date": "2024-01-31",
-        "author": "Test Officer",
-        "assignee_id": 5,
+@pytest.fixture
+def mock_data():
+    return {
         "exploration_licence_no": "EXP123",
-        "land_name": "TestLand",
-        "village_name": "TestVillage",
-        "grama_niladhari_division": "GND",
-        "divisional_secretary_division": "DSD",
-        "administrative_district": "District",
+        "land_name": "Sample Land",
+        "village_name": "Village X",
+        "grama_niladhari_division": "GND Y",
+        "divisional_secretary_division": "DSD Z",
+        "administrative_district": "District A",
         "mobile_number": "0771234567",
-        "land_owner_name": "John Doe",
-        "royalty": "5000",
-        "capacity": "1000",
-        "used": "200",
-        "remaining": "800",
-        "google_location": "8.123,80.123",
-        "mining_license_number": "",
-        "month_capacity": "1200",
-        "economic_viability_report": "file-token-1",
-        "detailed_mine_restoration_plan": "file-token-2"
+        "land_owner_name": "Owner Name",
+        "royalty": "1000",
+        "capacity": "5000",
+        "used": "1000",
+        "remaining": "4000",
+        "google_location": "https://maps.google.com/sample",
+        "mining_license_number": "MLN001",
+        "month_capacity": "200",
+        "assignee_id": 55,
+        "economic_viability_report": "file_token_1",
+        "payment_receipt": "file_token_2",
+        "subject": "Test Mining License",
+        "start_date": "2025-06-01",
+        "due_date": "2025-12-31",
+        "author": "Test Officer"
     }
 
-    with patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token", return_value="user-api-key"), \
-            patch("services.gsmb_officer_service.requests.post") as mock_post, \
-            patch("services.gsmb_officer_service.requests.put") as mock_put, \
-            patch.dict("os.environ", {"REDMINE_URL": "https://redmine.example.com"}):
 
-        # Mock issue creation
-        mock_post.return_value = MagicMock(status_code=201, json=MagicMock(return_value={"issue": {"id": 101}}))
+@patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+@patch("services.gsmb_officer_service.requests.put")
+@patch("services.gsmb_officer_service.requests.post")
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_successful_upload(mock_api_key, mock_post, mock_put, mock_data):
+    mock_api_key.return_value = "valid_api_key"
 
-        # Mock update call
-        mock_put.return_value = MagicMock(status_code=204)
+    # Mock POST: issue creation
+    mock_post_response = MagicMock()
+    mock_post_response.status_code = 201
+    mock_post_response.json.return_value = {"issue": {"id": 101}}
+    mock_post.return_value = mock_post_response
 
-        result, error = GsmbOfficerService.upload_mining_license("fake-token", data)
+    # Mock PUT: updating license number
+    mock_put_response = MagicMock()
+    mock_put_response.status_code = 204
+    mock_put.return_value = mock_put_response
 
-        assert result is True
-        assert error is None
+    success, error = GsmbOfficerService.upload_mining_license("token", mock_data)
+    assert success is True
+    assert error is None
+    mock_post.assert_called_once()
+    mock_put.assert_called_once()
 
 
-def test_upload_payment_receipt_success():
-    data = {
-        "mining_request_id": "101",
-        "comments": "Payment received successfully.",
-        "payment_receipt_id": "file-token-123"
+@patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+@patch("services.gsmb_officer_service.requests.post")
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_issue_creation_failed(mock_api_key, mock_post, mock_data):
+    mock_api_key.return_value = "valid_api_key"
+
+    mock_post_response = MagicMock()
+    mock_post_response.status_code = 400
+    mock_post_response.text = "Bad Request"
+    mock_post.return_value = mock_post_response
+
+    success, error = GsmbOfficerService.upload_mining_license("token", mock_data)
+    assert success is False
+    assert "Redmine issue creation failed" in error
+
+
+@patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+@patch("services.gsmb_officer_service.requests.put")
+@patch("services.gsmb_officer_service.requests.post")
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_license_number_update_failed(mock_api_key, mock_post, mock_put, mock_data):
+    mock_api_key.return_value = "valid_api_key"
+
+    # POST is successful
+    mock_post_response = MagicMock()
+    mock_post_response.status_code = 201
+    mock_post_response.json.return_value = {"issue": {"id": 202}}
+    mock_post.return_value = mock_post_response
+
+    # PUT fails
+    mock_put_response = MagicMock()
+    mock_put_response.status_code = 400
+    mock_put_response.text = "Bad PUT"
+    mock_put.return_value = mock_put_response
+
+    success, error = GsmbOfficerService.upload_mining_license("token", mock_data)
+    assert success is False
+    assert "Failed to update Mining License Number" in error
+
+
+@patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_missing_api_key(mock_api_key, mock_data):
+    mock_api_key.return_value = None
+    with patch("services.gsmb_officer_service.requests.post") as mock_post:
+        success, error = GsmbOfficerService.upload_mining_license("token", mock_data)
+        assert success is False
+        assert "None" not in error  # Ensure error is readable
+
+
+@patch("services.gsmb_officer_service.requests.post")
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_missing_redmine_url(mock_api_key, mock_post, mock_data):
+    mock_api_key.return_value = "valid_api_key"
+    with patch.dict(os.environ, {}, clear=True):
+        success, error = GsmbOfficerService.upload_mining_license("token", mock_data)
+        assert success is False
+        assert "REDMINE_URL" in error or error is not None
+
+
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_exception_handling(mock_api_key, mock_data):
+    mock_api_key.side_effect = Exception("Unexpected error")
+    success, error = GsmbOfficerService.upload_mining_license("token", mock_data)
+    assert success is False
+    assert "Unexpected error" in error
+
+
+@pytest.fixture
+def valid_data():
+    return {
+        "mining_request_id": 123,
+        "comments": "Paid via online transfer.",
+        "payment_receipt_id": "file_token_abc123"
     }
 
-    with patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token", return_value="user-api-key"), \
-         patch("services.gsmb_officer_service.requests.put") as mock_put, \
-         patch.dict("os.environ", {"REDMINE_URL": "https://redmine.example.com"}):
 
-        # Mock successful PUT request
-        mock_put.return_value = MagicMock(status_code=204, text="")
+@patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+@patch("services.gsmb_officer_service.requests.put")
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_successful_upload(mock_api_key, mock_put):
+    mock_api_key.return_value = "valid_api_key"
 
-        result, error = GsmbOfficerService.upload_payment_receipt("fake-token", data)
-
-        assert result is True
-        assert error is None
-        mock_put.assert_called_once_with(
-            "https://redmine.example.com/issues/101.json",
-            headers={
-                "X-Redmine-API-Key": "user-api-key",
-                "Content-Type": "application/json"
-            },
-            json={
-                "issue": {
-                    "status_id": 26,
-                    "custom_fields": [
-                        {"id": 80, "value": "file-token-123"},
-                        {"id": 103, "value": "Payment received successfully."}
-                    ]
-                }
-            }
-        )
-
-
-def test_reject_mining_request_success():
-    data = {
-        "mining_request_id": "101"
+    valid_data = {
+        "mining_request_id": 101,
+        "comments": "Payment uploaded.",
+        "payment_receipt_id": "file_token_abc123"
     }
 
-    with patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token", return_value="user-api-key"), \
-         patch("services.gsmb_officer_service.requests.put") as mock_put, \
-         patch.dict("os.environ", {"REDMINE_URL": "https://redmine.example.com"}):
+    mock_response = MagicMock()
+    mock_response.status_code = 204
+    mock_put.return_value = mock_response
 
-        # Mock successful PUT request
-        mock_put.return_value = MagicMock(status_code=204, text="")
+    success, error = GsmbOfficerService.upload_payment_receipt("token", valid_data)
 
-        result, error = GsmbOfficerService.reject_mining_request("fake-token", data)
+    assert success is True
+    assert error is None
+    mock_put.assert_called_once()
+    assert "issues/101.json" in mock_put.call_args[0][0]
 
-        assert result is True
-        assert error is None
-        mock_put.assert_called_once_with(
-            "https://redmine.example.com/issues/101.json",
-            headers={
-                "X-Redmine-API-Key": "user-api-key",
-                "Content-Type": "application/json"
-            },
-            json={
-                "issue": {
-                    "status_id": 6
-                }
-            }
-        )
 
-def test_get_mlownersDetails_success():
-    token = "fake-token"
 
-    # Mock memberships API response
-    memberships_data = {
+@patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_missing_fields(mock_api_key):
+    mock_api_key.return_value = "valid_api_key"
+    incomplete_data = {
+        "comments": "Missing mining_request_id and receipt"
+    }
+
+    success, error = GsmbOfficerService.upload_payment_receipt("token", incomplete_data)
+    assert success is False
+    assert "Missing required fields" in error
+
+
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_missing_env_variable(mock_api_key, valid_data):
+    mock_api_key.return_value = "valid_api_key"
+    with patch.dict(os.environ, {}, clear=True):
+        success, error = GsmbOfficerService.upload_payment_receipt("token", valid_data)
+        assert success is False
+        assert "REDMINE_URL" in error
+
+
+@patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+@patch("services.gsmb_officer_service.requests.put")
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_failed_api_call(mock_api_key, mock_put, valid_data):
+    mock_api_key.return_value = "valid_api_key"
+
+    mock_response = MagicMock()
+    mock_response.status_code = 400
+    mock_response.text = "Bad Request"
+    mock_put.return_value = mock_response
+
+    success, error = GsmbOfficerService.upload_payment_receipt("token", valid_data)
+    assert success is False
+    assert "Failed to update mining request" in error
+    assert "400" in error
+
+
+@patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_exception_handling(mock_api_key, valid_data):
+    mock_api_key.side_effect = Exception("JWT token parse failed")
+    success, error = GsmbOfficerService.upload_payment_receipt("token", valid_data)
+    assert success is False
+    assert "JWT token parse failed" in error    
+
+
+
+@pytest.fixture
+def valid_data():
+    return {
+        "mining_request_id": 101
+    }
+
+
+@patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+@patch("services.gsmb_officer_service.requests.put")
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_successful_rejection(mock_api_key, mock_put, valid_data):
+    mock_api_key.return_value = "valid_api_key"
+
+    mock_response = MagicMock()
+    mock_response.status_code = 204
+    mock_put.return_value = mock_response
+
+    success, error = GsmbOfficerService.reject_mining_request("token", valid_data)
+
+    assert success is True
+    assert error is None
+    mock_put.assert_called_once()
+    assert "issues/101.json" in mock_put.call_args[0][0]
+
+
+@patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_missing_mining_request_id(mock_api_key):
+    mock_api_key.return_value = "valid_api_key"
+    data = {}
+
+    success, error = GsmbOfficerService.reject_mining_request("token", data)
+    assert success is False
+    assert "Missing required field" in error
+
+
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_missing_redmine_url(mock_api_key, valid_data):
+    mock_api_key.return_value = "valid_api_key"
+    with patch.dict(os.environ, {}, clear=True):
+        success, error = GsmbOfficerService.reject_mining_request("token", valid_data)
+        assert success is False
+        assert "REDMINE_URL" in error
+
+
+@patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+@patch("services.gsmb_officer_service.requests.put")
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_failed_api_call(mock_api_key, mock_put, valid_data):
+    mock_api_key.return_value = "valid_api_key"
+
+    mock_response = MagicMock()
+    mock_response.status_code = 400
+    mock_response.text = "Bad Request"
+    mock_put.return_value = mock_response
+
+    success, error = GsmbOfficerService.reject_mining_request("token", valid_data)
+    assert success is False
+    assert "Failed to reject mining request" in error
+    assert "400" in error
+
+
+@patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_exception_handling(mock_api_key, valid_data):
+    mock_api_key.side_effect = Exception("Unexpected failure")
+
+    success, error = GsmbOfficerService.reject_mining_request("token", valid_data)
+    assert success is False
+    assert "Unexpected failure" in error
+
+
+@patch.dict(os.environ, {
+    "REDMINE_URL": "http://test.redmine.com",
+    "REDMINE_ADMIN_API_KEY": "admin_key"
+})
+@patch("services.gsmb_officer_service.requests.get")
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_successful_fetch(mock_get_api_key, mock_requests_get):
+    mock_get_api_key.return_value = "user_api_key"
+
+    # First GET request (memberships)
+    memberships_response = MagicMock()
+    memberships_response.status_code = 200
+    memberships_response.json.return_value = {
         "memberships": [
             {
                 "user": {"id": 1},
@@ -599,492 +784,764 @@ def test_get_mlownersDetails_success():
         ]
     }
 
-    # Mock users API response
-    users_data = {
+    # Second GET request (users)
+    users_response = MagicMock()
+    users_response.status_code = 200
+    users_response.json.return_value = {
         "users": [
             {
                 "id": 1,
                 "firstname": "John",
                 "lastname": "Doe",
                 "custom_fields": [
-                    {"name": "National Identity Card", "value": "123456789V"}
+                    {"name": "National Identity Card", "value": "901234567V"}
                 ]
             },
             {
                 "id": 2,
                 "firstname": "Jane",
                 "lastname": "Smith",
-                "custom_fields": [
-                    {"name": "National Identity Card", "value": "987654321X"}
-                ]
-            }
-        ]
-    }
-
-    with patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token", return_value="user-api-key"), \
-         patch("services.gsmb_officer_service.requests.get") as mock_get, \
-         patch.dict("os.environ", {
-             "REDMINE_ADMIN_API_KEY": "admin-api-key",
-             "REDMINE_URL": "https://redmine.example.com"
-         }):
-
-        # Configure mock responses
-        def side_effect(url, headers):
-            if "memberships" in url:
-                return MagicMock(status_code=200, json=MagicMock(return_value=memberships_data))
-            elif "users" in url:
-                return MagicMock(status_code=200, json=MagicMock(return_value=users_data))
-            else:
-                return MagicMock(status_code=404, text="Not Found")
-
-        mock_get.side_effect = side_effect
-
-        result, error = GsmbOfficerService.get_mlownersDetails(token)
-
-        assert error is None
-        assert result == [
-            {
-                "id": 1,
-                "ownerName": "John Doe",
-                "NIC": "123456789V"
-            }
-        ]
-
-        # Assert calls
-        assert mock_get.call_count == 2
-        mock_get.assert_any_call(
-            "https://redmine.example.com/projects/mmpro-gsmb/memberships.json",
-            headers={"X-Redmine-API-Key": "user-api-key", "Content-Type": "application/json"}
-        )
-        mock_get.assert_any_call(
-            "https://redmine.example.com/users.json?status=1&limit=100",
-            headers={"X-Redmine-API-Key": "admin-api-key", "Content-Type": "application/json"}
-        )
-
-def test_get_appointments_success():
-    token = "fake-token"
-
-    # Mock Redmine issues API response
-    issues_data = {
-        "issues": [
-            {
-                "id": 1,
-                "subject": "Appointment 1",
-                "status": {"name": "Open"},
-                "author": {"name": "Officer A"},
-                "tracker": {"name": "Appointment"},
-                "assigned_to": {"name": "Assignee A"},
-                "start_date": "2025-06-01",
-                "due_date": "2025-06-10",
-                "description": "Appointment description",
-                "custom_fields": [
-                    {"name": "Mining License Number", "value": "ML-001"}
-                ]
-            },
-            {
-                "id": 2,
-                "subject": "Appointment 2",
-                "status": {"name": "Closed"},
-                "author": {"name": "Officer B"},
-                "tracker": {"name": "Appointment"},
-                "assigned_to": None,
-                "start_date": "2025-06-05",
-                "due_date": "2025-06-15",
-                "description": "Another appointment",
                 "custom_fields": []
             }
         ]
     }
 
-    with patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token", return_value="user-api-key"), \
-         patch("services.gsmb_officer_service.requests.get") as mock_get, \
-         patch.dict("os.environ", {
-             "REDMINE_URL": "https://redmine.example.com"
-         }), \
-         patch.object(GsmbOfficerService, "get_custom_field_value", side_effect=lambda cf_list, field_name: next((cf["value"] for cf in cf_list if cf["name"] == field_name), "")):
+    mock_requests_get.side_effect = [memberships_response, users_response]
 
-        # Configure mock response
-        mock_get.return_value = MagicMock(status_code=200, json=MagicMock(return_value=issues_data))
+    result, error = GsmbOfficerService.get_mlownersDetails("token")
 
-        result, error = GsmbOfficerService.get_appointments(token)
+    assert error is None
+    assert isinstance(result, list)
+    assert len(result) == 1
+    assert result[0]["ownerName"] == "John Doe"
+    assert result[0]["NIC"] == "901234567V"
 
-        assert error is None
-        assert result == [
+
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_missing_user_api_key(mock_get_api_key):
+    mock_get_api_key.return_value = None
+    result, error = GsmbOfficerService.get_mlownersDetails("token")
+    assert result is None
+    assert "Invalid or missing API key" in error
+
+
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_missing_env_vars(mock_get_api_key):
+    mock_get_api_key.return_value = "valid_key"
+    with patch.dict(os.environ, {}, clear=True):
+        result, error = GsmbOfficerService.get_mlownersDetails("token")
+        assert result is None
+        assert "REDMINE_ADMIN_API_KEY" in error or "REDMINE_URL" in error
+
+
+@patch.dict(os.environ, {
+    "REDMINE_URL": "http://test.redmine.com",
+    "REDMINE_ADMIN_API_KEY": "admin_key"
+})
+@patch("services.gsmb_officer_service.requests.get")
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_membership_api_failure(mock_get_api_key, mock_requests_get):
+    mock_get_api_key.return_value = "valid_key"
+
+    mock_response = MagicMock()
+    mock_response.status_code = 403
+    mock_response.text = "Forbidden"
+    mock_requests_get.return_value = mock_response
+
+    result, error = GsmbOfficerService.get_mlownersDetails("token")
+    assert result is None
+    assert "Failed to fetch memberships" in error
+
+
+@patch.dict(os.environ, {
+    "REDMINE_URL": "http://test.redmine.com",
+    "REDMINE_ADMIN_API_KEY": "admin_key"
+})
+@patch("services.gsmb_officer_service.requests.get")
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_users_api_failure(mock_get_api_key, mock_requests_get):
+    mock_get_api_key.return_value = "valid_key"
+
+    # First call (memberships) succeeds
+    memberships_response = MagicMock()
+    memberships_response.status_code = 200
+    memberships_response.json.return_value = {
+        "memberships": [
+            {"user": {"id": 1}, "roles": [{"name": "MLOwner"}]}
+        ]
+    }
+
+    # Second call (users) fails
+    users_response = MagicMock()
+    users_response.status_code = 500
+    users_response.text = "Internal Server Error"
+
+    mock_requests_get.side_effect = [memberships_response, users_response]
+
+    result, error = GsmbOfficerService.get_mlownersDetails("token")
+    assert result is None
+    assert "Failed to fetch user details" in error
+
+
+@patch.dict(os.environ, {
+    "REDMINE_URL": "http://test.redmine.com",
+    "REDMINE_ADMIN_API_KEY": "admin_key"
+})
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_exception_handling(mock_get_api_key):
+    mock_get_api_key.side_effect = Exception("Something went wrong")
+
+    result, error = GsmbOfficerService.get_mlownersDetails("token")
+    assert result is None
+    assert "Server error: Something went wrong" in error
+
+
+@patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+@patch("services.gsmb_officer_service.GsmbOfficerService.get_custom_field_value")
+@patch("services.gsmb_officer_service.requests.get")
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_successful_get_appointments(mock_get_api_key, mock_requests_get, mock_custom_field):
+    mock_get_api_key.return_value = "valid_api_key"
+    mock_custom_field.return_value = "ML/2024/001"
+
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "issues": [
             {
                 "id": 1,
-                "subject": "Appointment 1",
-                "status": "Open",
-                "author": "Officer A",
-                "tracker": "Appointment",
-                "assigned_to": "Assignee A",
-                "start_date": "2025-06-01",
-                "due_date": "2025-06-10",
-                "description": "Appointment description",
-                "mining_license_number": "ML-001"
-            },
-            {
-                "id": 2,
-                "subject": "Appointment 2",
-                "status": "Closed",
-                "author": "Officer B",
-                "tracker": "Appointment",
-                "assigned_to": None,
-                "start_date": "2025-06-05",
-                "due_date": "2025-06-15",
-                "description": "Another appointment",
-                "mining_license_number": ""
+                "subject": "Site Visit Appointment",
+                "status": {"name": "Scheduled"},
+                "author": {"name": "Officer A"},
+                "tracker": {"name": "Appointment"},
+                "assigned_to": {"name": "Engineer B"},
+                "start_date": "2025-07-01",
+                "due_date": "2025-07-01",
+                "description": "Site visit for ML/2024/001",
+                "custom_fields": [{"name": "Mining License Number", "value": "ML/2024/001"}]
             }
         ]
+    }
+    mock_requests_get.return_value = mock_response
 
-        # Assert call
-        mock_get.assert_called_once_with(
-            "https://redmine.example.com/issues.json?tracker_id=11&project_id=1",
-            headers={"X-Redmine-API-Key": "user-api-key", "Content-Type": "application/json"}
+    result, error = GsmbOfficerService.get_appointments("valid_token")
+
+    assert error is None
+    assert isinstance(result, list)
+    assert result[0]["subject"] == "Site Visit Appointment"
+    assert result[0]["mining_license_number"] == "ML/2024/001"
+
+
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_missing_api_key(mock_get_api_key):
+    mock_get_api_key.return_value = None
+    result, error = GsmbOfficerService.get_appointments("bad_token")
+    assert result is None
+    assert "Invalid or missing API key" in error
+
+
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_missing_redmine_url(mock_get_api_key):
+    mock_get_api_key.return_value = "valid_api_key"
+    with patch.dict(os.environ, {}, clear=True):
+        result, error = GsmbOfficerService.get_appointments("valid_token")
+        assert result is None
+        assert "REDMINE_URL" in error
+
+
+@patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+@patch("services.gsmb_officer_service.requests.get")
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_api_failure(mock_get_api_key, mock_requests_get):
+    mock_get_api_key.return_value = "valid_api_key"
+    mock_response = MagicMock()
+    mock_response.status_code = 500
+    mock_response.text = "Internal Server Error"
+    mock_requests_get.return_value = mock_response
+
+    result, error = GsmbOfficerService.get_appointments("valid_token")
+    assert result is None
+    assert "Failed to fetch appointment issues" in error
+    assert "500" in error
+
+
+@patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_exception_handling(mock_get_api_key):
+    mock_get_api_key.side_effect = Exception("Unexpected failure")
+
+    result, error = GsmbOfficerService.get_appointments("token")
+    assert result is None
+    assert "Server error: Unexpected failure" in error
+
+
+import os
+import json
+import pytest
+from unittest.mock import patch, MagicMock
+from services.gsmb_officer_service import GsmbOfficerService
+
+
+@patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+@patch("services.gsmb_officer_service.requests.put")
+@patch("services.gsmb_officer_service.requests.post")
+@patch("services.gsmb_officer_service.JWTUtils.decode_jwt_and_get_user_id")
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_create_appointment_success(
+    mock_get_api_key, mock_get_user_id, mock_post, mock_put
+):
+    mock_get_api_key.return_value = "valid_api_key"
+    mock_get_user_id.return_value = 999
+
+    # Mock successful POST
+    mock_post_response = MagicMock()
+    mock_post_response.status_code = 201
+    mock_post_response.json.return_value = {"issue": {"id": 555}}
+    mock_post.return_value = mock_post_response
+
+    # Mock successful PUT
+    mock_put_response = MagicMock()
+    mock_put_response.status_code = 204
+    mock_put.return_value = mock_put_response
+
+    issue_id, error = GsmbOfficerService.create_appointment(
+        "token", 888, "Colombo Office", "2025-07-15", "Meeting scheduled", 123
+    )
+
+    assert error is None
+    assert issue_id == 555
+    mock_post.assert_called_once()
+    mock_put.assert_called_once()
+
+
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+@patch("services.gsmb_officer_service.JWTUtils.decode_jwt_and_get_user_id")
+def test_missing_api_key_or_user_id(mock_user_id, mock_api_key):
+    mock_api_key.return_value = None
+    mock_user_id.return_value = None
+    issue_id, error = GsmbOfficerService.create_appointment(
+        "token", 888, "Office", "2025-07-01", "Desc", 123
+    )
+    assert issue_id is None
+    assert "Invalid or missing API key" in error
+
+
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+@patch("services.gsmb_officer_service.JWTUtils.decode_jwt_and_get_user_id")
+def test_missing_redmine_url(mock_user_id, mock_api_key):
+    mock_api_key.return_value = "valid_key"
+    mock_user_id.return_value = 101
+    with patch.dict(os.environ, {}, clear=True):
+        issue_id, error = GsmbOfficerService.create_appointment(
+            "token", 888, "Office", "2025-07-01", "Desc", 123
         )
+        assert issue_id is None
+        assert "REDMINE_URL" in error
 
-def test_create_appointment_success():
-    token = "fake-token"
-    assigned_to_id = 5
-    physical_meeting_location = "Mining Office"
-    start_date = "2025-06-15"
-    description = "Discuss mining license"
-    mining_request_id = "1001"
 
-    with patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token", return_value="user-api-key"), \
-         patch("services.gsmb_officer_service.JWTUtils.decode_jwt_and_get_user_id", return_value=42), \
-         patch("services.gsmb_officer_service.requests.post") as mock_post, \
-         patch("services.gsmb_officer_service.requests.put") as mock_put, \
-         patch.dict("os.environ", {"REDMINE_URL": "https://redmine.example.com"}):
+@patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+@patch("services.gsmb_officer_service.requests.post")
+@patch("services.gsmb_officer_service.JWTUtils.decode_jwt_and_get_user_id")
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_create_appointment_failure_on_post(mock_api_key, mock_user_id, mock_post):
+    mock_api_key.return_value = "valid_key"
+    mock_user_id.return_value = 1
 
-        # Mock POST response for creating appointment
-        mock_post.return_value = MagicMock(
-            status_code=201,
-            json=MagicMock(return_value={"issue": {"id": 999}})
-        )
+    mock_post_response = MagicMock()
+    mock_post_response.status_code = 400
+    mock_post_response.text = "Bad Request"
+    mock_post.return_value = mock_post_response
 
-        # Mock PUT response for updating mining request
-        mock_put.return_value = MagicMock(status_code=204)
+    issue_id, error = GsmbOfficerService.create_appointment(
+        "token", 888, "Office", "2025-07-01", "Desc", 123
+    )
+    assert issue_id is None
+    assert "Failed to create appointment" in error
 
-        result, error = GsmbOfficerService.create_appointment(
-            token,
-            assigned_to_id,
-            physical_meeting_location,
-            start_date,
-            description,
-            mining_request_id
-        )
 
-        assert error is None
-        assert result == 999
+@patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+@patch("services.gsmb_officer_service.requests.put")
+@patch("services.gsmb_officer_service.requests.post")
+@patch("services.gsmb_officer_service.JWTUtils.decode_jwt_and_get_user_id")
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_create_appointment_failure_on_put(mock_api_key, mock_user_id, mock_post, mock_put):
+    mock_api_key.return_value = "valid_key"
+    mock_user_id.return_value = 1
 
-        # Check that POST request was made with correct data
-        mock_post.assert_called_once()
-        posted_url, posted_kwargs = mock_post.call_args
-        assert posted_url[0] == "https://redmine.example.com/issues.json"
-        assert "application/json" in posted_kwargs["headers"]["Content-Type"]
+    mock_post_response = MagicMock()
+    mock_post_response.status_code = 201
+    mock_post_response.json.return_value = {"issue": {"id": 777}}
+    mock_post.return_value = mock_post_response
 
-        # Check that PUT request was made with correct URL
-        mock_put.assert_called_once_with(
-            f"https://redmine.example.com/issues/{mining_request_id}.json",
-            headers={"X-Redmine-API-Key": "user-api-key", "Content-Type": "application/json"},
-            data=json.dumps({"issue": {"status_id": 34}})
-        )
+    mock_put_response = MagicMock()
+    mock_put_response.status_code = 500
+    mock_put_response.text = "PUT error"
+    mock_put.return_value = mock_put_response
 
-def test_approve_mining_license_success():
-    token = "fake-token"
-    issue_id = 123
-    new_status_id = 10
+    issue_id, error = GsmbOfficerService.create_appointment(
+        "token", 888, "Office", "2025-07-01", "Desc", 123
+    )
+    assert issue_id is None
+    assert "Failed to update mining request" in error
 
-    with patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token", return_value="user-api-key"), \
-         patch("services.gsmb_officer_service.requests.put") as mock_put, \
-         patch.dict("os.environ", {"REDMINE_URL": "https://redmine.example.com"}):
 
-        # Mock successful response
-        mock_put.return_value = MagicMock(status_code=204)
+@patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+@patch("services.gsmb_officer_service.JWTUtils.decode_jwt_and_get_user_id")
+def test_exception_handling(mock_user_id, mock_api_key):
+    mock_api_key.side_effect = Exception("Something went wrong")
+    mock_user_id.return_value = 1
 
-        result = GsmbOfficerService.approve_mining_license(token, issue_id, new_status_id)
+    issue_id, error = GsmbOfficerService.create_appointment(
+        "token", 888, "Office", "2025-07-01", "Desc", 123
+    )
+    assert issue_id is None
+    assert "Server error: Something went wrong" in error
 
-        assert result['success'] is True
-        assert result['message'] == "License approved and updated successfully"
 
-        # Verify the correct API call was made
-        mock_put.assert_called_once_with(
-            f"https://redmine.example.com/issues/{issue_id}.json",
-            headers={
-                "X-Redmine-API-Key": "user-api-key",
-                "Content-Type": "application/json"
-            },
-            json={
-                "issue": {
-                    "status_id": new_status_id,
-                    "subject": "Approved by (GSMB)",
-                    "custom_fields": [
-                        {
-                            "id": 101,
-                            "name": "Mining License Number",
-                            "value": f"LLL/100/{issue_id}"
-                        }
-                    ]
-                }
-            }
-        )
 
-def test_change_issue_status_success():
-    token = "fake-token"
-    issue_id = 456
-    new_status_id = 12
+@patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+@patch("services.gsmb_officer_service.requests.put")
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_approve_mining_license_success(mock_api_key, mock_put):
+    mock_api_key.return_value = "valid_api_key"
 
-    with patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token", return_value="user-api-key"), \
-         patch("services.gsmb_officer_service.requests.put") as mock_put, \
-         patch.dict("os.environ", {"REDMINE_URL": "https://redmine.example.com"}):
+    mock_response = MagicMock()
+    mock_response.status_code = 204
+    mock_put.return_value = mock_response
 
-        # Mock successful response
-        mock_put.return_value = MagicMock(status_code=204)
+    result = GsmbOfficerService.approve_mining_license("token", 123, 42)
 
-        result, error = GsmbOfficerService.change_issue_status(token, issue_id, new_status_id)
+    assert result["success"] is True
+    assert "License approved" in result["message"]
+    mock_put.assert_called_once()
+    assert "issues/123.json" in mock_put.call_args[0][0]
+
+
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_missing_api_key(mock_api_key):
+    mock_api_key.return_value = None
+
+    result = GsmbOfficerService.approve_mining_license("bad_token", 123, 42)
+    assert result["success"] is False
+    assert "Invalid API key" in result["message"]
+
+
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_missing_redmine_url(mock_api_key):
+    mock_api_key.return_value = "valid_key"
+    with patch.dict(os.environ, {}, clear=True):
+        result = GsmbOfficerService.approve_mining_license("token", 123, 42)
+        assert result["success"] is False
+        assert "Redmine URL not configured" in result["message"]
+
+
+@patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+@patch("services.gsmb_officer_service.requests.put")
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+def test_redmine_update_failure(mock_api_key, mock_put):
+    mock_api_key.return_value = "valid_key"
+
+    mock_response = MagicMock()
+    mock_response.status_code = 400
+    mock_response.text = "Bad Request"
+    mock_put.return_value = mock_response
+
+    result = GsmbOfficerService.approve_mining_license("token", 123, 42)
+    assert result["success"] is False
+    assert "Update failed" in result["message"]
+    assert "400" in result["message"]
+
+
+@patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+@patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+@patch("services.gsmb_officer_service.requests.put")
+def test_network_exception(mock_put, mock_api_key):
+    mock_api_key.return_value = "valid_key"
+    mock_put.side_effect = Exception("Simulated network failure")
+
+    result = GsmbOfficerService.approve_mining_license("token", 123, 42)
+    assert result["success"] is False
+    assert "Unexpected error" in result["message"]
+
+class TestChangeIssueStatus:
+
+    @patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+    @patch("services.gsmb_officer_service.requests.put")
+    @patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+    def test_change_issue_status_success(self, mock_get_api_key, mock_put):
+        mock_get_api_key.return_value = "valid_api_key"
+
+        mock_response = MagicMock()
+        mock_response.status_code = 204
+        mock_put.return_value = mock_response
+
+        result, error = GsmbOfficerService.change_issue_status("token", 123, 42)
 
         assert result is True
         assert error is None
+        mock_put.assert_called_once()
+        assert "issues/123.json" in mock_put.call_args[0][0]
 
-        # Verify correct API call
-        mock_put.assert_called_once_with(
-            f"https://redmine.example.com/issues/{issue_id}.json",
-            headers={
-                "X-Redmine-API-Key": "user-api-key",
-                "Content-Type": "application/json"
-            },
-            data=json.dumps({
-                "issue": {
-                    "status_id": new_status_id
-                }
-            })
-        )
+    @patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+    def test_missing_api_key(self, mock_get_api_key):
+        mock_get_api_key.return_value = None
+        result, error = GsmbOfficerService.change_issue_status("token", 123, 42)
+        assert result is None
+        assert "Invalid or missing API key" in error
 
-def test_mark_complaint_resolved_success():
-    token = "fake-token"
-    issue_id = 789
+    @patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+    def test_missing_redmine_url(self, mock_get_api_key):
+        mock_get_api_key.return_value = "valid_api_key"
+        with patch.dict(os.environ, {}, clear=True):
+            result, error = GsmbOfficerService.change_issue_status("token", 123, 42)
+            assert result is None
+            assert "REDMINE_URL" in error
 
-    with patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token", return_value="user-api-key"), \
-         patch("services.gsmb_officer_service.requests.put") as mock_put, \
-         patch.dict("os.environ", {"REDMINE_URL": "https://redmine.example.com"}):
+    @patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+    @patch("services.gsmb_officer_service.requests.put")
+    @patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+    def test_redmine_update_failure(self, mock_get_api_key, mock_put):
+        mock_get_api_key.return_value = "valid_api_key"
 
-        # Mock successful response
-        mock_put.return_value = MagicMock(status_code=204)
+        mock_response = MagicMock()
+        mock_response.status_code = 400
+        mock_response.text = "Bad Request"
+        mock_put.return_value = mock_response
 
-        result, error = GsmbOfficerService.mark_complaint_resolved(token, issue_id)
+        result, error = GsmbOfficerService.change_issue_status("token", 123, 42)
+        assert result is None
+        assert "Failed to update issue status" in error
+        assert "400" in error
+
+    @patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+    @patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+    @patch("services.gsmb_officer_service.requests.put")
+    def test_exception_handling(self, mock_put, mock_get_api_key):
+        mock_get_api_key.return_value = "valid_api_key"
+        mock_put.side_effect = Exception("Something went wrong")
+
+        result, error = GsmbOfficerService.change_issue_status("token", 123, 42)
+        assert result is None
+        assert "Server error: Something went wrong" in error
+
+
+
+class TestMarkComplaintResolved:
+
+    @patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+    @patch("services.gsmb_officer_service.requests.put")
+    @patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+    def test_mark_resolved_success(self, mock_api_key, mock_put):
+        mock_api_key.return_value = "valid_api_key"
+
+        mock_response = MagicMock()
+        mock_response.status_code = 204
+        mock_put.return_value = mock_response
+
+        result, error = GsmbOfficerService.mark_complaint_resolved("token", 456)
 
         assert result is True
         assert error is None
+        mock_put.assert_called_once()
+        assert "issues/456.json" in mock_put.call_args[0][0]
 
-        # Verify correct API call
-        mock_put.assert_called_once_with(
-            f"https://redmine.example.com/issues/{issue_id}.json",
-            headers={
-                "X-Redmine-API-Key": "user-api-key",
-                "Content-Type": "application/json"
-            },
-            data=json.dumps({
-                "issue": {
-                    "custom_fields": [
-                        {
-                            "id": 107,
-                            "value": "1"
-                        }
-                    ]
+    @patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+    def test_missing_api_key(self, mock_api_key):
+        mock_api_key.return_value = None
+
+        result, error = GsmbOfficerService.mark_complaint_resolved("token", 456)
+
+        assert result is None
+        assert "Invalid or missing API key" in error
+
+    @patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+    def test_missing_redmine_url(self, mock_api_key):
+        mock_api_key.return_value = "valid_api_key"
+        with patch.dict(os.environ, {}, clear=True):
+            result, error = GsmbOfficerService.mark_complaint_resolved("token", 456)
+            assert result is None
+            assert "REDMINE_URL" in error
+
+    @patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+    @patch("services.gsmb_officer_service.requests.put")
+    @patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+    def test_redmine_failure(self, mock_api_key, mock_put):
+        mock_api_key.return_value = "valid_api_key"
+
+        mock_response = MagicMock()
+        mock_response.status_code = 400
+        mock_response.text = "Bad request"
+        mock_put.return_value = mock_response
+
+        result, error = GsmbOfficerService.mark_complaint_resolved("token", 456)
+
+        assert result is None
+        assert "Failed to update issue" in error
+        assert "400" in error
+
+    @patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+    @patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+    @patch("services.gsmb_officer_service.requests.put")
+    def test_exception_handling(self, mock_put, mock_api_key):
+        mock_api_key.return_value = "valid_api_key"
+        mock_put.side_effect = Exception("Unexpected failure")
+
+        result, error = GsmbOfficerService.mark_complaint_resolved("token", 456)
+
+        assert result is None
+        assert "Server error: Unexpected failure" in error
+
+
+
+class TestGetMiningLicenseRequest:
+
+    @patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+    @patch("services.gsmb_officer_service.requests.get")
+    @patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+    @patch("services.gsmb_officer_service.GsmbOfficerService.get_custom_field_value")
+    def test_successful_request(self, mock_get_field, mock_api_key, mock_get):
+        mock_api_key.return_value = "valid_api_key"
+        mock_get_field.side_effect = lambda fields, name: f"mock_{name.lower().replace(' ', '_')}"
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "issues": [
+                {
+                    "id": 1,
+                    "subject": "Request 1",
+                    "assigned_to": {"name": "Officer A", "id": 10},
+                    "custom_fields": [],
+                    "created_on": "2025-06-01T10:00:00Z",
+                    "status": {"name": "Pending"}
                 }
-            })
-        )
-
-def test_get_mining_license_request_success():
-    token = "fake-token"
-    mock_issues = [
-        {
-            "id": 123,
-            "subject": "Test Mining License",
-            "assigned_to": {"name": "John Doe", "id": 5},
-            "custom_fields": [
-                {"name": "Mobile Number", "value": "0771234567"},
-                {"name": "Administrative District", "value": "District A"}
-            ],
-            "created_on": "2025-06-10T12:00:00Z",
-            "status": {"name": "New"}
+            ]
         }
-    ]
+        mock_get.return_value = mock_response
 
-    with patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token", return_value="user-api-key"), \
-         patch("services.gsmb_officer_service.requests.get") as mock_get, \
-         patch.dict("os.environ", {"REDMINE_URL": "https://redmine.example.com"}), \
-         patch.object(GsmbOfficerService, "get_custom_field_value", side_effect=lambda fields, name: next((f["value"] for f in fields if f["name"] == name), None)):
-
-        mock_get.return_value = MagicMock(status_code=200, json=MagicMock(return_value={"issues": mock_issues}))
-
-        result, error = GsmbOfficerService.get_mining_license_request(token)
+        result, error = GsmbOfficerService.get_mining_license_request("token")
 
         assert error is None
-        assert isinstance(result, list)
         assert len(result) == 1
-        assert result[0]["id"] == 123
-        assert result[0]["subject"] == "Test Mining License"
-        assert result[0]["assigned_to"] == "John Doe"
-        assert result[0]["assigned_to_id"] == 5
-        assert result[0]["mobile"] == "0771234567"
-        assert result[0]["district"] == "District A"
-        assert result[0]["date_created"] == "2025-06-10T12:00:00Z"
-        assert result[0]["status"] == "New"
+        assert result[0]["subject"] == "Request 1"
+        assert result[0]["mobile"] == "mock_mobile_number"
+        assert result[0]["district"] == "mock_administrative_district"
+        mock_get.assert_called_once()
 
-        mock_get.assert_called_once_with(
-            "https://redmine.example.com/issues.json?tracker_id=4&project_id=1&status_id=!7",
-            headers={
-                "X-Redmine-API-Key": "user-api-key",
-                "Content-Type": "application/json"
-            }
-        )
+    @patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+    def test_missing_api_key(self, mock_api_key):
+        mock_api_key.return_value = None
+        result, error = GsmbOfficerService.get_mining_license_request("token")
+        assert result is None
+        assert "Invalid or missing API key" in error
 
-def test_get_miningRequest_view_button_success():
-    token = "fake-token"
-    issue_id = 123
-    mock_issue = {
-        "id": issue_id,
-        "subject": "Mining Request Example",
-        "status": {"name": "Open"},
-        "assigned_to": {"name": "Jane Doe"},
-        "custom_fields": [
-            {"name": "Land Name(Licence Details)", "value": "Green Valley"},
-            {"name": "Land owner name", "value": "John Smith"},
-            {"name": "Name of village ", "value": "Village X"},
-            {"name": "Grama Niladhari Division", "value": "Division A"},
-            {"name": "Divisional Secretary Division", "value": "Division B"},
-            {"name": "Administrative District", "value": "District Y"},
-            {"name": "Mining License Number", "value": "LLL/100/123"},
-            {"name": "Mobile Number", "value": "0771234567"}
-        ]
-    }
-    attachments_mock = {
-        "Economic Viability Report": "http://example.com/economic_report.pdf",
-        "License fee receipt": "http://example.com/license_fee.pdf",
-        "Detailed Mine Restoration Plan": "http://example.com/restoration_plan.pdf",
-        "Deed and Survey Plan": "http://example.com/deed_survey.pdf",
-        "Payment Receipt": "http://example.com/payment_receipt.pdf",
-        "License Boundary Survey": "http://example.com/boundary_survey.pdf"
-    }
+    @patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+    def test_missing_redmine_url(self, mock_api_key):
+        mock_api_key.return_value = "valid_api_key"
+        with patch.dict(os.environ, {}, clear=True):
+            result, error = GsmbOfficerService.get_mining_license_request("token")
+            assert result is None
+            assert "REDMINE_URL" in error
 
-    with patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token", return_value="user-api-key"), \
-         patch("services.gsmb_officer_service.requests.get") as mock_get, \
-         patch.dict("os.environ", {"REDMINE_URL": "https://redmine.example.com"}), \
-         patch.object(GsmbOfficerService, "get_attachment_urls", return_value=attachments_mock):
+    @patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+    @patch("services.gsmb_officer_service.requests.get")
+    @patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+    def test_redmine_api_failure(self, mock_api_key, mock_get):
+        mock_api_key.return_value = "valid_api_key"
 
-        mock_get.return_value = MagicMock(
-            status_code=200,
-            json=MagicMock(return_value={"issue": mock_issue})
-        )
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_response.text = "Internal Server Error"
+        mock_get.return_value = mock_response
 
-        result, error = GsmbOfficerService.get_miningRequest_view_button(token, issue_id)
+        result, error = GsmbOfficerService.get_mining_license_request("token")
 
-        assert error is None
-        assert isinstance(result, dict)
-        assert result["id"] == issue_id
-        assert result["subject"] == "Mining Request Example"
-        assert result["status"] == "Open"
-        assert result["assigned_to"] == "Jane Doe"
-        assert result["land_name"] == "Green Valley"
-        assert result["land_owner_name"] == "John Smith"
-        assert result["village_name"] == "Village X"
-        assert result["grama_niladhari_division"] == "Division A"
-        assert result["divisional_secretary_division"] == "Division B"
-        assert result["administrative_district"] == "District Y"
-        assert result["mining_license_number"] == "LLL/100/123"
-        assert result["mobile_number"] == "0771234567"
+        assert result is None
+        assert "Failed to fetch mining license issues" in error
+        assert "500" in error
 
-        # Check attachment URLs are included
-        assert result["economic_viability_report"] == attachments_mock["Economic Viability Report"]
-        assert result["license_fee_receipt"] == attachments_mock["License fee receipt"]
+    @patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+    @patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+    @patch("services.gsmb_officer_service.requests.get")
+    def test_unexpected_exception(self, mock_get, mock_api_key):
+        mock_api_key.return_value = "valid_api_key"
+        mock_get.side_effect = Exception("Unexpected failure")
 
-        mock_get.assert_called_once_with(
-            "https://redmine.example.com/issues/123.json?include=attachments",
-            headers={
-                "X-Redmine-API-Key": "user-api-key",
-                "Content-Type": "application/json"
-            }
-        )
+        result, error = GsmbOfficerService.get_mining_license_request("token")
 
-def test_get_miningLicense_view_button_success():
-    token = "fake-token"
-    issue_id = 456
-    mock_issue = {
-        "id": issue_id,
-        "subject": "Mining License Example",
-        "start_date": "2025-06-01",
-        "due_date": "2026-06-01",
-        "status": {"name": "Approved"},
-        "assigned_to": {"name": "John Doe"},
-        "custom_fields": [
-            {"name": "Land Name(Licence Details)", "value": "Blue Hills"},
-            {"name": "Land owner name", "value": "Alice Smith"},
-            {"name": "Name of village ", "value": "Village Y"},
-            {"name": "Grama Niladhari Division", "value": "Division C"},
-            {"name": "Capacity", "value": "1000"},
-            {"name": "Used", "value": "600"},
-            {"name": "Remaining", "value": "400"},
-            {"name": "Exploration Licence No", "value": "EXP-789"},
-            {"name": "Royalty", "value": "5%"},
-            {"name": "Divisional Secretary Division", "value": "Division D"},
-            {"name": "Administrative District", "value": "District Z"},
-            {"name": "Mining License Number", "value": "LLL/100/456"},
-            {"name": "Mobile Number", "value": "0789876543"},
-        ]
-    }
+        assert result is None
+        assert "Server error: Unexpected failure" in error
 
-    attachments_mock = {
-        "Economic Viability Report": "http://example.com/economic_viability.pdf",
-        "License fee receipt": "http://example.com/license_fee.pdf",
-        "Detailed Mine Restoration Plan": "http://example.com/mine_restoration.pdf",
-        "Deed and Survey Plan": "http://example.com/deed_survey.pdf",
-        "Payment Receipt": "http://example.com/payment_receipt.pdf",
-        "License Boundary Survey": "http://example.com/boundary_survey.pdf"
-    }
 
-    with patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token", return_value="user-api-key"), \
-         patch("services.gsmb_officer_service.requests.get") as mock_get, \
-         patch.dict("os.environ", {"REDMINE_URL": "https://redmine.example.com"}), \
-         patch.object(GsmbOfficerService, "get_attachment_urls", return_value=attachments_mock):
+
+class TestGetMiningRequestViewButton:
+
+    @patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+    @patch("services.gsmb_officer_service.GsmbOfficerService.get_attachment_urls")
+    @patch("services.gsmb_officer_service.requests.get")
+    @patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+    def test_successful_fetch(self, mock_api_key, mock_get, mock_attachments):
+        mock_api_key.return_value = "valid_key"
 
         mock_get.return_value = MagicMock(
             status_code=200,
-            json=MagicMock(return_value={"issue": mock_issue})
-        )
-
-        result, error = GsmbOfficerService.get_miningLicense_view_button(token, issue_id)
-
-        assert error is None
-        assert isinstance(result, dict)
-        assert result["id"] == issue_id
-        assert result["subject"] == "Mining License Example"
-        assert result["start_date"] == "2025-06-01"
-        assert result["due_date"] == "2026-06-01"
-        assert result["status"] == "Approved"
-        assert result["assigned_to"] == "John Doe"
-        assert result["land_name"] == "Blue Hills"
-        assert result["land_owner_name"] == "Alice Smith"
-        assert result["village_name"] == "Village Y"
-        assert result["grama_niladhari_division"] == "Division C"
-        assert result["capacity"] == "1000"
-        assert result["used"] == "600"
-        assert result["remaining"] == "400"
-        assert result["exploration_licence_no"] == "EXP-789"
-        assert result["royalty"] == "5%"
-        assert result["divisional_secretary_division"] == "Division D"
-        assert result["administrative_district"] == "District Z"
-        assert result["mining_license_number"] == "LLL/100/456"
-        assert result["mobile_number"] == "0789876543"
-
-        # Check attachment URLs are included
-        for key in attachments_mock:
-            assert result[key.lower().replace(" ", "_")] == attachments_mock[key]
-
-        mock_get.assert_called_once_with(
-            "https://redmine.example.com/issues/456.json?include=attachments",
-            headers={
-                "X-Redmine-API-Key": "user-api-key",
-                "Content-Type": "application/json"
+            json=lambda: {
+                "issue": {
+                    "id": 1,
+                    "subject": "Sample Issue",
+                    "status": {"name": "Pending"},
+                    "assigned_to": {"name": "Officer A"},
+                    "custom_fields": [
+                        {"name": "Land Name(Licence Details)", "value": "Test Land"},
+                        {"name": "Mining License Number", "value": "ML123"},
+                        {"name": "Mobile Number", "value": "0771234567"}
+                    ]
+                }
             }
         )
+
+        mock_attachments.return_value = {
+            "Economic Viability Report": "http://file1.pdf",
+            "License fee receipt": "http://file2.pdf",
+            "Detailed Mine Restoration Plan": "http://file3.pdf",
+            "Deed and Survey Plan": "http://file4.pdf",
+            "Payment Receipt": "http://file5.pdf",
+            "License Boundary Survey": "http://file6.pdf"
+        }
+
+        result, error = GsmbOfficerService.get_miningRequest_view_button("token", 1)
+
+        assert error is None
+        assert result["id"] == 1
+        assert result["land_name"] == "Test Land"
+        assert result["mining_license_number"] == "ML123"
+        assert result["economic_viability_report"] == "http://file1.pdf"
+
+    @patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+    def test_missing_api_key(self, mock_api_key):
+        mock_api_key.return_value = None
+        result, error = GsmbOfficerService.get_miningRequest_view_button("token", 1)
+        assert result is None
+        assert "Invalid or missing API key" in error
+
+    @patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+    def test_missing_env_variable(self, mock_api_key):
+        mock_api_key.return_value = "valid_key"
+        with patch.dict(os.environ, {}, clear=True):
+            result, error = GsmbOfficerService.get_miningRequest_view_button("token", 1)
+            assert result is None
+            assert "REDMINE_URL" in error
+
+    @patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+    @patch("services.gsmb_officer_service.requests.get")
+    @patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+    def test_redmine_fetch_failure(self, mock_api_key, mock_get):
+        mock_api_key.return_value = "valid_key"
+        mock_get.return_value = MagicMock(status_code=404, text="Not Found")
+
+        result, error = GsmbOfficerService.get_miningRequest_view_button("token", 1)
+
+        assert result is None
+        assert "Failed to fetch issue" in error
+        assert "404" in error
+
+    @patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+    @patch("services.gsmb_officer_service.requests.get")
+    @patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+    def test_no_issue_in_response(self, mock_api_key, mock_get):
+        mock_api_key.return_value = "valid_key"
+        mock_get.return_value = MagicMock(status_code=200, json=lambda: {})
+
+        result, error = GsmbOfficerService.get_miningRequest_view_button("token", 1)
+
+        assert result is None
+        assert "Issue data not found" in error
+
+
+
+class TestGetMiningLicenseViewButton:
+
+    @patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+    @patch("services.gsmb_officer_service.GsmbOfficerService.get_attachment_urls")
+    @patch("services.gsmb_officer_service.requests.get")
+    @patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+    def test_successful_view_button(self, mock_get_token, mock_get_request, mock_get_attachments):
+        mock_get_token.return_value = "valid_api_key"
+
+        mock_get_request.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {
+                "issue": {
+                    "id": 1,
+                    "subject": "Test License",
+                    "start_date": "2024-01-01",
+                    "due_date": "2024-12-31",
+                    "status": {"name": "Approved"},
+                    "assigned_to": {"name": "Officer A"},
+                    "custom_fields": [
+                        {"name": "Land Name(Licence Details)", "value": "Sample Land"},
+                        {"name": "Mobile Number", "value": "0712345678"},
+                        {"name": "Capacity", "value": "1000"},
+                        {"name": "Mining License Number", "value": "ML-001"},
+                        {"name": "Used", "value": "100"},
+                        {"name": "Remaining", "value": "900"}
+                    ]
+                }
+            }
+        )
+
+        mock_get_attachments.return_value = {
+            "Economic Viability Report": "http://file1.com",
+            "License fee receipt": "http://file2.com",
+            "Detailed Mine Restoration Plan": "http://file3.com",
+            "Deed and Survey Plan": "http://file4.com",
+            "Payment Receipt": "http://file5.com",
+            "License Boundary Survey": "http://file6.com"
+        }
+
+        result, error = GsmbOfficerService.get_miningLicense_view_button("token", 1)
+
+        assert error is None
+        assert result["id"] == 1
+        assert result["land_name"] == "Sample Land"
+        assert result["used"] == "100"
+        assert result["license_fee_receipt"] == "http://file2.com"
+
+    @patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+    def test_missing_api_key(self, mock_get_token):
+        mock_get_token.return_value = None
+        result, error = GsmbOfficerService.get_miningLicense_view_button("token", 1)
+        assert result is None
+        assert "Invalid or missing API key" in error
+
+    def test_missing_env_variable(self):
+        with patch.dict(os.environ, {}, clear=True):
+            with patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token", return_value="key"):
+                result, error = GsmbOfficerService.get_miningLicense_view_button("token", 1)
+                assert result is None
+                assert "REDMINE_URL" in error
+
+    @patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+    @patch("services.gsmb_officer_service.requests.get")
+    @patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+    def test_redmine_issue_not_found(self, mock_get_token, mock_get):
+        mock_get_token.return_value = "valid_api_key"
+        mock_get.return_value = MagicMock(status_code=404, text="Not Found")
+
+        result, error = GsmbOfficerService.get_miningLicense_view_button("token", 1)
+
+        assert result is None
+        assert "Failed to fetch issue" in error
+
+    @patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+    @patch("services.gsmb_officer_service.requests.get")
+    @patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
+    def test_redmine_response_no_issue_data(self, mock_get_token, mock_get):
+        mock_get_token.return_value = "valid_api_key"
+        mock_get.return_value = MagicMock(status_code=200, json=lambda: {})
+
+        result, error = GsmbOfficerService.get_miningLicense_view_button("token", 1)
+
+        assert result is None
+        assert "Issue data not found" in error

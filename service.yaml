@@ -1,14 +1,14 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: middleware-service
+  name: mmpro-service
 spec:
   selector:
-    app: middleware
+    app: mmpro
   ports:
     - protocol: TCP
-      port: 5000 # External port
-      targetPort: 5000 # Container port
-      nodePort: 30000
-
+      port: 80          # Internal cluster port
+      targetPort: 5000  # Flask app inside container
+      nodePort: 31001   # External server port (you can choose between 30000â€“32767)
   type: NodePort
+
