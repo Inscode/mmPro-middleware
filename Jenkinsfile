@@ -18,7 +18,7 @@ pipeline {
         ARGOCD_APP_FILE = 'argocd-app.yaml'
         
         // ArgoCD Configuration
-        ARGOCD_SERVER = 'argocd.yourdomain.com' // Update with your ArgoCD URL
+        ARGOCD_SERVER = 'https://argocd.aasait.lk' // Update with your ArgoCD URL
         ARGOCD_APP_NAME = 'mmpro-application'
         
         // Versioning
