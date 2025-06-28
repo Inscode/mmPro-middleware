@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mmpro-application
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/Inscode/mmPro-middleware.git  # ✅ Your Git repo
+    targetRevision: main                                     # ✅ Branch name
+    path: .                                                  # ✅ Path to your manifests in the repo (e.g., "." or "k8s")
+
+  destination:
+    server: https://kubernetes.default.svc                  # ArgoCD's default
+    namespace: default                                      # Change if your app runs in another namespace
+
+  syncPolicy:
+    automated:                                              # Optional: auto-sync on commit
+      prune: true                                           # Deletes old resources
+      selfHeal: true                                        # Fix drift
+    syncOptions:
+    - CreateNamespace=true                                 # Automatically create namespace if it doesn't exist
