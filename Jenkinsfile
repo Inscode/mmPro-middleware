@@ -8,7 +8,7 @@ pipeline {
         REGISTRY_CREDENTIALS = 'dockerhub-creds'
         
         // Git Configuration
-        GIT_REPO = 'git@github.com:Inscode/mmPro-middleware.git'
+        GIT_REPO = 'https://github.com/Inscode/mmPro-middleware.git'
         GIT_CREDENTIALS = 'git-creds'
         GIT_BRANCH = 'main'
         
