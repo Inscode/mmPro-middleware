@@ -22,17 +22,6 @@ pipeline {
     }
 
     stages {
-        stage('Init SSH Known Hosts') {
-            steps {
-                sshagent(credentials: ["${GIT_CREDENTIALS}"]) {
-                    sh '''
-                        mkdir -p ~/.ssh
-                        ssh-keyscan github.com >> ~/.ssh/known_hosts
-                    '''
-                }
-            }
-        }
-
         stage('Checkout Code') {
             steps {
                 sshagent(credentials: ["${GIT_CREDENTIALS}"]) {
@@ -63,8 +52,7 @@ pipeline {
             steps {
                 dir('app') {
                     script {
-                        def dockerImage = docker.build("${DOCKER_HUB_REPO}:${IMAGE_TAG}")
-                        env.IMAGE_FULL = "${DOCKER_HUB_REPO}:${IMAGE_TAG}"
+                        dockerImage = docker.build("${DOCKER_HUB_REPO}:${IMAGE_TAG}")
                     }
                 }
             }
@@ -74,7 +62,7 @@ pipeline {
             steps {
                 script {
                     docker.withRegistry('', "${REGISTRY_CREDENTIALS}") {
-                        docker.image("${DOCKER_HUB_REPO}:${IMAGE_TAG}").push()
+                        dockerImage.push()
                     }
                 }
             }
@@ -84,8 +72,8 @@ pipeline {
             steps {
                 dir('app') {
                     sh """
-                        sed -i 's|image: .*|image: ${DOCKER_HUB_REPO}:${IMAGE_TAG}|' "${DEPLOYMENT_FILE}"
-                        sed -i 's|targetRevision: .*|targetRevision: ${GIT_BRANCH}|' "${ARGOCD_APP_FILE}"
+                        sed -i 's|image: .*|image: ${DOCKER_HUB_REPO}:${IMAGE_TAG}|' ${DEPLOYMENT_FILE}
+                        sed -i 's|targetRevision: .*|targetRevision: ${GIT_BRANCH}|' ${ARGOCD_APP_FILE}
                     """
                 }
             }
@@ -98,7 +86,7 @@ pipeline {
                         sh '''
                             git config user.name "achintha aasait"
                             git config user.email "achintha@gmail.com"
-                            git add "${DEPLOYMENT_FILE}" "${ARGOCD_APP_FILE}"
+                            git add ${DEPLOYMENT_FILE} ${ARGOCD_APP_FILE}
                             git commit -m "[CI] Update to ${DOCKER_HUB_REPO}:${IMAGE_TAG}" || echo "No changes to commit"
                             git push origin ${GIT_BRANCH}
                         '''
