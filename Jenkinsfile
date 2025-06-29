@@ -8,7 +8,6 @@ pipeline {
         REGISTRY_CREDENTIALS = 'dockerhub-creds'
 
         // Git config
-        GIT_REPO = 'git@github.com:Inscode/mmPro-middleware.git'
         GIT_BRANCH = 'main'
         GIT_CREDENTIALS = 'git-ssh-key'
 
@@ -22,22 +21,9 @@ pipeline {
     }
 
     stages {
-        stage('Checkout Code') {
-            steps {
-                sshagent(credentials: ["${GIT_CREDENTIALS}"]) {
-                    sh "git clone -b ${GIT_BRANCH} ${GIT_REPO} app"
-                }
-                dir('app') {
-                    script {
-                        env.WORKSPACE = pwd()
-                    }
-                }
-            }
-        }
-
         stage('Build & Test') {
             steps {
-                dir('app') {
+                dir('.') {  // Working with the already checked-out code
                     sh '''
                         python3 -m venv venv
                         ./venv/bin/pip install --upgrade pip
@@ -50,7 +36,7 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                dir('app') {
+                dir('.') {
                     script {
                         dockerImage = docker.build("${DOCKER_HUB_REPO}:${IMAGE_TAG}")
                     }
@@ -70,7 +56,7 @@ pipeline {
 
         stage('Update Manifests') {
             steps {
-                dir('app') {
+                dir('.') {
                     sh """
                         sed -i 's|image: .*|image: ${DOCKER_HUB_REPO}:${IMAGE_TAG}|' ${DEPLOYMENT_FILE}
                         sed -i 's|targetRevision: .*|targetRevision: ${GIT_BRANCH}|' ${ARGOCD_APP_FILE}
@@ -81,7 +67,7 @@ pipeline {
 
         stage('Commit & Push Changes') {
             steps {
-                dir('app') {
+                dir('.') {
                     sshagent(credentials: ["${GIT_CREDENTIALS}"]) {
                         sh '''
                             git config user.name "achintha aasait"
