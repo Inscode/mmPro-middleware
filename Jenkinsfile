@@ -52,12 +52,6 @@ pipeline {
                         '''
                     }
                 }
-                post {
-                    always {
-                        junit 'test-results.xml'
-                        cobertura coberturaReportFile: 'coverage.xml'
-                    }
-                }
         }
 
         stage('Build Docker Image') {
