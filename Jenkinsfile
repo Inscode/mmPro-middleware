@@ -90,8 +90,8 @@ pipeline {
                 dir('.') {
                     sshagent(credentials: ["${GIT_CREDENTIALS}"]) {
                         sh '''
-                            git config user.name "achintha aasait"
-                            git config user.email "achintha@gmail.com"
+                            git config user.name "Inscode"
+                            git config user.email "insaf.ahmedh@gmail.com"
                             git add ${DEPLOYMENT_FILE} ${ARGOCD_APP_FILE}
                             git commit -m "[CI] Update to ${DOCKER_HUB_REPO}:${IMAGE_TAG}" || echo "No changes to commit"
                             git push origin ${GIT_BRANCH}
