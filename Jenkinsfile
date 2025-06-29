@@ -55,9 +55,9 @@ pipeline {
             }
             post {
                 always {
-                    junit 'test-results.xml'  # Archive test results
-                    cobertura coberturaReportFile: 'coverage.xml'  # Archive coverage
-                    archiveArtifacts artifacts: 'htmlcov/**'  # Archive HTML coverage (optional)
+                    junit 'test-results.xml'  
+                    cobertura coberturaReportFile: 'coverage.xml' 
+                    archiveArtifacts artifacts: 'htmlcov/**'  
                 }
             }
         }
