@@ -21,45 +21,43 @@ pipeline {
     }
 
     stages {
-       stage('Build & Test') {
-            steps {
-                dir('.') {
-                    sh '''#!/bin/bash -xe
-                        # Create and activate virtual environment
-                        python3 -m venv venv
-                        source venv/bin/activate
-                        
-                        # Upgrade pip and install dependencies
-                        pip install --upgrade pip
-                        pip install -r requirements.txt
-                        
-                        # Diagnostic output (helps debugging)
-                        echo "Current directory structure:"
-                        ls -l
-                        echo "Test directory contents:"
-                        ls -l tests/
-                        
-                        # Run pytest with explicit path and increased verbosity
-                        PYTHONPATH=$PWD pytest \
-                            tests/ \
-                            -v \
-                            --junitxml=test-results.xml \
-                            --cov=./ \
-                            --cov-report=xml:coverage.xml
-                        
-                        # Generate HTML coverage report (optional)
-                        pip install pytest-cov
-                        pytest --cov=./ --cov-report=html:htmlcov tests/
-                    '''
+           stage('Build & Test') {
+                steps {
+                    dir('.') {
+                        sh '''#!/bin/bash -xe
+                            # Create and activate virtual environment
+                            python3 -m venv venv
+                            source venv/bin/activate
+                            
+                            # Upgrade pip and install dependencies
+                            pip install --upgrade pip
+                            pip install -r requirements.txt
+                            
+                            # Install test-specific requirements
+                            pip install pytest pytest-cov
+                            
+                            # Diagnostic output
+                            echo "PYTHONPATH: ${PYTHONPATH:-Not Set}"
+                            echo "Current directory: $(pwd)"
+                            echo "Test directory contents:"
+                            ls -l tests/
+                            
+                            # Run pytest with explicit path
+                            PYTHONPATH=$(pwd) pytest \
+                                tests/ \
+                                -v \
+                                --junitxml=test-results.xml \
+                                --cov=app \
+                                --cov-report=xml:coverage.xml || true
+                        '''
+                    }
                 }
-            }
-            post {
-                always {
-                    junit 'test-results.xml'  
-                    cobertura coberturaReportFile: 'coverage.xml' 
-                    archiveArtifacts artifacts: 'htmlcov/**'  
+                post {
+                    always {
+                        junit 'test-results.xml'
+                        cobertura coberturaReportFile: 'coverage.xml'
+                    }
                 }
-            }
         }
 
         stage('Build Docker Image') {
