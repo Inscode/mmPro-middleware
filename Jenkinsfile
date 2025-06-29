@@ -21,15 +21,43 @@ pipeline {
     }
 
     stages {
-        stage('Build & Test') {
+       stage('Build & Test') {
             steps {
-                dir('.') {  // Working with the already checked-out code
-                    sh '''
+                dir('.') {
+                    sh '''#!/bin/bash -xe
+                        # Create and activate virtual environment
                         python3 -m venv venv
-                        ./venv/bin/pip install --upgrade pip
-                        ./venv/bin/pip install -r requirements.txt
-                        ./venv/bin/python -m pytest
+                        source venv/bin/activate
+                        
+                        # Upgrade pip and install dependencies
+                        pip install --upgrade pip
+                        pip install -r requirements.txt
+                        
+                        # Diagnostic output (helps debugging)
+                        echo "Current directory structure:"
+                        ls -l
+                        echo "Test directory contents:"
+                        ls -l tests/
+                        
+                        # Run pytest with explicit path and increased verbosity
+                        PYTHONPATH=$PWD pytest \
+                            tests/ \
+                            -v \
+                            --junitxml=test-results.xml \
+                            --cov=./ \
+                            --cov-report=xml:coverage.xml
+                        
+                        # Generate HTML coverage report (optional)
+                        pip install pytest-cov
+                        pytest --cov=./ --cov-report=html:htmlcov tests/
                     '''
+                }
+            }
+            post {
+                always {
+                    junit 'test-results.xml'  # Archive test results
+                    cobertura coberturaReportFile: 'coverage.xml'  # Archive coverage
+                    archiveArtifacts artifacts: 'htmlcov/**'  # Archive HTML coverage (optional)
                 }
             }
         }
