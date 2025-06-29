@@ -1,18 +1,24 @@
 from diskcache import Cache
 import os
+from pathlib import Path  # Better path handling
 
-cache_dir = os.getenv('DISKCACHE_DIR', '/app/otp_cache')
+# Simple cache initialization with smart fallbacks
+def get_cache():
+    # 1. Try configured directory first
+    cache_dir = os.getenv('DISKCACHE_DIR', '/app/otp_cache')
+    
+    # 2. Try workspace directory in CI (like Jenkins)
+    if not os.access(cache_dir, os.W_OK) and 'WORKSPACE' in os.environ:
+        cache_dir = os.path.join(os.environ['WORKSPACE'], 'otp_cache')
+    
+    # 3. Final fallback to temp directory
+    if not os.access(cache_dir, os.W_OK):
+        cache_dir = '/tmp/otp_cache'
+    
+    # Ensure directory exists
+    Path(cache_dir).mkdir(parents=True, exist_ok=True)
+    
+    return Cache(cache_dir)
 
-try:
-    os.makedirs(cache_dir, exist_ok=True)
-    # Try to set permissions, but don't fail if we can't
-    try:
-        os.chmod(cache_dir, 0o755)
-    except PermissionError:
-        pass  # Continue with default permissions
-        
-    cache = Cache(cache_dir)
-except Exception as e:
-    print(f"Error initializing cache: {e}")
-    # Fallback to temporary directory if needed
-    cache = Cache('/tmp/otp_cache')
+# Single global cache instance
+cache = get_cache()
