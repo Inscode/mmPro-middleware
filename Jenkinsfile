@@ -92,9 +92,18 @@ pipeline {
                         sh '''
                             git config user.name "Inscode"
                             git config user.email "insaf.ahmedh@gmail.com"
+                            
+                            # Ensure remote URL uses SSH
+                            git remote set-url origin git@github.com:Inscode/mmPro-middleware.git
+                            
+                            # Checkout main branch explicitly
+                            git checkout main || git checkout -b main
+                            
                             git add ${DEPLOYMENT_FILE} ${ARGOCD_APP_FILE}
                             git commit -m "[CI] Update to ${DOCKER_HUB_REPO}:${IMAGE_TAG}" || echo "No changes to commit"
-                            git push origin ${GIT_BRANCH}
+                            
+                            # Push using SSH
+                            git push origin main
                         '''
                     }
                 }
