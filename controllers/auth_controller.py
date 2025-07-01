@@ -692,6 +692,13 @@ def mobile_reset_password():
 
     cache.delete(f"otp_verified:{email}")
     return jsonify({'message': 'Password updated successfully'}), 200
+
+
+@auth_bp.route('/ping', methods=['GET'])
+def ping():
+    print("✅ /ping endpoint hit")
+    return jsonify({ "message": "Ping received successfully 🎯" })
+
     
 
 

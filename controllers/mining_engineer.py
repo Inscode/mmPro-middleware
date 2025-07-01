@@ -4,6 +4,11 @@ from flask import Blueprint, jsonify, request
 from middleware.auth_middleware import role_required,check_token
 from services.auth_service import AuthService
 from services.mining_engineer_service import MiningEnginerService
+import requests  # For making HTTP requests to Redmine
+from flask import Response  # For streaming file responses in Flask
+from utils.jwt_utils import JWTUtils
+from flask import send_file
+from io import BytesIO
 
 
 # Define the Blueprint for mining_enginer
@@ -50,13 +55,9 @@ def update_miningOwner_appointment(issue_id):
 def get_me_pending_licenses():
     try:
         # Get the token from the Authorization header
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
+        token = request.headers.get('Authorization')
+        if not token:
             return jsonify({"error": "Authorization header is missing"}), 401
-            
-        # Split the header to get the token part (handle both "Bearer token" and just "token")
-        parts = auth_header.split()
-        token = parts[1] if len(parts) == 2 else auth_header
         
         # Fetch Mining Licenses from the service
         mining_licenses, error = MiningEnginerService.get_me_pending_licenses(token)
@@ -68,6 +69,77 @@ def get_me_pending_licenses():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+@mining_enginer_bp.route('/download-attachment/<int:attachment_id>', methods=['GET'])
+@check_token
+def download_attachment(attachment_id):
+    try:
+        token = request.headers.get('Authorization')
+        api_key = JWTUtils.get_api_key_from_token(token)
+        
+        REDMINE_URL = os.getenv("REDMINE_URL")
+        attachment_url = f"{REDMINE_URL}/attachments/download/{attachment_id}"
+        
+        # Stream the response from Redmine
+        response = requests.get(
+            attachment_url,
+            headers={"X-Redmine-API-Key": api_key},
+            stream=True
+        )
+        
+        if response.status_code != 200:
+            return jsonify({"error": "Failed to fetch attachment"}), response.status_code
+            
+        return Response(
+            response.iter_content(chunk_size=1024),
+            content_type=response.headers.get('Content-Type', 'application/octet-stream'),
+            headers={
+                'Content-Disposition': response.headers.get(
+                    'Content-Disposition', 
+                    f'attachment; filename=attachment_{attachment_id}'
+                )
+            }
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# @mining_enginer_bp.route('/download-attachment/<int:attachment_id>', methods=['GET'])
+# @check_token
+# def download_attachment(attachment_id):
+#     try:
+#         token = request.headers.get('Authorization')
+#         api_key = JWTUtils.get_api_key_from_token(token)
+
+#         REDMINE_URL = os.getenv("REDMINE_URL")
+#         attachment_url = f"{REDMINE_URL}/attachments/download/{attachment_id}"
+
+#         response = requests.get(
+#             attachment_url,
+#             headers={"X-Redmine-API-Key": api_key},
+#             stream=True
+#         )
+
+#         if response.status_code != 200:
+#             return jsonify({"error": "Failed to fetch attachment"}), response.status_code
+
+#         # Read content into BytesIO
+#         file_data = BytesIO(response.content)
+
+#         # Try to get filename from Content-Disposition header
+#         content_disposition = response.headers.get("Content-Disposition", "")
+#         filename = f"attachment_{attachment_id}"
+#         if "filename=" in content_disposition:
+#             filename = content_disposition.split("filename=")[1].strip('"')
+
+#         return send_file(
+#             file_data,
+#             mimetype=response.headers.get('Content-Type', 'application/octet-stream'),
+#             as_attachment=True,
+#             download_name=filename
+#         )
+
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
     
 @mining_enginer_bp.route('/create-ml-appointment', methods=['POST'])
 @check_token
@@ -309,6 +381,25 @@ def get_me_appointments():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@mining_enginer_bp.route('/view-mining-license/<int:issue_id>', methods=['GET'])
+@check_token
+@role_required(['miningEngineer'])
+def get_miningRequest_view_button(issue_id):
+    try:
+        token = request.headers.get('Authorization')
+        if not token:
+            return jsonify({"error": "Authorization token is missing"}), 400
+
+        # Fetch issue details
+        mining_license, error = MiningEnginerService.get_miningLicense_view_button(token, issue_id)
+
+        if error:
+            return jsonify({"error": error}), 500
+
+        return jsonify({"success": True, "data": mining_license}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @mining_enginer_bp.route('/me-approve-license', methods=['GET'])

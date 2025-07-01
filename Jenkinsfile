@@ -2,45 +2,64 @@ pipeline {
     agent any
 
     environment {
+        // Docker config
         DOCKER_HUB_REPO = 'inscodelk/mmpro'
-        IMAGE_NAME = "${DOCKER_HUB_REPO}"
-        REGISTRY_CREDENTIALS = 'dockerhub-creds'
-        GIT_REPO = 'https://github.com/Inscode/mmPro-middleware'
-        GIT_CREDENTIALS = 'git-creds'
-        DEPLOYMENT_FILE = 'deployment.yaml'
         IMAGE_TAG = "v${env.BUILD_NUMBER}"
+        REGISTRY_CREDENTIALS = 'dockerhub-creds'
+
+        // Git config
+        GIT_BRANCH = 'main'
+        GIT_CREDENTIALS = 'git-ssh-key'
+
+        // K8s manifest files
+        DEPLOYMENT_FILE = 'deployment.yaml'
+        ARGOCD_APP_FILE = 'argocd-app.yaml'
+
+        // ArgoCD config
+        ARGOCD_SERVER = 'argocd.aasait.lk'
+        ARGOCD_APP_NAME = 'mmpro-application'
     }
 
     stages {
-        stage('Checkout Code') {
-            steps {
-                git branch: 'main', url: "${GIT_REPO}", credentialsId: "${GIT_CREDENTIALS}"
-            }
+           stage('Build & Test') {
+                steps {
+                    dir('.') {
+                        sh '''#!/bin/bash -xe
+                            # Create and activate virtual environment
+                            python3 -m venv venv
+                            source venv/bin/activate
+                            
+                            # Upgrade pip and install dependencies
+                            pip install --upgrade pip
+                            pip install -r requirements.txt
+                            
+                            # Install test-specific requirements
+                            pip install pytest pytest-cov
+                            
+                            # Diagnostic output
+                            echo "PYTHONPATH: ${PYTHONPATH:-Not Set}"
+                            echo "Current directory: $(pwd)"
+                            echo "Test directory contents:"
+                            ls -l tests/
+                            
+                            # Run pytest with explicit path
+                            PYTHONPATH=$(pwd) pytest \
+                                tests/ \
+                                -v \
+                                --junitxml=test-results.xml \
+                                --cov=app \
+                                --cov-report=xml:coverage.xml || true
+                        '''
+                    }
+                }
         }
-
-        stage('Build & Test') {
-            steps {
-                sh '''
-                    set -e
-                    # Explicitly use python3.11 binary
-                    /usr/bin/python3.11 -m venv venv --clear
-                    ./venv/bin/pip install --upgrade pip
-                    ./venv/bin/pip install -r requirements.txt
-                    mkdir -p .cache
-                    export DISKCACHE_DIR=.cache
-        
-                    # Verify Python version
-                    echo "🐍 Python version:" && ./venv/bin/python --version
-                    ./venv/bin/python -m pytest
-                '''
-            }
-        }
-
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    dockerImage = docker.build("${IMAGE_NAME}:${IMAGE_TAG}")
+                dir('.') {
+                    script {
+                        dockerImage = docker.build("${DOCKER_HUB_REPO}:${IMAGE_TAG}")
+                    }
                 }
             }
         }
@@ -55,24 +74,51 @@ pipeline {
             }
         }
 
-        stage('Update Deployment YAML') {
+        stage('Update Manifests') {
             steps {
-                script {
-                    sh "sed -i 's|image: .*|image: ${IMAGE_NAME}:${IMAGE_TAG}|' ${DEPLOYMENT_FILE}"
+                dir('.') {
+                    sh """
+                        sed -i 's|image: .*|image: ${DOCKER_HUB_REPO}:${IMAGE_TAG}|' ${DEPLOYMENT_FILE}
+                        sed -i 's|targetRevision: .*|targetRevision: ${GIT_BRANCH}|' ${ARGOCD_APP_FILE}
+                    """
                 }
             }
         }
 
-        stage('Push Updated YAML to Git') {
+        stage('Commit & Push Changes') {
             steps {
-                withCredentials([usernamePassword(credentialsId: "${GIT_CREDENTIALS}", usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
-                    sh '''
-                        git config user.name "Jenkins"
-                        git config user.email "jenkins@example.com"
-                        git add ${DEPLOYMENT_FILE}
-                        git commit -m "Update image to ${IMAGE_NAME}:${IMAGE_TAG}"
-                        git push https://${GIT_USER}:${GIT_PASS}@github.com/Inscode/mmPro-middleware.git HEAD:main
+                dir('.') {
+                    sshagent(credentials: ["${GIT_CREDENTIALS}"]) {
+                        sh '''
+                            git config user.name "Inscode"
+                            git config user.email "insaf.ahmedh@gmail.com"
+                            git remote set-url origin git@github.com:Inscode/mmPro-middleware.git
+                            
+                            # Discard all local changes
+                            git reset --hard
+                            
+                            # Force sync with remote
+                            git fetch origin main
+                            git checkout -B main origin/main
+                            
+                            git add ${DEPLOYMENT_FILE} ${ARGOCD_APP_FILE}
+                            git commit -m "[CI] Update to ${DOCKER_HUB_REPO}:${IMAGE_TAG}" || echo "No changes to commit"
+                            git push origin main
+                        '''
+                    }
+                }
+            }
+        }
 
+        stage('Trigger ArgoCD Sync') {
+            steps {
+                withCredentials([string(credentialsId: 'argocd-api-token', variable: 'ARGOCD_TOKEN')]) {
+                    sh '''
+                        curl -sS -X POST \
+                        -H "Authorization: Bearer ${ARGOCD_TOKEN}" \
+                        -H "Content-Type: application/json" \
+                        --data '{}' \
+                        https://${ARGOCD_SERVER}/api/v1/applications/${ARGOCD_APP_NAME}/sync
                     '''
                 }
             }
@@ -81,11 +127,10 @@ pipeline {
 
     post {
         success {
-            echo "✅ CI/CD Pipeline completed successfully. Argo CD will auto-sync changes."
+            echo "✅ Pipeline SUCCESS - ${DOCKER_HUB_REPO}:${IMAGE_TAG} deployed via ArgoCD"
         }
         failure {
-            echo "❌ Pipeline failed. Check Jenkins logs for details."
+            echo "❌ Pipeline FAILED - Check build logs"
         }
     }
 }
-
