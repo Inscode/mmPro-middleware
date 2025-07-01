@@ -7,6 +7,9 @@ import os
 from werkzeug.utils import secure_filename
 import tempfile
 from utils.user_utils import UserUtils
+import requests  # For making HTTP requests to Redmine
+from flask import Response  # For streaming file responses in Flask
+from utils.jwt_utils import JWTUtils
 
 
 # Define the Blueprint for gsmb_officer
@@ -348,9 +351,6 @@ def get_mining_license_by_id(issue_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
-import requests  # For making HTTP requests to Redmine
-from flask import Response  # For streaming file responses in Flask
-from utils.jwt_utils import JWTUtils
 @gsmb_officer_bp.route('/download-attachment/<int:attachment_id>', methods=['GET'])
 @check_token
 def download_attachment(attachment_id):
