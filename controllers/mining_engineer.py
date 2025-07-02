@@ -503,11 +503,8 @@ def set_license_hold():
 def get_me_hold_licenses():
     try:
         # Extract token from headers
-        auth_header = request.headers.get("Authorization")
-        if not auth_header:
-            return jsonify({"error": "Authorization token is missing"}), 401
+        token = request.headers.get("Authorization")
 
-        token = auth_header.replace("Bearer ", "").strip()
         if not token:
             return jsonify({"error": "Authorization token is invalid"}), 401
 
