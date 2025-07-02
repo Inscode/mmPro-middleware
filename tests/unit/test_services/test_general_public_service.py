@@ -1,7 +1,9 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from services.general_public_service import GeneralPublicService
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta
+from datetime import timezone
+UTC = timezone.utc  # Add this line
 
 
 # is_lorry_number_valid
