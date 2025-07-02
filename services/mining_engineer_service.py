@@ -1163,6 +1163,8 @@ class MiningEnginerService:
 
             attachments = MiningEnginerService.get_attachment_urls(custom_fields)   
 
+            print("custom_field_map:", custom_field_map)
+
             formatted_issue = {
                 "id": issue.get("id"),
                 "subject": issue.get("subject"),
@@ -1173,6 +1175,7 @@ class MiningEnginerService:
                 "land_name": custom_field_map.get("Land Name(Licence Details)"),
                 "land_owner_name": custom_field_map.get("Land owner name"),
                 "village_name": custom_field_map.get("Name of village "),
+                "google_location": custom_field_map.get("Google location "),
                 "grama_niladhari_division": custom_field_map.get("Grama Niladhari Division"),
                 "capacity": custom_field_map.get("Capacity"),
                 "used": custom_field_map.get("Used"),
