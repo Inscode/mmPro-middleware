@@ -9,7 +9,7 @@ from flask import Response  # For streaming file responses in Flask
 from utils.jwt_utils import JWTUtils
 from flask import send_file
 from io import BytesIO
-
+    
 
 # Define the Blueprint for mining_enginer
 mining_enginer_bp = Blueprint('mining_enginer', __name__)
@@ -518,3 +518,26 @@ def get_me_hold_licenses():
 
     except Exception as e:
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
+
+@mining_enginer_bp.route('/me-reject-licenses', methods=['GET'])
+@check_token
+@role_required(['miningEngineer'])
+def get_me_reject_licenses():
+    try:
+        # Get the token from the Authorization header
+        token = request.headers.get('Authorization')
+        if not token:
+            return jsonify({"error": "Authorization header is missing"}), 401
+        
+        # Fetch Mining Licenses from the service
+        mining_licenses, error = MiningEnginerService.get_me_reject_licenses(token)
+        
+        if error:
+            return jsonify({"error": error}), 500 if "Server error" in error else 400
+            
+        return jsonify({"success": True, "data": mining_licenses}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
