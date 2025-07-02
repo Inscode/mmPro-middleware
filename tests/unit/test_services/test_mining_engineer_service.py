@@ -53,6 +53,7 @@ def test_update_miningOwner_appointment_fail_status_code(mock_put):
     assert result is None
     assert "Failed to create appointment" in err
 
+
 @patch("services.mining_engineer_service.requests.get")
 def test_get_me_pending_licenses_success(mock_get):
     # Mock Redmine API paginated response
@@ -85,51 +86,44 @@ def test_get_me_pending_licenses_success(mock_get):
     issues_page_2 = {"issues": []}  # no more pages
 
     def side_effect(*args, **kwargs):
-        if kwargs.get("params", {}).get("offset") == 0:
-            mock_resp = MagicMock()
-            mock_resp.status_code = 200
+        offset = kwargs.get("params", {}).get("offset", 0)
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        if offset == 0:
             mock_resp.json.return_value = issues_page_1
-            return mock_resp
         else:
-            mock_resp = MagicMock()
-            mock_resp.status_code = 200
             mock_resp.json.return_value = issues_page_2
-            return mock_resp
+        return mock_resp
 
     mock_get.side_effect = side_effect
 
-    # Also patch get_attachment_urls to return empty dict (to avoid real HTTP calls)
+    # Patch get_attachment_urls to return an empty dictionary
     with patch.object(MiningEnginerService, "get_attachment_urls", return_value={}):
         result, err = MiningEnginerService.get_me_pending_licenses("token")
 
+    # Assertions
     assert err is None
     assert isinstance(result, list)
+    assert len(result) == 1
     assert result[0]["id"] == 1
-    assert result[0]["subject"] == "Test License"
+    assert result[0]["assigned_to"] == "User1"
+    assert result[0]["Google_location"] == "GPS123"
+    assert result[0]["mining_number"] == "ML123"
+ 
 
 
-def test_get_attachment_urls_success(monkeypatch):
-    # Setup custom_fields with fake attachment IDs
+def test_get_attachment_urls_success():
     custom_fields = [
         {"name": "Detailed Mine Restoration Plan", "value": "10"},
         {"name": "Deed and Survey Plan", "value": "20"},
         {"name": "Payment Receipt", "value": "30"},
     ]
 
-    # Mock requests.get to return fake URLs
-    def mock_requests_get(url, headers):
-        class MockResp:
-            status_code = 200
-            def json(self):
-                return {"attachment": {"content_url": f"http://files.com/{url.split('/')[-1].split('.')[0]}"}}
-        return MockResp()
-
-    monkeypatch.setattr("services.mining_engineer_service.requests.get", mock_requests_get)
-
     urls = MiningEnginerService.get_attachment_urls("fake_key", "http://fake-redmine.com", custom_fields)
-    assert urls["Detailed Mine Restoration Plan"] == "http://files.com/10"
-    assert urls["Deed and Survey Plan"] == "http://files.com/20"
-    assert urls["Payment Receipt"] == "http://files.com/30"
+
+    assert urls["Detailed Mine Restoration Plan"] == 10
+    assert urls["Deed and Survey Plan"] == 20
+    assert urls["Payment Receipt"] == 30
 
 
 @patch("services.mining_engineer_service.requests.put")
@@ -555,3 +549,79 @@ def test_get_me_hold_licenses_success(mock_get):
         assert error is None
         assert len(issues) == 1
         assert issues[0]["hold"] == "Hold Reason"
+
+
+@patch("services.mining_engineer_service.JWTUtils.get_api_key_from_token")
+@patch("services.mining_engineer_service.requests.get")
+@patch("services.mining_engineer_service.os.getenv")
+def test_get_miningLicense_view_button_success(mock_getenv, mock_requests_get, mock_get_api_key):
+    # Arrange
+    mock_get_api_key.return_value = MOCK_API_KEY
+    mock_getenv.return_value = MOCK_REDMINE_URL
+
+    mock_issue_data = {
+        "issue": {
+            "id": MOCK_ISSUE_ID,
+            "subject": "Test Subject",
+            "start_date": "2025-06-01",
+            "due_date": "2025-06-10",
+            "status": {"name": "Approved"},
+            "assigned_to": {"name": "Engineer A"},
+            "custom_fields": [
+                {"name": "Land Name(Licence Details)", "value": "Land A"},
+                {"name": "Land owner name", "value": "Owner X"},
+                {"name": "Mining License Number", "value": "ML-2025-100"},
+                {"name": "Payment Receipt", "value": "123"},
+            ]
+        }
+    }
+
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = mock_issue_data
+    mock_requests_get.return_value = mock_response
+
+    with patch("services.mining_engineer_service.MiningEnginerService.get_attachment_urls", return_value={"Payment Receipt": "http://files.com/123"}):
+        result, error = MiningEnginerService.get_miningLicense_view_button(MOCK_TOKEN, MOCK_ISSUE_ID)
+
+    # Assert
+    assert error is None
+    assert result["id"] == MOCK_ISSUE_ID
+    assert result["land_name"] == "Land A"
+    assert result["land_owner_name"] == "Owner X"
+    assert result["payment_receipt"] == "http://files.com/123"
+
+
+@patch("services.mining_engineer_service.JWTUtils.get_api_key_from_token", return_value=None)
+def test_get_miningLicense_view_button_invalid_token(mock_get_api_key):
+    result, error = MiningEnginerService.get_miningLicense_view_button("badtoken", MOCK_ISSUE_ID)
+    assert result is None
+    assert "Invalid or missing API key" in error
+
+
+@patch("services.mining_engineer_service.JWTUtils.get_api_key_from_token", return_value=MOCK_API_KEY)
+@patch("services.mining_engineer_service.requests.get")
+@patch("services.mining_engineer_service.os.getenv", return_value=MOCK_REDMINE_URL)
+def test_get_miningLicense_view_button_api_error(mock_getenv, mock_requests_get, mock_get_api_key):
+    mock_response = MagicMock()
+    mock_response.status_code = 500
+    mock_response.text = "Internal Server Error"
+    mock_requests_get.return_value = mock_response
+
+    result, error = MiningEnginerService.get_miningLicense_view_button(MOCK_TOKEN, MOCK_ISSUE_ID)
+    assert result is None
+    assert "Failed to fetch issue" in error
+
+
+@patch("services.mining_engineer_service.JWTUtils.get_api_key_from_token", return_value=MOCK_API_KEY)
+@patch("services.mining_engineer_service.requests.get")
+@patch("services.mining_engineer_service.os.getenv", return_value=MOCK_REDMINE_URL)
+def test_get_miningLicense_view_button_missing_issue(mock_getenv, mock_requests_get, mock_get_api_key):
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {}  # No "issue" key
+    mock_requests_get.return_value = mock_response
+
+    result, error = MiningEnginerService.get_miningLicense_view_button(MOCK_TOKEN, MOCK_ISSUE_ID)
+    assert result is None
+    assert "Issue data not found" in error
