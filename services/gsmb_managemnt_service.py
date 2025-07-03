@@ -767,21 +767,42 @@ class GsmbManagmentService:
                 "User-Agent": "GSMB-Management-Service/1.0"
             }
 
-            params = {"status": 3, "include": "custom_fields"}  # status 1 = active, status 3 = inactive
-            response = requests.get(
-                f"{REDMINE_URL}/users.json",
-                headers=headers,
-                params=params,
-                timeout=10
-            )
+            all_users = []
+            offset = 0
+            limit = 100  # Redmine's max per page
+            
+            while True:
+                params = {
+                    "status": 3, 
+                    "include": "custom_fields",
+                    "offset": offset,
+                    "limit": limit
+                }
+                
+                response = requests.get(
+                    f"{REDMINE_URL}/users.json",
+                    headers=headers,
+                    params=params,
+                    timeout=10
+                )
 
-            if response.status_code != 200:
-                return None, f"API request failed (Status {response.status_code})"
+                if response.status_code != 200:
+                    return None, f"API request failed (Status {response.status_code})"
 
-            users = response.json().get("users", [])
+                data = response.json()
+                users = data.get("users", [])
+                all_users.extend(users)
+                
+                # Check if we've got all users
+                total_count = data.get("total_count", 0)
+                if len(all_users) >= total_count or len(users) < limit:
+                    break
+                    
+                offset += limit
+
+            # Filter users by type
             matched_users = []
-
-            for user in users:
+            for user in all_users:
                 custom_fields = user.get("custom_fields", [])
                 custom_fields_dict = {
                     field["name"]: field["value"]
@@ -801,7 +822,7 @@ class GsmbManagmentService:
             return matched_users, None
 
         except requests.exceptions.RequestException as e:
-            return None, f"Network error occurred"
+            return None, f"Network error occurred: {str(e)}"
         except Exception as e:
             return None, f"Unexpected error: {str(e)}"
         
