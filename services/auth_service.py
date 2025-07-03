@@ -541,7 +541,7 @@ class AuthService:
                 "firstname": first_name,
                 "lastname": last_name,
                 "mail": email,
-                "status": 3, 
+                "status": 1, 
                 "password": password,
                 "custom_fields": custom_fields
             }
