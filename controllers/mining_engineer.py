@@ -333,20 +333,16 @@ def update_issue_status():
         return jsonify({"error": str(e)}), 500
     
 
-@mining_enginer_bp.route('/me-meetingeShedule-licenses', methods=['GET'])
+@mining_enginer_bp.route('/meetingScheduledLicenses', methods=['GET'])
 @check_token
 @role_required(['miningEngineer'])
 def get_me_meetingeShedule_licenses():
     try:
         # Get the token from the Authorization header
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
-            return jsonify({"error": "Authorization header is missing"}), 401
+        token = request.headers.get('Authorization')
+        if not token:
+            return jsonify({"error": "token is missing"}), 401
             
-        # Split the header to get the token part (handle both "Bearer token" and just "token")
-        parts = auth_header.split()
-        token = parts[1] if len(parts) == 2 else auth_header
-        
         # Fetch Mining Licenses from the service
         mining_licenses, error = MiningEnginerService.get_me_meetingeShedule_licenses(token)
         
@@ -363,8 +359,7 @@ def get_me_meetingeShedule_licenses():
 @role_required(['miningEngineer'])
 def get_me_appointments():
     try:
-        auth_header = request.headers.get('Authorization')
-        token = auth_header.split()[1] if auth_header and ' ' in auth_header else auth_header
+        token = request.headers.get('Authorization')
         
         if not token:
             return jsonify({"error": "Authorization header missing"}), 401
@@ -508,11 +503,8 @@ def set_license_hold():
 def get_me_hold_licenses():
     try:
         # Extract token from headers
-        auth_header = request.headers.get("Authorization")
-        if not auth_header:
-            return jsonify({"error": "Authorization token is missing"}), 401
+        token = request.headers.get("Authorization")
 
-        token = auth_header.replace("Bearer ", "").strip()
         if not token:
             return jsonify({"error": "Authorization token is invalid"}), 401
 

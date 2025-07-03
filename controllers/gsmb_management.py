@@ -176,6 +176,82 @@ def unactive_gsmb_officers():
         "officers": officers,
         "count": len(officers) if officers else 0
     }), 200
+
+@gsmb_management_bp.route('/users/police', methods=['GET'])
+@check_token
+@role_required(['GSMBManagement'])
+def get_police_users():
+    token = request.headers.get("Authorization")
+    if not token:
+        return jsonify({"error": "Authorization token is required"}), 401
+
+    users, error = GsmbManagmentService.get_users_by_type(token, "police")
+    if error:
+        current_app.logger.error(f"Error fetching police users: {error}")
+        return jsonify({"error": error}), 500
+
+    return jsonify({
+        "users": users,
+        "count": len(users)
+    }), 200
+
+
+@gsmb_management_bp.route('/users/gsmb-officer', methods=['GET'])
+@check_token
+@role_required(['GSMBManagement'])
+def get_gsmb_officer_users():
+    token = request.headers.get("Authorization")
+    if not token:
+        return jsonify({"error": "Authorization token is required"}), 401
+
+    users, error = GsmbManagmentService.get_users_by_type(token, "gsmbOfficer")
+    if error:
+        current_app.logger.error(f"Error fetching GSMB officer users: {error}")
+        return jsonify({"error": error}), 500
+
+    return jsonify({
+        "users": users,
+        "count": len(users)
+    }), 200
+
+
+@gsmb_management_bp.route('/users/mining-engineer', methods=['GET'])
+@check_token
+@role_required(['GSMBManagement'])
+def get_mining_engineer_users():
+    token = request.headers.get("Authorization")
+    if not token:
+        return jsonify({"error": "Authorization token is required"}), 401
+
+    users, error = GsmbManagmentService.get_users_by_type(token, "miningEngineer")
+    if error:
+        current_app.logger.error(f"Error fetching mining engineer users: {error}")
+        return jsonify({"error": error}), 500
+
+    return jsonify({
+        "users": users,
+        "count": len(users)
+    }), 200
+
+
+@gsmb_management_bp.route('/users/ml-owner', methods=['GET'])
+@check_token
+@role_required(['GSMBManagement'])
+def get_ml_owner_users():
+    token = request.headers.get("Authorization")
+    if not token:
+        return jsonify({"error": "Authorization token is required"}), 401
+
+    users, error = GsmbManagmentService.get_active_ml_owners(token)
+    if error:
+        current_app.logger.error(f"Error fetching ML owner users: {error}")
+        return jsonify({"error": error}), 500
+
+    return jsonify({
+        "users": users,
+        "count": len(users)
+    }), 200
+
     
 
 @gsmb_management_bp.route('/active-gsmb-officers/<int:id>', methods=['PUT'])

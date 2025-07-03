@@ -4,6 +4,7 @@ import requests
 from utils.MLOUtils import MLOUtils
 from utils.jwt_utils import JWTUtils
 from utils.limit_utils import LimitUtils
+from utils.jwt_utils import JWTUtils
 from werkzeug.utils import secure_filename 
 import json
 
@@ -69,10 +70,24 @@ class MiningEnginerService:
                 return None, "Redmine URL or API Key is missing"
 
             headers = {"X-Redmine-API-Key": API_KEY}
-            params = {"project_id": 1, "tracker_id": 4, "offset": 0, "limit": 100}
+            
+            # --- Constants ---
+            TRACKER_ID = 4  # Mining License tracker
+            STATUS_ID = 26  # ME Appointment Pending
+            LIMIT = 100
+
+            offset = 0
             all_issues = []
 
+            # --- Paginated fetch ---
             while True:
+                params = {
+                    "tracker_id": TRACKER_ID,
+                    "status_id": STATUS_ID,
+                    "offset": offset,
+                    "limit": LIMIT
+                }
+
                 response = requests.get(
                     f"{REDMINE_URL}/projects/mmpro-gsmb/issues.json",
                     params=params,
@@ -86,46 +101,24 @@ class MiningEnginerService:
                 issues = data.get("issues", [])
                 all_issues.extend(issues)
 
-                if len(issues) < params["limit"]:
+                if len(issues) < LIMIT:
                     break
 
-                params["offset"] += params["limit"]
+                offset += LIMIT
 
+            # --- Process issues ---
             processed_issues = []
             for issue in all_issues:
-                if issue.get("status", {}).get("id") != 31:
-                    continue
-
                 custom_fields = {
                     field['id']: field['value']
                     for field in issue.get('custom_fields', [])
                     if str(field.get('value', '')).strip()
                 }
 
-                attachment_urls = MiningEnginerService.get_attachment_urls(
-                    API_KEY, REDMINE_URL, issue.get("custom_fields", [])
-                )
-
                 processed_issues.append({
                     "id": issue.get("id"),
-                    # "subject": issue.get("subject"),
-                    # "status": issue.get("status", {}).get("name"),
                     "assigned_to": issue.get("assigned_to", {}).get("name"),
-                    # "exploration_license_no": custom_fields.get(19),
-                    # "Land_Name": custom_fields.get(28),
-                    # "Land_owner_name": custom_fields.get(29),
-                    # "Name_of_village": custom_fields.get(30),
-                    # "Grama_Niladhari": custom_fields.get(31),
-                    # "Divisional_Secretary_Division": custom_fields.get(32),
-                    # "administrative_district": custom_fields.get(33),
-                    # "Capacity": custom_fields.get(34),
-                    # "Mobile_Numbe": custom_fields.get(66),
                     "Google_location": custom_fields.get(92),
-                    # "Detailed_Plan": int(custom_fields.get(72)),
-                    # "Payment_Receipt":int(custom_fields.get(80)),
-                    # "Deed_Plan": int(custom_fields.get(90)),
-                    # "License Boundary Survey":int(custom_fields.get(105)),
-                    # "Economic Viability Report":int(custom_fields.get(100)),
                     "mining_number": custom_fields.get(101),
                 })
 
@@ -133,6 +126,7 @@ class MiningEnginerService:
 
         except Exception as e:
             return None, f"Server error: {str(e)}"
+
 
     
     # @staticmethod
@@ -174,7 +168,7 @@ class MiningEnginerService:
 
 
     @staticmethod
-    def get_attachment_urls(api_key, redmine_url, custom_fields):
+    def get_attachment_urls(custom_fields):
         try:
             upload_field_names = {
                 "Economic Viability Report",
@@ -478,6 +472,78 @@ class MiningEnginerService:
         except Exception as e:
             return None, f"Server error: {str(e)}"
         
+    # @staticmethod
+    # def get_me_meetingeShedule_licenses(token):  
+    #     try:
+    #         REDMINE_URL = os.getenv("REDMINE_URL")
+    #         API_KEY = JWTUtils.get_api_key_from_token(token)
+
+    #         if not REDMINE_URL or not API_KEY:
+    #             return None, "Redmine URL or API Key is missing"
+
+    #         # Step 2: Define query parameters for project_id=1 and tracker_id=4 (ML)
+    #         params = {
+    #             "project_id": 1,
+    #             "tracker_id": 4,  # ML tracker ID
+    #             "status_id": 31 
+    #         }
+
+    #         headers = {
+    #             "X-Redmine-API-Key": API_KEY
+    #         }
+
+    #         # Make the Redmine request
+    #         limit = LimitUtils.get_limit()
+    #         response = requests.get(
+    #             f"{REDMINE_URL}/projects/mmpro-gsmb/issues.json?offset=0&limit={limit}",
+    #             params=params,
+    #             headers=headers
+    #         )
+
+    #         # Check if the request was successful
+    #         if response.status_code != 200:
+    #             error_msg = f"Redmine API error: {response.status_code}"
+    #             if response.text:
+    #                 error_msg += f" - {response.text[:200]}"  # Truncate long error messages
+    #             return None, error_msg
+
+    #         data = response.json()
+    #         issues = data.get("issues", [])
+
+    #         processed_issues = []
+    #         for issue in issues:
+    #             # Process custom fields using IDs
+    #             custom_fields = {field['id']: field['value']
+    #                             for field in issue.get('custom_fields', [])
+    #                             if field.get('value') and str(field.get('value')).strip()}
+
+    #             attachment_urls = MiningEnginerService.get_attachment_urls(API_KEY, REDMINE_URL, issue.get("custom_fields", []))
+
+    #             processed_issues.append({
+    #                 "id": issue.get("id"),
+    #                 "subject": issue.get("subject"),
+    #                 "status": issue.get("status", {}).get("name"),
+    #                 "assigned_to": issue.get("assigned_to", {}).get("name"),
+    #                 "exploration_license_no": custom_fields.get(19),  # ID for "Exploration Licence No"
+    #                 "Land_Name": custom_fields.get(28),  # ID for "Land Name(Licence Details)"
+    #                 "Land_owner_name": custom_fields.get(29),  # ID for "Land owner name"
+    #                 "Name_of_village": custom_fields.get(30),  # ID for "Name of village"
+    #                 "Grama_Niladhari": custom_fields.get(31),  # ID for "Grama Niladhari Division"
+    #                 "Divisional_Secretary_Division": custom_fields.get(32),  # ID for "Divisional Secretary Division"
+    #                 "administrative_district": custom_fields.get(33),  # ID for "Administrative District"
+    #                 "Capacity": custom_fields.get(34),  # ID for "Capacity"
+    #                 "Mobile_Numbe": custom_fields.get(66),  # ID for "Mobile Number"
+    #                 "Google_location": custom_fields.get(92),  # ID for "Google location"
+    #                 "Detailed_Plan": attachment_urls.get("Detailed Mine Restoration Plan") or custom_fields.get(72),  # ID for "Detailed Mine Restoration Plan"
+    #                 "Payment_Receipt": attachment_urls.get("Payment Receipt") or custom_fields.get(80),  # ID for "Payment Receipt"
+    #                 "Deed_Plan": attachment_urls.get("Deed and Survey Plan") or custom_fields.get(90),  # ID for "Deed and Survey Plan"
+    #             })
+
+    #         return processed_issues, None
+
+    #     except Exception as e:
+    #         return None, f"Server error: {str(e)}"
+    
     @staticmethod
     def get_me_meetingeShedule_licenses(token):  
         try:
@@ -487,12 +553,7 @@ class MiningEnginerService:
             if not REDMINE_URL or not API_KEY:
                 return None, "Redmine URL or API Key is missing"
 
-            # Step 1: Extract user_id from the token
-            user_id, error = MLOUtils.get_user_info_from_token(token)
-            if not user_id:
-                return None, error
-
-            # Step 2: Define query parameters for project_id=1 and tracker_id=4 (ML)
+            # Step 1: Define query parameters
             params = {
                 "project_id": 1,
                 "tracker_id": 4,  # ML tracker ID
@@ -503,15 +564,17 @@ class MiningEnginerService:
                 "X-Redmine-API-Key": API_KEY
             }
 
-            # Make the Redmine request
-            limit = LimitUtils.get_limit()
+            # ✅ Use a fixed default limit
+            limit = 100
+
+            # Step 2: Make the Redmine request
             response = requests.get(
-                f"{REDMINE_URL}/projects/mmpro-gsmb/issues.json?offset=0&limit={limit}",
-                params=params,
+                f"{REDMINE_URL}/projects/mmpro-gsmb/issues.json",
+                params={**params, "offset": 0, "limit": limit},
                 headers=headers
             )
 
-            # Check if the request was successful
+            # Step 3: Check response
             if response.status_code != 200:
                 error_msg = f"Redmine API error: {response.status_code}"
                 if response.text:
@@ -523,38 +586,42 @@ class MiningEnginerService:
 
             processed_issues = []
             for issue in issues:
-                # Process custom fields using IDs
-                custom_fields = {field['id']: field['value']
-                                for field in issue.get('custom_fields', [])
-                                if field.get('value') and str(field.get('value')).strip()}
+                # Extract custom fields by ID
+                custom_fields = {
+                    field['id']: field['value']
+                    for field in issue.get('custom_fields', [])
+                    if field.get('value') and str(field.get('value')).strip()
+                }
 
-                attachment_urls = MiningEnginerService.get_attachment_urls(API_KEY, REDMINE_URL, issue.get("custom_fields", []))
+                attachment_urls = MiningEnginerService.get_attachment_urls(
+                    API_KEY, REDMINE_URL, issue.get("custom_fields", [])
+                )
 
                 processed_issues.append({
                     "id": issue.get("id"),
                     "subject": issue.get("subject"),
                     "status": issue.get("status", {}).get("name"),
                     "assigned_to": issue.get("assigned_to", {}).get("name"),
-                    "exploration_license_no": custom_fields.get(19),  # ID for "Exploration Licence No"
-                    "Land_Name": custom_fields.get(28),  # ID for "Land Name(Licence Details)"
-                    "Land_owner_name": custom_fields.get(29),  # ID for "Land owner name"
-                    "Name_of_village": custom_fields.get(30),  # ID for "Name of village"
-                    "Grama_Niladhari": custom_fields.get(31),  # ID for "Grama Niladhari Division"
-                    "Divisional_Secretary_Division": custom_fields.get(32),  # ID for "Divisional Secretary Division"
-                    "administrative_district": custom_fields.get(33),  # ID for "Administrative District"
-                    "Capacity": custom_fields.get(34),  # ID for "Capacity"
-                    "Mobile_Numbe": custom_fields.get(66),  # ID for "Mobile Number"
-                    "Google_location": custom_fields.get(92),  # ID for "Google location"
-                    "Detailed_Plan": attachment_urls.get("Detailed Mine Restoration Plan") or custom_fields.get(72),  # ID for "Detailed Mine Restoration Plan"
-                    "Payment_Receipt": attachment_urls.get("Payment Receipt") or custom_fields.get(80),  # ID for "Payment Receipt"
-                    "Deed_Plan": attachment_urls.get("Deed and Survey Plan") or custom_fields.get(90),  # ID for "Deed and Survey Plan"
+                    "exploration_license_no": custom_fields.get(19),
+                    "Land_Name": custom_fields.get(28),
+                    "Land_owner_name": custom_fields.get(29),
+                    "Name_of_village": custom_fields.get(30),
+                    "Grama_Niladhari": custom_fields.get(31),
+                    "Divisional_Secretary_Division": custom_fields.get(32),
+                    "administrative_district": custom_fields.get(33),
+                    "Capacity": custom_fields.get(34),
+                    "Mobile_Numbe": custom_fields.get(66),
+                    "Google_location": custom_fields.get(92),
+                    "Detailed_Plan": attachment_urls.get("Detailed Mine Restoration Plan") or custom_fields.get(72),
+                    "Payment_Receipt": attachment_urls.get("Payment Receipt") or custom_fields.get(80),
+                    "Deed_Plan": attachment_urls.get("Deed and Survey Plan") or custom_fields.get(90),
                 })
 
             return processed_issues, None
 
         except Exception as e:
             return None, f"Server error: {str(e)}"
-    
+
     @staticmethod
     def get_me_appointments(token):
         """Get all ME Appointments for the current mining engineer"""
@@ -670,9 +737,7 @@ class MiningEnginerService:
                         if field.get('value') and str(field.get('value')).strip()
                     }
 
-                    attachment_urls = MiningEnginerService.get_attachment_urls(
-                        API_KEY, REDMINE_URL, issue.get("custom_fields", [])
-                    )
+                    attachment_urls = MiningEnginerService.get_attachment_urls(issue.get("custom_fields", []))
 
                     processed_issues.append({
                         "id": issue.get("id"),
@@ -856,6 +921,49 @@ class MiningEnginerService:
             return {"error": f"Server error: {str(e)}"}         
         
 
+    # @staticmethod
+    # def set_license_hold(issue_id, reason_for_hold, token):
+    #     try:
+    #         user_api_key = JWTUtils.get_api_key_from_token(token)
+    #         if not user_api_key:
+    #             return False, "Invalid or missing API key in token"
+
+    #         REDMINE_URL = os.getenv("REDMINE_URL")
+    #         if not REDMINE_URL:
+    #             return False, "Environment variable 'REDMINE_URL' is not set"
+
+    #         # 1. Get the "Hold" status ID (assuming fixed or fetch dynamically)
+    #         # You can hardcode the Hold status ID if fixed, here example 39 as per your data
+    #         hold_status_id = 39
+
+    #         # 2. Update the issue status to "Hold" and set the "Reason For Hold" custom field
+    #         update_payload = {
+    #             "issue": {
+    #                 "status_id": hold_status_id,
+    #                 "custom_fields": [
+    #                     {
+    #                         "id":106,
+    #                         "value": reason_for_hold
+    #                     }
+    #                 ]
+    #             }
+    #         }
+
+    #         response = requests.put(
+    #             f"{REDMINE_URL}/issues/{issue_id}.json",
+    #             json=update_payload,
+    #             headers={"X-Redmine-API-Key": user_api_key, "Content-Type": "application/json"}
+    #         )
+
+    #         if response.status_code not in [200, 204]:
+    #             return False, f"Failed to update issue: {response.status_code} - {response.text}"
+
+    #         return True, None
+
+    #     except Exception as e:
+    #         return False, f"Server error: {str(e)}"
+
+
     @staticmethod
     def set_license_hold(issue_id, reason_for_hold, token):
         try:
@@ -867,17 +975,14 @@ class MiningEnginerService:
             if not REDMINE_URL:
                 return False, "Environment variable 'REDMINE_URL' is not set"
 
-            # 1. Get the "Hold" status ID (assuming fixed or fetch dynamically)
-            # You can hardcode the Hold status ID if fixed, here example 39 as per your data
+            # 1. Set current issue to Hold
             hold_status_id = 39
-
-            # 2. Update the issue status to "Hold" and set the "Reason For Hold" custom field
             update_payload = {
                 "issue": {
                     "status_id": hold_status_id,
                     "custom_fields": [
                         {
-                            "id":106,
+                            "id": 106,  # Reason for hold
                             "value": reason_for_hold
                         }
                     ]
@@ -891,13 +996,53 @@ class MiningEnginerService:
             )
 
             if response.status_code not in [200, 204]:
-                return False, f"Failed to update issue: {response.status_code} - {response.text}"
+                return False, f"Failed to update license issue: {response.status_code} - {response.text}"
+
+            # 2. Construct the matching value used in MeAppointment
+            license_ref_string = f"ML Request LLL/100/{issue_id}"
+
+            # 3. Search MeAppointment issues with custom field "Mining License Number" = license_ref_string
+            search_params = {
+                "project_id": 1,
+                "tracker_id": 12,  # MeAppointment tracker ID
+                "status_id": "*",  # Get all statuses
+                "cf_101": license_ref_string  # Custom field ID 101 = "Mining License Number"
+            }
+
+            search_response = requests.get(
+                f"{REDMINE_URL}/issues.json",
+                params=search_params,
+                headers={"X-Redmine-API-Key": user_api_key}
+            )
+
+            if search_response.status_code != 200:
+                return False, f"Failed to search MeAppointment: {search_response.status_code} - {search_response.text}"
+
+            me_issues = search_response.json().get("issues", [])
+            if not me_issues:
+                return False, f"No MeAppointment issue found for license {license_ref_string}"
+
+            # 4. Close the first matched MeAppointment (assumes one-to-one)
+            me_appointment_id = me_issues[0]["id"]
+            close_payload = {
+                "issue": {
+                    "status_id": 5  # Closed
+                }
+            }
+
+            close_response = requests.put(
+                f"{REDMINE_URL}/issues/{me_appointment_id}.json",
+                json=close_payload,
+                headers={"X-Redmine-API-Key": user_api_key, "Content-Type": "application/json"}
+            )
+
+            if close_response.status_code not in [200, 204]:
+                return False, f"Failed to close MeAppointment: {close_response.status_code} - {close_response.text}"
 
             return True, None
 
         except Exception as e:
             return False, f"Server error: {str(e)}"
-
 
     
     @staticmethod
@@ -909,9 +1054,9 @@ class MiningEnginerService:
             if not REDMINE_URL or not API_KEY:
                 return None, "Redmine URL or API Key is missing"
 
-            user_id, error = MLOUtils.get_user_info_from_token(token)
-            if not user_id:
-                return None, error
+            # user_id, error = MLOUtils.get_user_info_from_token(token)
+            # if not user_id:
+            #     return None, error
 
             headers = {
                 "X-Redmine-API-Key": API_KEY
@@ -954,9 +1099,7 @@ class MiningEnginerService:
                         if field.get('value') and str(field.get('value')).strip()
                     }
 
-                    attachment_urls = MiningEnginerService.get_attachment_urls(
-                        API_KEY, REDMINE_URL, issue.get("custom_fields", [])
-                    )
+                    attachment_urls = MiningEnginerService.get_attachment_urls(issue.get("custom_fields", []))
 
                     processed_issues.append({
                         "id": issue.get("id"),
@@ -1018,7 +1161,9 @@ class MiningEnginerService:
             custom_fields = issue.get("custom_fields", [])
             custom_field_map = {field["name"]: field.get("value") for field in custom_fields}
 
-            attachments = MiningEnginerService.get_attachment_urls(api_key, REDMINE_URL, custom_fields)
+            attachments = MiningEnginerService.get_attachment_urls(custom_fields)   
+
+            print("custom_field_map:", custom_field_map)
 
             formatted_issue = {
                 "id": issue.get("id"),
@@ -1030,6 +1175,7 @@ class MiningEnginerService:
                 "land_name": custom_field_map.get("Land Name(Licence Details)"),
                 "land_owner_name": custom_field_map.get("Land owner name"),
                 "village_name": custom_field_map.get("Name of village "),
+                "google_location": custom_field_map.get("Google location "),
                 "grama_niladhari_division": custom_field_map.get("Grama Niladhari Division"),
                 "capacity": custom_field_map.get("Capacity"),
                 "used": custom_field_map.get("Used"),
@@ -1054,7 +1200,7 @@ class MiningEnginerService:
             return None, f"Server error: {str(e)}"
 
     @staticmethod
-    def get_attachment_urls(api_key, redmine_url, custom_fields):
+    def get_attachment_urls(custom_fields):
         try:
             upload_field_names = {
                 "Economic Viability Report",
