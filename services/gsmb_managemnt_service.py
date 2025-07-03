@@ -811,13 +811,12 @@ class GsmbManagmentService:
         try:
             REDMINE_URL = os.getenv("REDMINE_URL", "http://gsmb.aasait.lk")
             api_key = JWTUtils.get_api_key_from_token(token)
-            admin_api_key = os.getenv("REDMINE_ADMIN_API_KEY")
 
             if not api_key:
                 return None, "API Key is missing"
 
             headers = {
-                "X-Redmine-API-Key": admin_api_key,
+                "X-Redmine-API-Key": api_key,
                 "Content-Type": "application/json",
                 "User-Agent": "GSMB-Management-Service/1.0"
             }
