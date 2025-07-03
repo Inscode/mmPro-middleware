@@ -642,7 +642,7 @@ class MiningEnginerService:
                 "project_id": 1,
                 "tracker_id": 12,  # ME Appointment tracker
                 # "assigned_to_id": user_info["user_id"],
-                # "status_id": "open",  # Only show open appointments
+                "status_id": "open",  # Only show open appointments
                 "limit": 100
             }
 
