@@ -1278,7 +1278,7 @@ class MiningEnginerService:
                 }
 
                 attachment_urls = MiningEnginerService.get_attachment_urls(
-                    API_KEY, REDMINE_URL, issue.get("custom_fields", [])
+                     issue.get("custom_fields", [])
                 )
 
                 processed_issues.append({

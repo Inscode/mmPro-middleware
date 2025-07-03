@@ -85,6 +85,17 @@ class MLOwnerService:
                     royalty = custom_fields_dict.get("Royalty", "N/A")
                     status = issue.get("status", {}).get("name", "Unknown")
 
+                    # Check if license has expired by comparing current date with due date
+                    if due_date != "N/A":
+                        try:
+                            due_date_obj = datetime.strptime(due_date, "%Y-%m-%d").date()
+                            current_date = datetime.now().date()
+                            if current_date > due_date_obj:
+                                status = "Expired"
+                        except ValueError:
+                            # If date parsing fails, keep the original status
+                            pass
+
                     relevant_issues.append({
                         "License Number": license_number,
                         "Divisional Secretary Division": divisional_secretary,
