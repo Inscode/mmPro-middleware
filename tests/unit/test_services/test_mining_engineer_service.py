@@ -10,6 +10,15 @@ MOCK_ISSUE_ID = 123
 MOCK_API_KEY = "mocked_api_key"
 MOCK_REDMINE_URL = "http://mocked-redmine-url.com"
 
+def make_api_key():
+    return "mocked_api_key_123456"
+
+def make_user_id():
+    return 42  # or any integer ID for the user
+
+def make_token():
+    return "Bearer mocked.jwt.token"
+
 # Helper: mock environment variables
 @pytest.fixture(autouse=True)
 def set_env_vars(monkeypatch):
