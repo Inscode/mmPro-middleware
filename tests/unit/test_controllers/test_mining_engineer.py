@@ -210,25 +210,25 @@ class TestMiningEngineerController:
         assert res.status_code == 403
         assert "error" in res.json
 
-    ### --- /me-meetingeShedule-licenses [GET] --- ###
     @patch('services.mining_engineer_service.MiningEnginerService.get_me_meetingeShedule_licenses')
     def test_me_meeting_schedule_licenses_success(self, mock_service, client, valid_token):
         mock_service.return_value = (["meeting1", "meeting2"], None)
-        res = client.get('/mining-engineer/me-meetingeShedule-licenses', headers={"Authorization": valid_token})
+        res = client.get('/mining-engineer/meetingScheduledLicenses', headers={"Authorization": valid_token})
         assert res.status_code == 200
         assert res.json["success"] is True
 
     @patch('services.mining_engineer_service.MiningEnginerService.get_me_meetingeShedule_licenses')
     def test_me_meeting_schedule_licenses_service_error(self, mock_service, client, valid_token):
         mock_service.return_value = (None, "Bad request")
-        res = client.get('/mining-engineer/me-meetingeShedule-licenses', headers={"Authorization": valid_token})
+        res = client.get('/mining-engineer/meetingScheduledLicenses', headers={"Authorization": valid_token})
         assert res.status_code == 400
         assert "error" in res.json
 
-    def test_me_meeting_schedule_licenses_missing_token(self, client, valid_token):
-        res = client.get('/mining-engineer/me-meetingeShedule-licenses')
-        assert res.status_code == 403
+    def test_me_meeting_schedule_licenses_missing_token(self, client):
+        res = client.get('/mining-engineer/meetingScheduledLicenses')
+        assert res.status_code == 403  # or 401 if your decorator returns 401
         assert "error" in res.json
+
 
     ### --- /me-appointments [GET] --- ###
     @patch('services.mining_engineer_service.MiningEnginerService.get_me_appointments')
