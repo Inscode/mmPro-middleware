@@ -237,6 +237,18 @@ class MiningEnginerService:
                         {
                             "id": 94,  # ME Report
                             "value": update_data.get("me_report")
+                        },
+                        {
+                            "id": 64,  
+                            "value": update_data.get("Remaining")
+                        },
+                        {
+                            "id": 63, 
+                            "value": update_data.get("Used")
+                        },
+                         {
+                            "id": 18,  # ME Report
+                            "value": update_data.get("royalty", "")
                         }
                     ]              
                 }
