@@ -903,7 +903,7 @@ class GsmbManagmentService:
 
         
     @staticmethod
-    def activate_gsmb_officer(token,id,update_data):
+    def activate_gsmb_officer(token,id):
         try:
             REDMINE_URL = os.getenv("REDMINE_URL")
             API_KEY = JWTUtils.get_api_key_from_token(token)

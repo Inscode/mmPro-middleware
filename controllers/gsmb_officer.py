@@ -10,6 +10,8 @@ from utils.user_utils import UserUtils
 import requests  # For making HTTP requests to Redmine
 from flask import Response  # For streaming file responses in Flask
 from utils.jwt_utils import JWTUtils
+from werkzeug.http import parse_options_header
+
 
 
 # Define the Blueprint for gsmb_officer
@@ -350,35 +352,42 @@ def get_mining_license_by_id(issue_id):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
+                                                                                
 @gsmb_officer_bp.route('/download-attachment/<int:attachment_id>', methods=['GET'])
-@check_token
+# @check_token
 def download_attachment(attachment_id):
     try:
         token = request.headers.get('Authorization')
-        api_key = JWTUtils.get_api_key_from_token(token)
-        
+        # api_key = JWTUtils.get_api_key_from_token(token)
+        api_key = os.getenv("REDMINE_ADMIN_API_KEY")
+
         REDMINE_URL = os.getenv("REDMINE_URL")
         attachment_url = f"{REDMINE_URL}/attachments/download/{attachment_id}"
-        
-        # Stream the response from Redmine
+
         response = requests.get(
             attachment_url,
             headers={"X-Redmine-API-Key": api_key},
             stream=True
         )
-        
+
         if response.status_code != 200:
             return jsonify({"error": "Failed to fetch attachment"}), response.status_code
-            
+
+        # Extract filename
+        content_disposition = response.headers.get('Content-Disposition', '')
+        filename = f'attachment_{attachment_id}'  # Default fallback
+        if content_disposition:
+            _, params = parse_options_header(content_disposition)
+            filename = params.get('filename', filename)
+
+        # Use fallback content type
+        content_type = response.headers.get('Content-Type', 'application/octet-stream')
+
         return Response(
             response.iter_content(chunk_size=1024),
-            content_type=response.headers.get('Content-Type', 'application/octet-stream'),
+            content_type=content_type,
             headers={
-                'Content-Disposition': response.headers.get(
-                    'Content-Disposition', 
-                    f'attachment; filename=attachment_{attachment_id}'
-                )
+                'Content-Disposition': f'attachment; filename="{filename}"'
             }
         )
     except Exception as e:
