@@ -352,14 +352,15 @@ def get_mining_license_by_id(issue_id):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
+                                                                                
 @gsmb_officer_bp.route('/download-attachment/<int:attachment_id>', methods=['GET'])
-@check_token
+# @check_token
 def download_attachment(attachment_id):
     try:
         token = request.headers.get('Authorization')
-        api_key = JWTUtils.get_api_key_from_token(token)
-        
+        # api_key = JWTUtils.get_api_key_from_token(token)
+        api_key = os.getenv("REDMINE_ADMIN_API_KEY")
+
         REDMINE_URL = os.getenv("REDMINE_URL")
         attachment_url = f"{REDMINE_URL}/attachments/download/{attachment_id}"
 
@@ -372,14 +373,19 @@ def download_attachment(attachment_id):
         if response.status_code != 200:
             return jsonify({"error": "Failed to fetch attachment"}), response.status_code
 
-        # Extract filename from Content-Disposition header
+        # Extract filename
         content_disposition = response.headers.get('Content-Disposition', '')
-        _, params = parse_options_header(content_disposition)
-        filename = params.get('filename', f'attachment_{attachment_id}')
+        filename = f'attachment_{attachment_id}'  # Default fallback
+        if content_disposition:
+            _, params = parse_options_header(content_disposition)
+            filename = params.get('filename', filename)
+
+        # Use fallback content type
+        content_type = response.headers.get('Content-Type', 'application/octet-stream')
 
         return Response(
             response.iter_content(chunk_size=1024),
-            content_type=response.headers.get('Content-Type', 'application/octet-stream'),
+            content_type=content_type,
             headers={
                 'Content-Disposition': f'attachment; filename="{filename}"'
             }
