@@ -354,12 +354,13 @@ def get_mining_license_by_id(issue_id):
         return jsonify({"error": str(e)}), 500
                                                                                 
 @gsmb_officer_bp.route('/download-attachment/<int:attachment_id>', methods=['GET'])
-# @check_token
+@check_token
+@role_required(['GSMBOfficer'])
 def download_attachment(attachment_id):
     try:
         token = request.headers.get('Authorization')
-        # api_key = JWTUtils.get_api_key_from_token(token)
-        api_key = os.getenv("REDMINE_ADMIN_API_KEY")
+        api_key = JWTUtils.get_api_key_from_token(token)
+        # api_key = os.getenv("REDMINE_ADMIN_API_KEY")
 
         REDMINE_URL = os.getenv("REDMINE_URL")
         attachment_url = f"{REDMINE_URL}/attachments/download/{attachment_id}"
