@@ -1,7 +1,10 @@
 from flask import Blueprint, current_app, jsonify, request
 from middleware.auth_middleware import role_required,check_token
 from services.gsmb_managemnt_service import GsmbManagmentService
-
+from utils.jwt_utils import JWTUtils
+import requests
+import os
+from flask import Response
 
 gsmb_management_bp = Blueprint('gsmb_management', __name__) 
 
@@ -176,6 +179,82 @@ def unactive_gsmb_officers():
         "officers": officers,
         "count": len(officers) if officers else 0
     }), 200
+
+@gsmb_management_bp.route('/users/police', methods=['GET'])
+@check_token
+@role_required(['GSMBManagement'])
+def get_police_users():
+    token = request.headers.get("Authorization")
+    if not token:
+        return jsonify({"error": "Authorization token is required"}), 401
+
+    users, error = GsmbManagmentService.get_users_by_type(token, "police")
+    if error:
+        current_app.logger.error(f"Error fetching police users: {error}")
+        return jsonify({"error": error}), 500
+
+    return jsonify({
+        "users": users,
+        "count": len(users)
+    }), 200
+
+
+@gsmb_management_bp.route('/users/gsmb-officer', methods=['GET'])
+@check_token
+@role_required(['GSMBManagement'])
+def get_gsmb_officer_users():
+    token = request.headers.get("Authorization")
+    if not token:
+        return jsonify({"error": "Authorization token is required"}), 401
+
+    users, error = GsmbManagmentService.get_users_by_type(token, "gsmbOfficer")
+    if error:
+        current_app.logger.error(f"Error fetching GSMB officer users: {error}")
+        return jsonify({"error": error}), 500
+
+    return jsonify({
+        "users": users,
+        "count": len(users)
+    }), 200
+
+
+@gsmb_management_bp.route('/users/mining-engineer', methods=['GET'])
+@check_token
+@role_required(['GSMBManagement'])
+def get_mining_engineer_users():
+    token = request.headers.get("Authorization")
+    if not token:
+        return jsonify({"error": "Authorization token is required"}), 401
+
+    users, error = GsmbManagmentService.get_users_by_type(token, "miningEngineer")
+    if error:
+        current_app.logger.error(f"Error fetching mining engineer users: {error}")
+        return jsonify({"error": error}), 500
+
+    return jsonify({
+        "users": users,
+        "count": len(users)
+    }), 200
+
+
+@gsmb_management_bp.route('/users/ml-owner', methods=['GET'])
+@check_token
+@role_required(['GSMBManagement'])
+def get_ml_owner_users():
+    token = request.headers.get("Authorization")
+    if not token:
+        return jsonify({"error": "Authorization token is required"}), 401
+
+    users, error = GsmbManagmentService.get_active_ml_owners(token)
+    if error:
+        current_app.logger.error(f"Error fetching ML owner users: {error}")
+        return jsonify({"error": error}), 500
+
+    return jsonify({
+        "users": users,
+        "count": len(users)
+    }), 200
+
     
 
 @gsmb_management_bp.route('/active-gsmb-officers/<int:id>', methods=['PUT'])
@@ -205,3 +284,37 @@ def active_gsmb_officers(id):  # Parameter name should match the route parameter
         current_app.logger.error(f"Unexpected error in active_gsmb_officers: {str(e)}")
         return jsonify({"error": "An unexpected error occurred"}), 500
 
+
+@gsmb_management_bp.route('/download-attachment/<int:attachment_id>', methods=['GET'])
+@check_token
+@role_required(['GSMBManagement'])
+def download_attachment(attachment_id):
+    try:
+        token = request.headers.get('Authorization')
+        api_key = JWTUtils.get_api_key_from_token(token)
+        
+        REDMINE_URL = os.getenv("REDMINE_URL")
+        attachment_url = f"{REDMINE_URL}/attachments/download/{attachment_id}"
+        
+        # Stream the response from Redmine
+        response = requests.get(
+            attachment_url,
+            headers={"X-Redmine-API-Key": api_key},
+            stream=True
+        )
+        
+        if response.status_code != 200:
+            return jsonify({"error": "Failed to fetch attachment"}), response.status_code
+            
+        return Response(
+            response.iter_content(chunk_size=1024),
+            content_type=response.headers.get('Content-Type', 'application/octet-stream'),
+            headers={
+                'Content-Disposition': response.headers.get(
+                    'Content-Disposition', 
+                    f'attachment; filename=attachment_{attachment_id}'
+                )
+            }
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

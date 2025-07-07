@@ -8,7 +8,6 @@ pipeline {
         REGISTRY_CREDENTIALS = 'dockerhub-creds'
 
         // Git config
-        GIT_REPO = 'git@github.com:Inscode/mmPro-middleware.git'
         GIT_BRANCH = 'main'
         GIT_CREDENTIALS = 'git-ssh-key'
 
@@ -22,35 +21,42 @@ pipeline {
     }
 
     stages {
-        stage('Checkout Code') {
-            steps {
-                sshagent(credentials: ["${GIT_CREDENTIALS}"]) {
-                    sh "git clone -b ${GIT_BRANCH} ${GIT_REPO} app"
-                }
-                dir('app') {
-                    script {
-                        env.WORKSPACE = pwd()
+           stage('Build & Test') {
+                steps {
+                    dir('.') {
+                        sh '''#!/bin/bash -xe
+                            # Create and activate virtual environment
+                            python3 -m venv venv
+                            source venv/bin/activate
+                            
+                            # Upgrade pip and install dependencies
+                            pip install --upgrade pip
+                            pip install -r requirements.txt
+                            
+                            # Install test-specific requirements
+                            pip install pytest pytest-cov
+                            
+                            # Diagnostic output
+                            echo "PYTHONPATH: ${PYTHONPATH:-Not Set}"
+                            echo "Current directory: $(pwd)"
+                            echo "Test directory contents:"
+                            ls -l tests/
+                            
+                            # Run pytest with explicit path
+                            PYTHONPATH=$(pwd) pytest \
+                                tests/ \
+                                -v \
+                                --junitxml=test-results.xml \
+                                --cov=app \
+                                --cov-report=xml:coverage.xml || true
+                        '''
                     }
                 }
-            }
-        }
-
-        stage('Build & Test') {
-            steps {
-                dir('app') {
-                    sh '''
-                        python3 -m venv venv
-                        ./venv/bin/pip install --upgrade pip
-                        ./venv/bin/pip install -r requirements.txt
-                        ./venv/bin/python -m pytest
-                    '''
-                }
-            }
         }
 
         stage('Build Docker Image') {
             steps {
-                dir('app') {
+                dir('.') {
                     script {
                         dockerImage = docker.build("${DOCKER_HUB_REPO}:${IMAGE_TAG}")
                     }
@@ -70,7 +76,7 @@ pipeline {
 
         stage('Update Manifests') {
             steps {
-                dir('app') {
+                dir('.') {
                     sh """
                         sed -i 's|image: .*|image: ${DOCKER_HUB_REPO}:${IMAGE_TAG}|' ${DEPLOYMENT_FILE}
                         sed -i 's|targetRevision: .*|targetRevision: ${GIT_BRANCH}|' ${ARGOCD_APP_FILE}
@@ -81,14 +87,23 @@ pipeline {
 
         stage('Commit & Push Changes') {
             steps {
-                dir('app') {
+                dir('.') {
                     sshagent(credentials: ["${GIT_CREDENTIALS}"]) {
                         sh '''
-                            git config user.name "achintha aasait"
-                            git config user.email "achintha@gmail.com"
+                            git config user.name "Inscode"
+                            git config user.email "insaf.ahmedh@gmail.com"
+                            git remote set-url origin git@github.com:Inscode/mmPro-middleware.git
+                            
+                            # Discard all local changes
+                            git reset --hard
+                            
+                            # Force sync with remote
+                            git fetch origin main
+                            git checkout -B main origin/main
+                            
                             git add ${DEPLOYMENT_FILE} ${ARGOCD_APP_FILE}
                             git commit -m "[CI] Update to ${DOCKER_HUB_REPO}:${IMAGE_TAG}" || echo "No changes to commit"
-                            git push origin ${GIT_BRANCH}
+                            git push origin main
                         '''
                     }
                 }
