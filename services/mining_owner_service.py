@@ -468,7 +468,7 @@ class MLOwnerService:
                 headers = {
                     "User-Agent": "MiningLicenseTPL/1.0 (it-support@miningcompany.com)"  # <-- important for Nominatim usage policy
                 }
-                response_first = requests.get(url, headers=headers, timeout=1)
+                response_first = requests.get(url, headers=headers, timeout=5)
                 
                 if response_first.status_code != 200:
                     raise ValueError(f"Geocoding failed with status code {response_first.status_code}, body: {response_first.text}")
