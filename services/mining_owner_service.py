@@ -1390,6 +1390,23 @@ class MLOwnerService:
                                 summary["start_date"] = t_issue.get("start_date")
                                 break  # stop after first match
 
+                elif issue.get("status", {}).get("id") == 34 and mining_license_no:
+                    tracker11_url = f"{REDMINE_URL}/issues.json?tracker_id=11&project_id=1"
+                    tracker_response = requests.get(
+                        tracker11_url,
+                        headers={"X-Redmine-API-Key": user_api_key, "Content-Type": "application/json"}
+                    )
+
+                    if tracker_response.status_code == 200:
+                        tracker_issues = tracker_response.json().get("issues", [])
+                        for t_issue in tracker_issues:
+                            t_fields = t_issue.get("custom_fields", [])
+                            t_license_no = MLOwnerService.get_custom_field_value(t_fields, "Mining License Number")
+                            if t_license_no == mining_license_no:
+                                summary["start_date"] = t_issue.get("start_date")
+                                summary["GSMB_physical_meetinglocation"] = MLOwnerService.get_custom_field_value(t_fields, "GSMB physical meeting location")
+                                break  # stop after first match  
+
                 license_summaries.append(summary)
 
             return license_summaries, None
