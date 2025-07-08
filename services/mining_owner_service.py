@@ -1332,6 +1332,7 @@ class MLOwnerService:
             if not REDMINE_URL:
                 return None, "Environment variable 'REDMINE_URL' is not set"
 
+            # Get issues from tracker_id 4 (Mining License)
             ml_issues_url = f"{REDMINE_URL}/issues.json?tracker_id=4&project_id=1&status_id=!7"
             response = requests.get(
                 ml_issues_url,
@@ -1342,27 +1343,44 @@ class MLOwnerService:
                 return None, f"Failed to fetch ML issues: {response.status_code} - {response.text}"
 
             issues = response.json().get("issues", [])
-
             license_summaries = []
 
             for issue in issues:
                 assigned_to = issue.get("assigned_to", {})
                 assigned_to_id = assigned_to.get("id")
 
-                # Filter: only include issues assigned to current user
+                # Only include issues assigned to current user
                 if assigned_to_id != user_id:
                     continue
 
                 custom_fields = issue.get("custom_fields", [])
-
                 mining_license_no = MLOwnerService.get_custom_field_value(custom_fields, "Mining License Number")
 
-                license_summaries.append({
+                summary = {
                     "mining_license_number": mining_license_no,
                     "created_on": issue.get("created_on"),
                     "updated_on": issue.get("updated_on"),
                     "status": issue.get("status", {}).get("name")
-                })
+                }
+
+                # If status ID = 31, check tracker_id=12 for matching Mining License Number
+                if issue.get("status", {}).get("id") == 31 and mining_license_no:
+                    tracker12_url = f"{REDMINE_URL}/issues.json?tracker_id=12&project_id=1"
+                    tracker_response = requests.get(
+                        tracker12_url,
+                        headers={"X-Redmine-API-Key": user_api_key, "Content-Type": "application/json"}
+                    )
+
+                    if tracker_response.status_code == 200:
+                        tracker_issues = tracker_response.json().get("issues", [])
+                        for t_issue in tracker_issues:
+                            t_fields = t_issue.get("custom_fields", [])
+                            t_license_no = MLOwnerService.get_custom_field_value(t_fields, "Mining License Number")
+                            if t_license_no == mining_license_no:
+                                summary["start_date"] = t_issue.get("start_date")
+                                break  # stop after first match
+
+                license_summaries.append(summary)
 
             return license_summaries, None
 
