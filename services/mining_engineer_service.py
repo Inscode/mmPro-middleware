@@ -1037,7 +1037,7 @@ class MiningEnginerService:
             search_params = {
                 "project_id": 1,
                 "tracker_id": 12,  # MeAppointment tracker ID
-                "status_id": "*",  # Get all statuses
+                "status_id": 31,  # Get all statuses
                 "cf_101": license_ref_string  # Custom field ID 101 = "Mining License Number"
             }
 
@@ -1055,7 +1055,12 @@ class MiningEnginerService:
                 return False, f"No MeAppointment issue found for license {license_ref_string}"
 
             # 4. Close the first matched MeAppointment (assumes one-to-one)
+
+            print("me issues", me_issues)
             me_appointment_id = me_issues[0]["id"]
+
+            print("me appointment id", me_appointment_id)
+
             close_payload = {
                 "issue": {
                     "status_id": 5  # Closed

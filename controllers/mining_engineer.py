@@ -454,11 +454,11 @@ def get_me_approve_single_license(issue_id):
 @role_required(['miningEngineer'])
 def get_me_licenses_count():
     try:
-        # Get the token from the Authorization header
-        token = request.headers.get('Authorization')
+        auth_header = request.headers.get('Authorization')
+        token = auth_header.split()[1] if auth_header and ' ' in auth_header else auth_header
+        
         if not token:
-            return jsonify({"error": "token is missing"}), 401
-            
+            return jsonify({"error": "Authorization header missing"}), 401
         # Fetch Mining Licenses from the service
         mining_licenses, error = MiningEnginerService.get_me_licenses_count(token)
         
