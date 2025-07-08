@@ -1,7 +1,10 @@
 from flask import Blueprint, current_app, jsonify, request
 from middleware.auth_middleware import role_required,check_token
 from services.gsmb_managemnt_service import GsmbManagmentService
-
+from utils.jwt_utils import JWTUtils
+import requests
+import os
+from flask import Response
 
 gsmb_management_bp = Blueprint('gsmb_management', __name__) 
 
@@ -264,7 +267,7 @@ def active_gsmb_officers(id):  # Parameter name should match the route parameter
 
     try:
         # Activate the officer by changing status from 3 to 1
-        success, error = GsmbManagmentService.activate_gsmb_officer(token, id, {"status": 1})
+        success, error = GsmbManagmentService.activate_gsmb_officer(token, id)
         
         if error:
             current_app.logger.error(f"Error activating GSMB officer {id}: {error}")
@@ -281,3 +284,37 @@ def active_gsmb_officers(id):  # Parameter name should match the route parameter
         current_app.logger.error(f"Unexpected error in active_gsmb_officers: {str(e)}")
         return jsonify({"error": "An unexpected error occurred"}), 500
 
+
+@gsmb_management_bp.route('/download-attachment/<int:attachment_id>', methods=['GET'])
+@check_token
+@role_required(['GSMBManagement'])
+def download_attachment(attachment_id):
+    try:
+        token = request.headers.get('Authorization')
+        api_key = JWTUtils.get_api_key_from_token(token)
+        
+        REDMINE_URL = os.getenv("REDMINE_URL")
+        attachment_url = f"{REDMINE_URL}/attachments/download/{attachment_id}"
+        
+        # Stream the response from Redmine
+        response = requests.get(
+            attachment_url,
+            headers={"X-Redmine-API-Key": api_key},
+            stream=True
+        )
+        
+        if response.status_code != 200:
+            return jsonify({"error": "Failed to fetch attachment"}), response.status_code
+            
+        return Response(
+            response.iter_content(chunk_size=1024),
+            content_type=response.headers.get('Content-Type', 'application/octet-stream'),
+            headers={
+                'Content-Disposition': response.headers.get(
+                    'Content-Disposition', 
+                    f'attachment; filename=attachment_{attachment_id}'
+                )
+            }
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

@@ -565,40 +565,47 @@ class MiningEnginerService:
             if not REDMINE_URL or not API_KEY:
                 return None, "Redmine URL or API Key is missing"
 
-            # Step 1: Define query parameters
+            # Query parameters for Redmine
             params = {
                 "project_id": 1,
                 "tracker_id": 4,  # ML tracker ID
-                "status_id": 31 
+                "status_id": 31   # Scheduled status
             }
 
             headers = {
                 "X-Redmine-API-Key": API_KEY
             }
 
-            # ✅ Use a fixed default limit
+            all_issues = []
+            offset = 0
             limit = 100
 
-            # Step 2: Make the Redmine request
-            response = requests.get(
-                f"{REDMINE_URL}/projects/mmpro-gsmb/issues.json",
-                params={**params, "offset": 0, "limit": limit},
-                headers=headers
-            )
+            while True:
+                response = requests.get(
+                    f"{REDMINE_URL}/projects/mmpro-gsmb/issues.json",
+                    params={**params, "offset": offset, "limit": limit},
+                    headers=headers
+                )
 
-            # Step 3: Check response
-            if response.status_code != 200:
-                error_msg = f"Redmine API error: {response.status_code}"
-                if response.text:
-                    error_msg += f" - {response.text[:200]}"  # Truncate long error messages
-                return None, error_msg
+                if response.status_code != 200:
+                    error_msg = f"Redmine API error: {response.status_code}"
+                    if response.text:
+                        error_msg += f" - {response.text[:200]}"
+                    return None, error_msg
 
-            data = response.json()
-            issues = data.get("issues", [])
+                data = response.json()
+                issues = data.get("issues", [])
+                total_count = data.get("total_count", 0)
+
+                all_issues.extend(issues)
+
+                if offset + limit >= total_count:
+                    break
+
+                offset += limit
 
             processed_issues = []
-            for issue in issues:
-                # Extract custom fields by ID
+            for issue in all_issues:
                 custom_fields = {
                     field['id']: field['value']
                     for field in issue.get('custom_fields', [])
@@ -606,7 +613,7 @@ class MiningEnginerService:
                 }
 
                 attachment_urls = MiningEnginerService.get_attachment_urls(
-                    API_KEY, REDMINE_URL, issue.get("custom_fields", [])
+                    issue.get("custom_fields", [])
                 )
 
                 processed_issues.append({
@@ -654,8 +661,10 @@ class MiningEnginerService:
                 "project_id": 1,
                 "tracker_id": 12,  # ME Appointment tracker
                 # "assigned_to_id": user_info["user_id"],
-                # "status_id": "open",  # Only show open appointments
-                "offset": 0
+
+                "status_id": "open",  # Only show open appointments
+                "limit": 100
+
             }
 
             appointments = []

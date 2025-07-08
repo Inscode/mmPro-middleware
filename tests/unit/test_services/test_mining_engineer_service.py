@@ -10,6 +10,15 @@ MOCK_ISSUE_ID = 123
 MOCK_API_KEY = "mocked_api_key"
 MOCK_REDMINE_URL = "http://mocked-redmine-url.com"
 
+def make_api_key():
+    return "mocked_api_key_123456"
+
+def make_user_id():
+    return 42  # or any integer ID for the user
+
+def make_token():
+    return "Bearer mocked.jwt.token"
+
 # Helper: mock environment variables
 @pytest.fixture(autouse=True)
 def set_env_vars(monkeypatch):
@@ -119,7 +128,7 @@ def test_get_attachment_urls_success():
         {"name": "Payment Receipt", "value": "30"},
     ]
 
-    urls = MiningEnginerService.get_attachment_urls("fake_key", "http://fake-redmine.com", custom_fields)
+    urls = MiningEnginerService.get_attachment_urls(custom_fields)
 
     assert urls["Detailed Mine Restoration Plan"] == 10
     assert urls["Deed and Survey Plan"] == 20
@@ -502,26 +511,38 @@ def test_get_me_licenses_count_success(mock_get_api_key, mock_get_user_info, moc
 
 
 @patch("services.mining_engineer_service.requests.put")
-def test_set_license_hold_success(mock_put):
-    mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_put.return_value = mock_response
+@patch("services.mining_engineer_service.requests.get")
+@patch("services.mining_engineer_service.requests.put")
+def test_set_license_hold_success(mock_put_close, mock_get, mock_put_hold):
+    # 1. Mock first PUT to set status to Hold
+    mock_put_hold.return_value = MagicMock(status_code=200)
+
+    # 2. Mock GET to return one MeAppointment issue
+    mock_get_response = MagicMock(status_code=200)
+    mock_get_response.json.return_value = {
+        "issues": [{"id": 9999}]
+    }
+    mock_get.return_value = mock_get_response
+
+    # 3. Mock second PUT to close MeAppointment
+    mock_put_close.return_value = MagicMock(status_code=200)
 
     success, error = MiningEnginerService.set_license_hold(MOCK_ISSUE_ID, "Reason for hold", MOCK_TOKEN)
     assert success is True
     assert error is None
 
 
+
 @patch("services.mining_engineer_service.requests.put")
 def test_set_license_hold_fail(mock_put):
-    mock_response = MagicMock()
-    mock_response.status_code = 400
+    # First PUT fails with 400
+    mock_response = MagicMock(status_code=400)
     mock_response.text = "Bad Request"
     mock_put.return_value = mock_response
 
     success, error = MiningEnginerService.set_license_hold(MOCK_ISSUE_ID, "Reason for hold", MOCK_TOKEN)
     assert success is False
-    assert "Failed to update issue" in error
+    assert "Failed to update license issue" in error
 
 
 @patch("services.mining_engineer_service.requests.get")

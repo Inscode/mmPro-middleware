@@ -267,6 +267,16 @@ class MLOwnerService:
                                 field["name"]: field["value"] for field in custom_fields
                             }
 
+                            remaining_str = custom_fields_dict.get("Remaining", "0")
+                            try:
+                                remaining_cubes = int(remaining_str.strip()) if remaining_str.strip() else 0
+                            except ValueError:
+                                remaining_cubes = 0
+
+                            # ✅ Filter out zero remaining cubes
+                            if remaining_cubes == 0:
+                                continue
+
                             owner_name = assigned_to.get("name", "N/A")
                             license_number = custom_fields_dict.get("Mining License Number", "N/A")
                             divisional_secretary = custom_fields_dict.get("Divisional Secretary Division", "N/A")
@@ -479,7 +489,7 @@ class MLOwnerService:
                 headers = {
                     "User-Agent": "MiningLicenseTPL/1.0 (it-support@miningcompany.com)"  # <-- important for Nominatim usage policy
                 }
-                response_first = requests.get(url, headers=headers, timeout=1)
+                response_first = requests.get(url, headers=headers, timeout=5)
                 
                 if response_first.status_code != 200:
                     raise ValueError(f"Geocoding failed with status code {response_first.status_code}, body: {response_first.text}")
