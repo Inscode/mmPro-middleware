@@ -237,6 +237,18 @@ class MiningEnginerService:
                         {
                             "id": 94,  # ME Report
                             "value": update_data.get("me_report")
+                        },
+                        {
+                            "id": 64,  
+                            "value": update_data.get("Remaining")
+                        },
+                        {
+                            "id": 63, 
+                            "value": update_data.get("Used")
+                        },
+                         {
+                            "id": 18,  # ME Report
+                            "value": update_data.get("royalty", "")
                         }
                     ]              
                 }
@@ -649,39 +661,52 @@ class MiningEnginerService:
                 "project_id": 1,
                 "tracker_id": 12,  # ME Appointment tracker
                 # "assigned_to_id": user_info["user_id"],
-                # "status_id": "open",  # Only show open appointments
+
+                "status_id": "open",  # Only show open appointments
                 "limit": 100
+
             }
 
-            response = requests.get(
-                f"{REDMINE_URL}/issues.json",
-                headers={"X-Redmine-API-Key": api_key},
-                params=params,
-                timeout=30
-            )
-
-            if response.status_code != 200:
-                return {"error": f"Redmine API error: {response.status_code}"}
-
             appointments = []
-            for issue in response.json().get("issues", []):
-                appointments.append({
-                    "id": issue.get("id"),
-                    "subject": issue.get("subject"),
-                    "start_date": issue.get("start_date"),
-                    "status": issue.get("status", {}).get("name"),
-                    "assigned_to": issue.get("assigned_to", {}).get("name"),
-                    "Google_location": next(
-                        (cf["value"] for cf in issue.get("custom_fields", []) 
-                        if cf.get("id") == 92),
-                        None
-                    ),
-                    "mining_number": next(
-                        (cf["value"] for cf in issue.get("custom_fields", []) 
-                        if cf.get("id") == 101),
-                        None
-                    )
-                })
+            while True:
+                response = requests.get(
+                    f"{REDMINE_URL}/issues.json",
+                    headers={"X-Redmine-API-Key": api_key},
+                    params=params
+                )
+
+                if response.status_code != 200:
+                    return {"error": f"Redmine API error: {response.status_code}"}
+
+                data = response.json()
+                issues = data.get("issues", [])
+                
+                for issue in issues:
+                    appointments.append({
+                        "id": issue.get("id"),
+                        "subject": issue.get("subject"),
+                        "start_date": issue.get("start_date"),
+                        "status": issue.get("status", {}).get("name"),
+                        "assigned_to": issue.get("assigned_to", {}).get("name"),
+                        "Google_location": next(
+                            (cf["value"] for cf in issue.get("custom_fields", []) 
+                            if cf.get("id") == 92),
+                            None
+                        ),
+                        "mining_number": next(
+                            (cf["value"] for cf in issue.get("custom_fields", []) 
+                            if cf.get("id") == 101),
+                            None
+                        )
+                    })
+
+                # Check if we've fetched all issues
+                total_count = data.get("total_count", 0)
+                if len(appointments) >= total_count:
+                    break
+                
+                # Move to the next page
+                params["offset"] += len(issues)  # Use actual number of issues returned
 
             return {"appointments": appointments}
 
@@ -1285,7 +1310,7 @@ class MiningEnginerService:
                 }
 
                 attachment_urls = MiningEnginerService.get_attachment_urls(
-                    API_KEY, REDMINE_URL, issue.get("custom_fields", [])
+                     issue.get("custom_fields", [])
                 )
 
                 processed_issues.append({

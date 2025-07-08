@@ -214,14 +214,18 @@ def miningEngineer_approve(me_appointment_issue_id):
         # Upload the file to Redmine and get the file ID
         me_report_file_id = AuthService.upload_file_to_redmine(me_report_file) if me_report_file else None
 
-
+        # Get capacity value first to use for remaining
+        capacity_value = request.form.get("Capacity", "")
 
         # Get form data (not JSON)
         update_data = {
             "status_id": request.form.get("status_id", 32),
+            "Remaining": request.form.get("Remaining", capacity_value),
+            "Used": request.form.get("Used", 0),
+            "royalty": request.form.get("royalty", 5000),
             "start_date": request.form.get("start_date", ""),
             "due_date": request.form.get("due_date", ""),
-            "Capacity": request.form.get("Capacity", ""),
+            "Capacity": capacity_value,
             "month_capacity": request.form.get("month_capacity", ""),
             "me_comment": request.form.get("me_comment", ""),
             "me_report":me_report_file_id
