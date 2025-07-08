@@ -7,6 +7,7 @@ from utils.limit_utils import LimitUtils
 from utils.jwt_utils import JWTUtils
 from werkzeug.utils import secure_filename 
 import json
+from utils.jwt_utils import JWTUtils
 
 
 load_dotenv()
@@ -382,9 +383,15 @@ class MiningEnginerService:
             if not api_key:
                 return None, "Invalid API token"
 
-            user_Id, error = MLOUtils.get_user_info_from_token(token)
-            if not user_Id:
-                return None, f"User info error: {error}"
+            result = JWTUtils.decode_jwt_and_get_user_id(token)
+
+            if not result['success']:
+                return None, result['message']
+
+            user_id = result['user_id']
+
+
+            print(f"User ID extracted from token: {user_id}")  # Debugging: Print user ID
 
             # 3. Extract ML issue ID from license number (format: LLL/100/206)
             try:
@@ -400,7 +407,7 @@ class MiningEnginerService:
                     "status_id": 31,   # ME Appointment Scheduled
                     "subject": f"Site Visit for Mining License {mining_license_number}",
                     "start_date": start_date,
-                    "assigned_to_id": user_Id,
+                    "assigned_to_id": user_id,
                     "custom_fields": [
                         {
                             "id": 101,  # Mining License Number field
