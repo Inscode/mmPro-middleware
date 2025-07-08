@@ -7,6 +7,7 @@ from utils.limit_utils import LimitUtils
 from utils.jwt_utils import JWTUtils
 from werkzeug.utils import secure_filename 
 import json
+from utils.jwt_utils import JWTUtils
 
 
 load_dotenv()
@@ -382,9 +383,15 @@ class MiningEnginerService:
             if not api_key:
                 return None, "Invalid API token"
 
-            user_Id, error = MLOUtils.get_user_info_from_token(token)
-            if not user_Id:
-                return None, f"User info error: {error}"
+            result = JWTUtils.decode_jwt_and_get_user_id(token)
+
+            if not result['success']:
+                return None, result['message']
+
+            user_id = result['user_id']
+
+
+            print(f"User ID extracted from token: {user_id}")  # Debugging: Print user ID
 
             # 3. Extract ML issue ID from license number (format: LLL/100/206)
             try:
@@ -400,7 +407,7 @@ class MiningEnginerService:
                     "status_id": 31,   # ME Appointment Scheduled
                     "subject": f"Site Visit for Mining License {mining_license_number}",
                     "start_date": start_date,
-                    "assigned_to_id": user_Id,
+                    "assigned_to_id": user_id,
                     "custom_fields": [
                         {
                             "id": 101,  # Mining License Number field
@@ -565,40 +572,47 @@ class MiningEnginerService:
             if not REDMINE_URL or not API_KEY:
                 return None, "Redmine URL or API Key is missing"
 
-            # Step 1: Define query parameters
+            # Query parameters for Redmine
             params = {
                 "project_id": 1,
                 "tracker_id": 4,  # ML tracker ID
-                "status_id": 31 
+                "status_id": 31   # Scheduled status
             }
 
             headers = {
                 "X-Redmine-API-Key": API_KEY
             }
 
-            # ✅ Use a fixed default limit
+            all_issues = []
+            offset = 0
             limit = 100
 
-            # Step 2: Make the Redmine request
-            response = requests.get(
-                f"{REDMINE_URL}/projects/mmpro-gsmb/issues.json",
-                params={**params, "offset": 0, "limit": limit},
-                headers=headers
-            )
+            while True:
+                response = requests.get(
+                    f"{REDMINE_URL}/projects/mmpro-gsmb/issues.json",
+                    params={**params, "offset": offset, "limit": limit},
+                    headers=headers
+                )
 
-            # Step 3: Check response
-            if response.status_code != 200:
-                error_msg = f"Redmine API error: {response.status_code}"
-                if response.text:
-                    error_msg += f" - {response.text[:200]}"  # Truncate long error messages
-                return None, error_msg
+                if response.status_code != 200:
+                    error_msg = f"Redmine API error: {response.status_code}"
+                    if response.text:
+                        error_msg += f" - {response.text[:200]}"
+                    return None, error_msg
 
-            data = response.json()
-            issues = data.get("issues", [])
+                data = response.json()
+                issues = data.get("issues", [])
+                total_count = data.get("total_count", 0)
+
+                all_issues.extend(issues)
+
+                if offset + limit >= total_count:
+                    break
+
+                offset += limit
 
             processed_issues = []
-            for issue in issues:
-                # Extract custom fields by ID
+            for issue in all_issues:
                 custom_fields = {
                     field['id']: field['value']
                     for field in issue.get('custom_fields', [])
@@ -606,7 +620,7 @@ class MiningEnginerService:
                 }
 
                 attachment_urls = MiningEnginerService.get_attachment_urls(
-                    API_KEY, REDMINE_URL, issue.get("custom_fields", [])
+                    issue.get("custom_fields", [])
                 )
 
                 processed_issues.append({
@@ -654,39 +668,52 @@ class MiningEnginerService:
                 "project_id": 1,
                 "tracker_id": 12,  # ME Appointment tracker
                 # "assigned_to_id": user_info["user_id"],
+
                 "status_id": "open",  # Only show open appointments
                 "limit": 100
+
             }
 
-            response = requests.get(
-                f"{REDMINE_URL}/issues.json",
-                headers={"X-Redmine-API-Key": api_key},
-                params=params,
-                timeout=30
-            )
-
-            if response.status_code != 200:
-                return {"error": f"Redmine API error: {response.status_code}"}
-
             appointments = []
-            for issue in response.json().get("issues", []):
-                appointments.append({
-                    "id": issue.get("id"),
-                    "subject": issue.get("subject"),
-                    "start_date": issue.get("start_date"),
-                    "status": issue.get("status", {}).get("name"),
-                    "assigned_to": issue.get("assigned_to", {}).get("name"),
-                    "Google_location": next(
-                        (cf["value"] for cf in issue.get("custom_fields", []) 
-                        if cf.get("id") == 92),
-                        None
-                    ),
-                    "mining_number": next(
-                        (cf["value"] for cf in issue.get("custom_fields", []) 
-                        if cf.get("id") == 101),
-                        None
-                    )
-                })
+            while True:
+                response = requests.get(
+                    f"{REDMINE_URL}/issues.json",
+                    headers={"X-Redmine-API-Key": api_key},
+                    params=params
+                )
+
+                if response.status_code != 200:
+                    return {"error": f"Redmine API error: {response.status_code}"}
+
+                data = response.json()
+                issues = data.get("issues", [])
+                
+                for issue in issues:
+                    appointments.append({
+                        "id": issue.get("id"),
+                        "subject": issue.get("subject"),
+                        "start_date": issue.get("start_date"),
+                        "status": issue.get("status", {}).get("name"),
+                        "assigned_to": issue.get("assigned_to", {}).get("name"),
+                        "Google_location": next(
+                            (cf["value"] for cf in issue.get("custom_fields", []) 
+                            if cf.get("id") == 92),
+                            None
+                        ),
+                        "mining_number": next(
+                            (cf["value"] for cf in issue.get("custom_fields", []) 
+                            if cf.get("id") == 101),
+                            None
+                        )
+                    })
+
+                # Check if we've fetched all issues
+                total_count = data.get("total_count", 0)
+                if len(appointments) >= total_count:
+                    break
+                
+                # Move to the next page
+                params["offset"] += len(issues)  # Use actual number of issues returned
 
             return {"appointments": appointments}
 
@@ -1017,7 +1044,7 @@ class MiningEnginerService:
             search_params = {
                 "project_id": 1,
                 "tracker_id": 12,  # MeAppointment tracker ID
-                "status_id": "*",  # Get all statuses
+                "status_id": 31,  # Get all statuses
                 "cf_101": license_ref_string  # Custom field ID 101 = "Mining License Number"
             }
 
@@ -1035,7 +1062,12 @@ class MiningEnginerService:
                 return False, f"No MeAppointment issue found for license {license_ref_string}"
 
             # 4. Close the first matched MeAppointment (assumes one-to-one)
+
+            print("me issues", me_issues)
             me_appointment_id = me_issues[0]["id"]
+
+            print("me appointment id", me_appointment_id)
+
             close_payload = {
                 "issue": {
                     "status_id": 5  # Closed

@@ -147,11 +147,10 @@ def download_attachment(attachment_id):
 def create_ml_appointment():
     try:
         # 1. Extract token
-        auth_header = request.headers.get('Authorization')
-        token = auth_header.split()[1] if auth_header and ' ' in auth_header else auth_header
+        token = request.headers.get('Authorization')
         
         if not token:
-            return jsonify({"error": "Authorization header missing"}), 401
+            return jsonify({"error": "Token is missing"}), 401
 
         # 2. Validate input
         data = request.get_json()
@@ -455,15 +454,11 @@ def get_me_approve_single_license(issue_id):
 @role_required(['miningEngineer'])
 def get_me_licenses_count():
     try:
-        # Get the token from the Authorization header
         auth_header = request.headers.get('Authorization')
-        if not auth_header:
-            return jsonify({"error": "Authorization header is missing"}), 401
-            
-        # Split the header to get the token part (handle both "Bearer token" and just "token")
-        parts = auth_header.split()
-        token = parts[1] if len(parts) == 2 else auth_header
+        token = auth_header.split()[1] if auth_header and ' ' in auth_header else auth_header
         
+        if not token:
+            return jsonify({"error": "Authorization header missing"}), 401
         # Fetch Mining Licenses from the service
         mining_licenses, error = MiningEnginerService.get_me_licenses_count(token)
         

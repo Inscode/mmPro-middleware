@@ -267,7 +267,7 @@ def active_gsmb_officers(id):  # Parameter name should match the route parameter
 
     try:
         # Activate the officer by changing status from 3 to 1
-        success, error = GsmbManagmentService.activate_gsmb_officer(token, id, {"status": 1})
+        success, error = GsmbManagmentService.activate_gsmb_officer(token, id)
         
         if error:
             current_app.logger.error(f"Error activating GSMB officer {id}: {error}")
