@@ -83,17 +83,16 @@ class JWTUtils:
 
 
     @staticmethod
-    def create_access_token(user_id, user_role, api_key):
+    def create_access_token(user_id, user_role):
         """
         Generate a short-lived access token.
         """
-        encrypted_api_key = JWTUtils.cipher.encrypt(api_key.encode()).decode()
+        # encrypted_api_key = JWTUtils.cipher.encrypt(api_key.encode()).decode()
 
         access_token_exp = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=15)
         access_payload = {
             'user_id': user_id,
             'role': user_role,
-            'api_key': encrypted_api_key,
             'exp': access_token_exp
         }
 

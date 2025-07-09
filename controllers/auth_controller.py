@@ -101,9 +101,9 @@ def refresh_token():
       
         user_role = decoded_payload["role"]
        
-        api_key = UserUtils.get_user_api_key(user_id)
+        # api_key = UserUtils.get_user_api_key(user_id)
        
-        new_access_token = JWTUtils.create_access_token(user_id, user_role, api_key)
+        new_access_token = JWTUtils.create_access_token(user_id, user_role)
 
         return jsonify({
             'access_token': new_access_token  
