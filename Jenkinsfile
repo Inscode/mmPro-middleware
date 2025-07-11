@@ -16,7 +16,7 @@ pipeline {
         ARGOCD_APP_FILE = 'k8s/argocd-app.yaml'
 
         // ArgoCD config
-        ARGOCD_SERVER = 'argocd.aasait.lk'
+        ARGOCD_SERVER = '124.43.163.209'
         ARGOCD_APP_NAME = 'mmpro-application'
     }
 
