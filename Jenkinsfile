@@ -113,13 +113,15 @@ pipeline {
         stage('Trigger ArgoCD Sync') {
             steps {
                 withCredentials([string(credentialsId: 'argocd-api-token', variable: 'ARGOCD_TOKEN')]) {
-                    sh '''
+                     sh '''
                         curl -sS -X POST \
                         -H "Authorization: Bearer ${ARGOCD_TOKEN}" \
                         -H "Content-Type: application/json" \
+                        --insecure \
                         --data '{}' \
                         https://${ARGOCD_SERVER}/api/v1/applications/${ARGOCD_APP_NAME}/sync
                     '''
+
                 }
             }
         }
