@@ -12,8 +12,8 @@ pipeline {
         GIT_CREDENTIALS = 'git-ssh-key'
 
         // K8s manifest files
-        DEPLOYMENT_FILE = 'deployment.yaml'
-        ARGOCD_APP_FILE = 'argocd-app.yaml'
+        DEPLOYMENT_FILE = 'k8s/deployment.yaml'
+        ARGOCD_APP_FILE = 'k8s/argocd-app.yaml'
 
         // ArgoCD config
         ARGOCD_SERVER = 'argocd.aasait.lk'
