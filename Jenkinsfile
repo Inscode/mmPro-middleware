@@ -88,20 +88,24 @@ pipeline {
         stage('Commit & Push Changes') {
             steps {
                 dir('.') {
-                  sshagent(credentials: ['Mmpro-Git']) {
+                    sshagent(credentials: ["${GIT_CREDENTIALS}"]) {
                         sh '''
-                            git config user.email "achinthamihiran654@gmail.com"
-                            git config user.name "MihiranWijesekara"
+                            git config user.name "Inscode"
+                            git config user.email "insaf.ahmedh@gmail.com"
+                            git remote set-url origin git@github.com:Inscode/mmPro-middleware.git
                             
-                            # ✅ Set SSH URL (fixes the fatal error)
-                            git remote set-url origin git@github.com:MihiranWijesekara/mmPro-frontend.git
-
+                            # Discard all local changes
+                            git reset --hard
+                            
+                            # Force sync with remote
+                            git fetch origin main
+                            git checkout -B main origin/main
+                            
                             git add ${DEPLOYMENT_FILE} ${ARGOCD_APP_FILE}
-                            git commit -m "🔄 Update image tag to ${IMAGE_TAG}" || echo "No changes to commit"
-                            git push origin master
+                            git commit -m "[CI] Update to ${DOCKER_HUB_REPO}:${IMAGE_TAG}" || echo "No changes to commit"
+                            git push origin main
                         '''
                     }
-
                 }
             }
         }
