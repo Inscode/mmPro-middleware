@@ -5,7 +5,7 @@ from services.auth_service import AuthService
 from services.mining_owner_service import MLOwnerService
 from utils.jwt_utils import JWTUtils
 from utils.user_utils import UserUtils
-from hashlib import md5
+from hashlib import sha256
 import time
 import requests
 
@@ -355,12 +355,12 @@ def handle_payhere_ipn():
 
         # 3. Verify PayHere signature
         merchant_secret = os.getenv("MERCHANT_SECRET")
-        hashed_secret = md5(merchant_secret.encode()).hexdigest().upper()
+        hashed_secret = sha256(merchant_secret.encode()).hexdigest().upper()
         base_string = (
             f"{data['merchant_id']}{data['order_id']}{data['payhere_amount']}"
             f"{data['payhere_currency']}{data['status_code']}{hashed_secret}"
         )
-        calculated_sig = md5(base_string.encode()).hexdigest().upper()
+        calculated_sig = sha256(base_string.encode()).hexdigest().upper()
 
         if calculated_sig != data['md5sig']:
             return jsonify({"error": "Invalid signature"}), 403
@@ -467,9 +467,9 @@ def create_payhere_session():
 
         # Generate correct PayHere hash
         def generate_payhere_hash():
-            hashed_secret = md5(merchant_secret.encode()).hexdigest().upper()
+            hashed_secret = sha256(merchant_secret.encode()).hexdigest().upper()
             base_string = f"{merchant_id}{order_id}{amount_float:.2f}LKR{hashed_secret}"
-            return md5(base_string.encode()).hexdigest().upper()
+            return sha256(base_string.encode()).hexdigest().upper()
 
         payment_config = {
             "sandbox": True,  # Set to False in production
