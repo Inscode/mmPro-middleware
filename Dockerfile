@@ -24,7 +24,6 @@ RUN pip install --user -r requirements.txt
 FROM base as final
 COPY --from=builder /home/appuser/.local /home/appuser/.local
 COPY . .
-COPY .env ./
 
 # Environment config (updated)
 ENV ENVIRONMENT=development \

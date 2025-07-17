@@ -9,6 +9,11 @@ from controllers import (
 
 def create_app(config_filename='.env'):
     app = Flask(__name__)
+
+    # ⚠️ SECURITY NOTE:
+    # Ensure disabling CSRF protection is safe for your use case.
+    # - If you're building a REST API using JWT or token-based authentication, CSRF protection is typically not needed.
+    # - If you're using session-based auth or handling form submissions via cookies, enable CSRF protection (e.g., via Flask-WTF).
     
     # Load configuration
     app.config.from_pyfile(config_filename)
