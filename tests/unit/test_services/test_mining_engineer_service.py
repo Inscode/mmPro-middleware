@@ -8,7 +8,7 @@ from utils.MLOUtils import MLOUtils
 MOCK_TOKEN = "mocked.jwt.token"
 MOCK_ISSUE_ID = 123
 MOCK_API_KEY = "mocked_api_key"
-MOCK_REDMINE_URL = "http://mocked-redmine-url.com"
+MOCK_REDMINE_URL = "https://mocked-redmine-url.com"
 
 def make_api_key():
     return "mocked_api_key_123456"
@@ -22,7 +22,7 @@ def make_token():
 # Helper: mock environment variables
 @pytest.fixture(autouse=True)
 def set_env_vars(monkeypatch):
-    monkeypatch.setenv("REDMINE_URL", "http://fake-redmine.com")
+    monkeypatch.setenv("REDMINE_URL", "https://fake-redmine.com")
     monkeypatch.setenv("ORS_API_KEY", "fake_ors_key")
     yield
 
@@ -294,9 +294,9 @@ def test_miningEngineer_reject_fail_ml_update(mock_put):
         mock_get_user_info.return_value = (make_user_id(), None)
         mock_get_limit.return_value = 10
         mock_get_attachment_urls.return_value = {
-            "Detailed Mine Restoration Plan": "http://example.com/plan.pdf",
-            "Payment Receipt": "http://example.com/receipt.pdf",
-            "Deed and Survey Plan": "http://example.com/deed.pdf"
+            "Detailed Mine Restoration Plan": "https://example.com/plan.pdf",
+            "Payment Receipt": "https://example.com/receipt.pdf",
+            "Deed and Survey Plan": "https://example.com/deed.pdf"
         }
 
         issues_data = {
@@ -334,7 +334,7 @@ def test_miningEngineer_reject_fail_ml_update(mock_put):
         assert error is None
         assert len(results) == 1
         assert results[0]["id"] == 1
-        assert results[0]["Detailed_Plan"] == "http://example.com/plan.pdf"
+        assert results[0]["Detailed_Plan"] == "https://example.com/plan.pdf"
 
     @patch("services.mining_engineer_service.JWTUtils.get_api_key_from_token")
     @patch("services.mining_engineer_service.requests.get")
@@ -602,7 +602,7 @@ def test_get_miningLicense_view_button_success(mock_getenv, mock_requests_get, m
     mock_response.json.return_value = mock_issue_data
     mock_requests_get.return_value = mock_response
 
-    with patch("services.mining_engineer_service.MiningEnginerService.get_attachment_urls", return_value={"Payment Receipt": "http://files.com/123"}):
+    with patch("services.mining_engineer_service.MiningEnginerService.get_attachment_urls", return_value={"Payment Receipt": "https://files.com/123"}):
         result, error = MiningEnginerService.get_miningLicense_view_button(MOCK_TOKEN, MOCK_ISSUE_ID)
 
     # Assert
@@ -610,7 +610,7 @@ def test_get_miningLicense_view_button_success(mock_getenv, mock_requests_get, m
     assert result["id"] == MOCK_ISSUE_ID
     assert result["land_name"] == "Land A"
     assert result["land_owner_name"] == "Owner X"
-    assert result["payment_receipt"] == "http://files.com/123"
+    assert result["payment_receipt"] == "https://files.com/123"
 
 
 @patch("services.mining_engineer_service.JWTUtils.get_api_key_from_token", return_value=None)
