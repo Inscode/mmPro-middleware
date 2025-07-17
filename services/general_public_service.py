@@ -8,8 +8,7 @@ import random
 from services.cache import cache
 # from datetime import datetime, timedelta, UTC, timezone
 from datetime import datetime, timedelta, timezone
-
-
+import secrets
 
 
 load_dotenv()
@@ -116,7 +115,7 @@ class GeneralPublicService:
 
     @staticmethod
     def generate_otp():
-        return str(random.randint(100000, 999999))  # Generate a 6-digit OTP
+        return str(secrets.randbelow(100000, 999999))  # Generate a 6-digit OTP
 
     @staticmethod
     def send_verification_code(phone):
@@ -126,8 +125,8 @@ class GeneralPublicService:
         try:
             url = "https://message.textware.lk:5001/sms/send_sms.php"
             params = {
-                "username": "aasait",
-                "password": "Aasait@textware132",
+                "username": os.getenv("TEXTWARE_USERNAME"),
+                "password": os.getenv("TEXTWARE_PASSWORD"),
                 "src": "TWTEST",
                 "dst": phone,
                 "msg": f"Your OTP code is {otp}"

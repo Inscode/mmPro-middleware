@@ -7,6 +7,12 @@ import jwt
 from config import Config
 import io
 
+TEST_USERNAME = "testuser"
+TEST_PASSWORD = "testpass" 
+
+INVALID_TEST_USERNAME = "wronguser"
+INVALID_TEST_PASSWORD = "wrongpass"
+
 def test_login_success(client):
     mock_user_data = {
         'id': 1,
@@ -25,8 +31,8 @@ def test_login_success(client):
     with patch('services.auth_service.AuthService.authenticate_user', return_value=(mock_user_data, mock_user_role, mock_api_key)):
         with patch('utils.jwt_utils.JWTUtils.create_jwt_token', return_value=mock_tokens):
             response = client.post('/auth/login', json={
-                'username': 'testuser',
-                'password': 'testpass'
+                'username': TEST_USERNAME,
+                'password': TEST_PASSWORD
             })
             assert response.status_code == 200
             json_data = response.get_json()
@@ -48,8 +54,8 @@ def test_login_missing_credentials(client):
 def test_login_invalid_credentials(client):
     with patch('services.auth_service.AuthService.authenticate_user', return_value=(None, None, 'Invalid credentials')):
         response = client.post('auth/login', json={
-            'username': 'wronguser',
-            'password': 'wrongpass'
+            'username': INVALID_TEST_USERNAME,
+            'password': INVALID_TEST_PASSWORD
         })
         assert response.status_code == 401
         json_data = response.get_json()
