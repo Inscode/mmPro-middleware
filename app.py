@@ -8,7 +8,7 @@ from controllers import (
 )
 
 def create_app(config_filename='.env'):
-    app = Flask(__name__)
+    app = Flask(__name__) # NOSONAR: JWT-based API, CSRF not required
 
     # ⚠️ SECURITY NOTE:
     # Ensure disabling CSRF protection is safe for your use case.
