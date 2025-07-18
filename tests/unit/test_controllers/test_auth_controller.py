@@ -1,5 +1,7 @@
 # tests/unit/test_auth_controller.py
 
+import os
+from dotenv import load_dotenv
 import pytest
 from unittest.mock import patch
 from flask import url_for
@@ -7,11 +9,13 @@ import jwt
 from config import Config
 import io
 
-TEST_USERNAME = "testuser"
-TEST_PASSWORD = "testpass" 
+load_dotenv()
 
-INVALID_TEST_USERNAME = "wronguser"
-INVALID_TEST_PASSWORD = "wrongpass"
+TEST_USERNAME = os.getenv("TEST_USERNAME")
+TEST_PASSWORD = os.getenv("TEST_PASSWORD")
+
+INVALID_TEST_USERNAME = os.getenv("INVALID_TEST_USERNAME")
+INVALID_TEST_PASSWORD = os.getenv("INVALID_TEST_PASSWORD")
 
 def test_login_success(client):
     mock_user_data = {
