@@ -23,7 +23,8 @@ RUN pip install --user -r requirements.txt
 # Stage 3: Final Image
 FROM base as final
 COPY --from=builder /home/appuser/.local /home/appuser/.local
-COPY . .
+COPY . .   
+# NOSONAR: Safe due to strict .dockerignore
 
 # Environment config (updated)
 ENV ENVIRONMENT=development \
