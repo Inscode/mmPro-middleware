@@ -1,5 +1,6 @@
 from flask import Flask
 from flask_cors import CORS
+import os
 from controllers import (
     auth_bp, mining_owner_bp, gsmb_officer_bp, 
     police_officer_bp, general_public_bp, 
@@ -8,20 +9,29 @@ from controllers import (
 )
 
 def create_app(config_filename='.env'):
-    app = Flask(__name__) # NOSONAR: JWT-based API, CSRF not required
-
-    # ⚠️ SECURITY NOTE:
-    # Ensure disabling CSRF protection is safe for your use case.
-    # - If you're building a REST API using JWT or token-based authentication, CSRF protection is typically not needed.
-    # - If you're using session-based auth or handling form submissions via cookies, enable CSRF protection (e.g., via Flask-WTF).
+    app = Flask(__name__)
     
     # Load configuration
     app.config.from_pyfile(config_filename)
     
-    # Enable CORS
-    CORS(app)
-    # Or your specific CORS config if needed:
-    # CORS(app, resources={r"/*": {"origins": ["http://localhost:5173"]}})
+    # Parse allowed origins from .env
+    allowed_origins = []
+    if 'ALLOWED_ORIGINS' in app.config:
+        allowed_origins = [
+            origin.strip() 
+            for origin in app.config['ALLOWED_ORIGINS'].split(',')
+            if origin.strip()
+        ]
+    
+    # Secure CORS configuration
+    CORS(app, resources={
+        r"/*": {
+            "origins": allowed_origins,
+            "supports_credentials": True,  
+            "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"]
+        }
+    })
     
     # Register Blueprints
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -35,7 +45,6 @@ def create_app(config_filename='.env'):
     
     return app
 
-# For running directly
 if __name__ == '__main__':
     app = create_app()
     print("Server is running on port 5000")
