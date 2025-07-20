@@ -5,3 +5,15 @@ otp_cache/cache.db-shm
 otp_cache/cache.db-wal
 .env
 tempCodeRunnerFile.py
+
+# Logs and caches
+/otp_cache/
+/logs/
+
+# Docker/Kubernetes
+**/secrets.yaml
+**/*-secret.yaml
+
+# IDE/Editor
+.idea/
+.vscode/

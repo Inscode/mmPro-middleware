@@ -5,11 +5,10 @@ from twilio.rest import Client
 from twilio.base.exceptions import TwilioException
 from utils.jwt_utils import JWTUtils
 import random
-from diskcache import Cache
-from datetime import datetime, timedelta
-
-
-cache = Cache('otp_cache') 
+from services.cache import cache
+# from datetime import datetime, timedelta, UTC, timezone
+from datetime import datetime, timedelta, timezone
+import secrets
 
 
 load_dotenv()
@@ -75,7 +74,8 @@ class GeneralPublicService:
 
             tpl_issues = tpl_response.json().get("issues", [])
             lorry_number_lower = lorry_number.lower()
-            current_time = datetime.utcnow()
+            current_time = datetime.now(timezone.utc)
+
 
             # Check if any TPL license matches the given lorry number (cf_13)
             for issue in tpl_issues:
@@ -92,7 +92,7 @@ class GeneralPublicService:
                         continue  # Skip if no creation date
                 
                     try:
-                        created_on = datetime.strptime(created_on_str, "%Y-%m-%dT%H:%M:%SZ")
+                        created_on = datetime.strptime(created_on_str, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
                         estimated_hours = issue.get("estimated_hours", 0)
                     
                         # Calculate expiration time
@@ -115,7 +115,7 @@ class GeneralPublicService:
 
     @staticmethod
     def generate_otp():
-        return str(random.randint(100000, 999999))  # Generate a 6-digit OTP
+        return str(secrets.randbelow(100000, 999999))  # Generate a 6-digit OTP
 
     @staticmethod
     def send_verification_code(phone):
@@ -125,8 +125,8 @@ class GeneralPublicService:
         try:
             url = "https://message.textware.lk:5001/sms/send_sms.php"
             params = {
-                "username": "aasait",
-                "password": "Aasait@textware132",
+                "username": os.getenv("TEXTWARE_USERNAME"),
+                "password": os.getenv("TEXTWARE_PASSWORD"),
                 "src": "TWTEST",
                 "dst": phone,
                 "msg": f"Your OTP code is {otp}"

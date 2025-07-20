@@ -15,14 +15,96 @@ class GsmbOfficerService:
 
     ORS_API_KEY = os.getenv("ORS_API_KEY")
     
+    # @staticmethod
+    # def get_mlowners(token):
+    #     try:
+    #         # 🔑 Extract user's API key from token for memberships request
+    #         user_api_key = JWTUtils.get_api_key_from_token(token)
+    #         if not user_api_key:
+    #             return None, "Invalid or missing API key in the token"
+
+    #         # 🔑 Get Redmine Admin API key for user details request
+    #         admin_api_key = os.getenv("REDMINE_ADMIN_API_KEY")
+    #         if not admin_api_key:
+    #             return None, "Environment variable 'REDMINE_ADMIN_API_KEY' is not set"
+
+    #         # 🌐 Get Redmine URL
+    #         REDMINE_URL = os.getenv("REDMINE_URL")
+
+    #         if not REDMINE_URL:
+    #             return None, "Environment variable 'REDMINE_URL' is not set"
+
+    #         # 1️⃣ Fetch memberships using the **user's API key**
+    #         memberships_url = f"{REDMINE_URL}/projects/mmpro-gsmb/memberships.json"
+    #         memberships_response = requests.get(
+    #             memberships_url, 
+    #             headers={"X-Redmine-API-Key": user_api_key, "Content-Type": "application/json"}
+    #         )
+
+    #         if memberships_response.status_code != 200:
+    #             return None, f"Failed to fetch memberships: {memberships_response.status_code} - {memberships_response.text}"
+
+    #         memberships = memberships_response.json().get("memberships", [])
+
+    #         # 2️⃣ Filter users who have the role "MLOwner"
+    #         ml_owner_ids = [
+    #             membership['user']['id'] for membership in memberships
+    #             if any(role["name"] == "MLOwner" for role in membership.get("roles", []))
+    #         ]
+
+    #         if not ml_owner_ids:
+    #             return [], None  # No MLOwner users found
+
+    #         # 3️⃣ Fetch user details using the **admin API key** (for broader access)
+    #         users_url = f"{REDMINE_URL}/users.json?status=1&limit=100"
+    #         users_response = requests.get(
+    #             users_url, 
+    #             headers={"X-Redmine-API-Key": admin_api_key, "Content-Type": "application/json"}
+    #         )
+
+    #         if users_response.status_code != 200:
+    #             return None, f"Failed to fetch user details: {users_response.status_code} - {users_response.text}"
+
+    #         all_users = users_response.json().get("users", [])
+
+    #         # 4️⃣ Filter users who match MLOwner IDs
+    #         ml_owners_details = [
+    #             user for user in all_users if user["id"] in ml_owner_ids
+    #         ]
+
+    #         # Fetch the mining license counts for all users
+    #         license_counts, license_error = GsmbOfficerService.get_mining_license_counts(token)
+    #         if license_error:
+    #             return None, license_error
+
+    #         # 5️⃣ Map license count to each MLOwner
+    #         formatted_ml_owners = []
+    #         for ml_owner in ml_owners_details:
+    #             owner_name = f"{ml_owner.get('firstname', '')} {ml_owner.get('lastname', '')}"
+    #             ml_owner_name = owner_name.strip()
+    #             license_count = license_counts.get(ml_owner_name, 0)
+
+    #             # Prepare formatted output
+    #             formatted_owner = {
+    #                 "id": ml_owner["id"],
+    #                 "ownerName": ml_owner_name,
+    #                 "NIC": next((field["value"] for field in ml_owner.get("custom_fields", []) if field["name"] == "National Identity Card"), ""),
+    #                 "email": ml_owner.get("mail", ""),
+    #                 "phoneNumber": next((field["value"] for field in ml_owner.get("custom_fields", []) if field["name"] == "Mobile Number"), ""),
+    #                 "totalLicenses": license_count
+    #             }
+                
+    #             formatted_ml_owners.append(formatted_owner)
+
+    #         return formatted_ml_owners, None  # ✅ Return the formatted user details with license count
+
+    #     except Exception as e:
+    #         return None, f"Server error: {str(e)}"
+
+    
     @staticmethod
     def get_mlowners(token):
         try:
-            # 🔑 Extract user's API key from token for memberships request
-            user_api_key = JWTUtils.get_api_key_from_token(token)
-            if not user_api_key:
-                return None, "Invalid or missing API key in the token"
-
             # 🔑 Get Redmine Admin API key for user details request
             admin_api_key = os.getenv("REDMINE_ADMIN_API_KEY")
             if not admin_api_key:
@@ -30,35 +112,13 @@ class GsmbOfficerService:
 
             # 🌐 Get Redmine URL
             REDMINE_URL = os.getenv("REDMINE_URL")
-
             if not REDMINE_URL:
                 return None, "Environment variable 'REDMINE_URL' is not set"
 
-            # 1️⃣ Fetch memberships using the **user's API key**
-            memberships_url = f"{REDMINE_URL}/projects/mmpro-gsmb/memberships.json"
-            memberships_response = requests.get(
-                memberships_url, 
-                headers={"X-Redmine-API-Key": user_api_key, "Content-Type": "application/json"}
-            )
-
-            if memberships_response.status_code != 200:
-                return None, f"Failed to fetch memberships: {memberships_response.status_code} - {memberships_response.text}"
-
-            memberships = memberships_response.json().get("memberships", [])
-
-            # 2️⃣ Filter users who have the role "MLOwner"
-            ml_owner_ids = [
-                membership['user']['id'] for membership in memberships
-                if any(role["name"] == "MLOwner" for role in membership.get("roles", []))
-            ]
-
-            if not ml_owner_ids:
-                return [], None  # No MLOwner users found
-
-            # 3️⃣ Fetch user details using the **admin API key** (for broader access)
+            # 1️⃣ Fetch all users with admin API key
             users_url = f"{REDMINE_URL}/users.json?status=1&limit=100"
             users_response = requests.get(
-                users_url, 
+                users_url,
                 headers={"X-Redmine-API-Key": admin_api_key, "Content-Type": "application/json"}
             )
 
@@ -67,39 +127,43 @@ class GsmbOfficerService:
 
             all_users = users_response.json().get("users", [])
 
-            # 4️⃣ Filter users who match MLOwner IDs
+            # 2️⃣ Filter users by custom field "User Type" == "mlOwner"
             ml_owners_details = [
-                user for user in all_users if user["id"] in ml_owner_ids
+                user for user in all_users
+                if any(field.get("name") == "User Type" and field.get("value") == "mlOwner"
+                    for field in user.get("custom_fields", []))
             ]
 
-            # Fetch the mining license counts for all users
+            if not ml_owners_details:
+                return [], None  # No MLOwners found
+
+            # 3️⃣ Fetch mining license counts
             license_counts, license_error = GsmbOfficerService.get_mining_license_counts(token)
             if license_error:
                 return None, license_error
 
-            # 5️⃣ Map license count to each MLOwner
+            # 4️⃣ Format response
             formatted_ml_owners = []
             for ml_owner in ml_owners_details:
-                owner_name = f"{ml_owner.get('firstname', '')} {ml_owner.get('lastname', '')}"
-                ml_owner_name = owner_name.strip()
-                license_count = license_counts.get(ml_owner_name, 0)
+                owner_name = f"{ml_owner.get('firstname', '')} {ml_owner.get('lastname', '')}".strip()
+                license_count = license_counts.get(owner_name, 0)
 
-                # Prepare formatted output
                 formatted_owner = {
                     "id": ml_owner["id"],
-                    "ownerName": ml_owner_name,
+                    "ownerName": owner_name,
                     "NIC": next((field["value"] for field in ml_owner.get("custom_fields", []) if field["name"] == "National Identity Card"), ""),
                     "email": ml_owner.get("mail", ""),
                     "phoneNumber": next((field["value"] for field in ml_owner.get("custom_fields", []) if field["name"] == "Mobile Number"), ""),
                     "totalLicenses": license_count
                 }
-                
+
                 formatted_ml_owners.append(formatted_owner)
 
-            return formatted_ml_owners, None  # ✅ Return the formatted user details with license count
+            return formatted_ml_owners, None
 
         except Exception as e:
             return None, f"Server error: {str(e)}"
+
         
     @staticmethod
     def get_tpls(token):
@@ -151,6 +215,82 @@ class GsmbOfficerService:
         except Exception as e:
             return None, f"Server error: {str(e)}"
         
+    # @staticmethod
+    # def get_mining_licenses(token):
+    #     try:
+    #         # 🔑 Extract user's API key from token
+    #         user_api_key = JWTUtils.get_api_key_from_token(token)
+    #         if not user_api_key:
+    #             return None, "Invalid or missing API key in the token"
+
+    #         # 🌐 Get Redmine URL
+    #         REDMINE_URL = os.getenv("REDMINE_URL")
+    #         if not REDMINE_URL:
+    #             return None, "Environment variable 'REDMINE_URL' is not set"
+
+    #         # 🚀 Fetch all ML issues from Redmine
+    #         ml_issues_url = f"{REDMINE_URL}/issues.json?tracker_id=4&project_id=1&status_id=7"
+    #         response = requests.get(
+    #             ml_issues_url,
+    #             headers={"X-Redmine-API-Key": user_api_key, "Content-Type": "application/json"}
+    #         )
+
+    #         if response.status_code != 200:
+    #             return None, f"Failed to fetch ML issues: {response.status_code} - {response.text}"
+
+    #         issues = response.json().get("issues", [])
+    #         formatted_mls = []
+
+    #         for issue in issues:
+    #             issue_id = issue.get("id")
+                
+    #             # Fetching attachments separately
+    #             custom_fields = issue.get("custom_fields", [])  # Extract custom fields
+    #             attachment_urls = GsmbOfficerService.get_attachment_urls(user_api_key, REDMINE_URL, custom_fields)
+
+
+    #             formatted_ml = {
+    #                 "id": issue_id,
+    #                 "subject": issue.get("subject"),
+    #                 "status": issue.get("status", {}).get("name"),
+    #                 "author": issue.get("author", {}).get("name"),
+    #                 "assigned_to": issue.get("assigned_to", {}).get("name") if issue.get("assigned_to") else None,
+    #                 "start_date": issue.get("start_date"),
+    #                 "due_date": issue.get("due_date"),
+    #                 "exploration_licence_no": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Exploration Licence No"),
+    #                 "applicant_or_company_name": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Name of Applicant OR Company"),
+    #                 "land_name": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Land Name(Licence Details)"),
+    #                 "land_owner_name": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Land owner name"),
+    #                 "village_name": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Name of village "),
+    #                 "grama_niladhari_division": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Grama Niladhari Division"),
+    #                 "divisional_secretary_division": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Divisional Secretary Division"),
+    #                 "administrative_district": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Administrative District"),
+    #                 "capacity": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Capacity"),
+    #                 "used": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Used"),
+    #                 "remaining": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Remaining"),
+    #                 "royalty": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Royalty"),
+    #                 "license_number": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Mining License Number"),
+    #                 "mining_license_number": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Mining License Number"),
+    #                 "mobile_number": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Mobile Number"),
+
+                    
+    #                 # Fetching File URLs from Attachments API
+    #                 "economic_viability_report": attachment_urls.get("Economic Viability Report"),
+    #                 "license_fee_receipt": attachment_urls.get("License fee receipt"),
+    #                 "detailed_mine_restoration_plan": attachment_urls.get("Detailed Mine Restoration Plan"),
+    #                 "professional": attachment_urls.get("Professional"),
+    #                 "deed_and_survey_plan": attachment_urls.get("Deed and Survey Plan"),
+    #                 "payment_receipt": attachment_urls.get("Payment Receipt"),
+    #                 "license_boundary_survey": attachment_urls.get("License Boundary Survey")
+    #             }
+
+    #             formatted_mls.append(formatted_ml)
+ 
+    #         return formatted_mls, None
+
+    #     except Exception as e:
+    #         return None, f"Server error: {str(e)}"
+
     @staticmethod
     def get_mining_licenses(token):
         try:
@@ -187,202 +327,41 @@ class GsmbOfficerService:
 
                 formatted_ml = {
                     "id": issue_id,
-                    "subject": issue.get("subject"),
+                    # "subject": issue.get("subject"),
                     "status": issue.get("status", {}).get("name"),
-                    "author": issue.get("author", {}).get("name"),
+                    # "author": issue.get("author", {}).get("name"),
                     "assigned_to": issue.get("assigned_to", {}).get("name") if issue.get("assigned_to") else None,
                     "start_date": issue.get("start_date"),
                     "due_date": issue.get("due_date"),
-                    "exploration_licence_no": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Exploration Licence No"),
-                    "applicant_or_company_name": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Name of Applicant OR Company"),
-                    "land_name": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Land Name(Licence Details)"),
-                    "land_owner_name": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Land owner name"),
-                    "village_name": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Name of village "),
-                    "grama_niladhari_division": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Grama Niladhari Division"),
+                    # "exploration_licence_no": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Exploration Licence No"),
+                    # "applicant_or_company_name": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Name of Applicant OR Company"),
+                    # "land_name": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Land Name(Licence Details)"),
+                    # "land_owner_name": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Land owner name"),
+                    # "village_name": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Name of village "),
+                    # "grama_niladhari_division": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Grama Niladhari Division"),
                     "divisional_secretary_division": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Divisional Secretary Division"),
-                    "administrative_district": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Administrative District"),
+                    # "administrative_district": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Administrative District"),
                     "capacity": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Capacity"),
                     "used": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Used"),
                     "remaining": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Remaining"),
                     "royalty": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Royalty"),
-                    "license_number": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Mining License Number"),
+                    # "license_number": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Mining License Number"),
                     "mining_license_number": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Mining License Number"),
                     "mobile_number": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Mobile Number"),
 
                     
                     # Fetching File URLs from Attachments API
-                    "economic_viability_report": attachment_urls.get("Economic Viability Report"),
-                    "license_fee_receipt": attachment_urls.get("License fee receipt"),
-                    "detailed_mine_restoration_plan": attachment_urls.get("Detailed Mine Restoration Plan"),
-                    "professional": attachment_urls.get("Professional"),
-                    "deed_and_survey_plan": attachment_urls.get("Deed and Survey Plan"),
-                    "payment_receipt": attachment_urls.get("Payment Receipt"),
-                    "license_boundary_survey": attachment_urls.get("License Boundary Survey")
+                #     "economic_viability_report": attachment_urls.get("Economic Viability Report"),
+                #     "license_fee_receipt": attachment_urls.get("License fee receipt"),
+                #     "detailed_mine_restoration_plan": attachment_urls.get("Detailed Mine Restoration Plan"),
+                #     "professional": attachment_urls.get("Professional"),
+                #     "deed_and_survey_plan": attachment_urls.get("Deed and Survey Plan"),
+                #     "payment_receipt": attachment_urls.get("Payment Receipt"),
+                #     "license_boundary_survey": attachment_urls.get("License Boundary Survey")
                 }
 
                 formatted_mls.append(formatted_ml)
  
-            return formatted_mls, None
-
-        except Exception as e:
-            return None, f"Server error: {str(e)}"
-
-
-    # @staticmethod
-    # def get_mining_license_requests(token):
-    #     try:
-    #         user_api_key = JWTUtils.get_api_key_from_token(token)
-    #         if not user_api_key:
-    #             return None, "Invalid or missing API key in the token"
-
-    #         REDMINE_URL = os.getenv("REDMINE_URL")
-    #         if not REDMINE_URL:
-    #             return None, "Environment variable 'REDMINE_URL' is not set"
-
-    #         ml_issues_url = f"{REDMINE_URL}/issues.json?tracker_id=4&project_id=1&status_id=!7"
-    #         response = requests.get(
-    #             ml_issues_url,
-    #             headers={"X-Redmine-API-Key": user_api_key, "Content-Type": "application/json"}
-    #         )
-
-    #         if response.status_code != 200:
-    #             return None, f"Failed to fetch ML issues: {response.status_code} - {response.text}"
-
-    #         issues = response.json().get("issues", [])
-
-    #         formatted_mls = []
-
-    #         for issue in issues:
-    #             custom_fields = issue.get("custom_fields", [])
-    #             attachment_urls = GsmbOfficerService.get_attachment_urls(user_api_key, REDMINE_URL, custom_fields)
-
-    #             # Fetch assigned_to user details
-    #             assigned_to = issue.get("assigned_to", {})
-    #             assigned_to_id = assigned_to.get("id")
-    #             assigned_to_details = None
-
-    #             # if assigned_to_id:
-    #             #     user_response = requests.get(
-    #             #         f"{REDMINE_URL}/users/{assigned_to_id}.json",
-    #             #         headers={"X-Redmine-API-Key": user_api_key, "Content-Type": "application/json"}
-    #             #     )
-    #             #     if user_response.status_code == 200:
-    #             #         assigned_to_details = user_response.json().get("user", {})
-
-    #             ml_data = {
-    #                 "id": issue.get("id"),
-    #                 "subject": issue.get("subject"),
-    #                 "status": issue.get("status", {}).get("name"),
-    #                 "assigned_to": assigned_to.get("name"),
-    #                 "created_on": issue.get("created_on"),
-    #                 # "assigned_to_details": {
-    #                 #     "id": assigned_to_details.get("id"),
-    #                 #     "name": f"{assigned_to_details.get('firstname', '')} {assigned_to_details.get('lastname', '')}".strip(),
-    #                 #     "email": assigned_to_details.get("mail"),
-    #                 #     "custom_fields": assigned_to_details.get("custom_fields", [])
-    #                 # } if assigned_to_details else None,
-    #                 "exploration_licence_no": GsmbOfficerService.get_custom_field_value(custom_fields, "Exploration Licence No"),
-    #                 "land_name": GsmbOfficerService.get_custom_field_value(custom_fields, "Land Name(Licence Details)"),
-    #                 "land_owner_name": GsmbOfficerService.get_custom_field_value(custom_fields, "Land owner name"),
-    #                 "village_name": GsmbOfficerService.get_custom_field_value(custom_fields, "Name of village "),
-    #                 "grama_niladhari_division": GsmbOfficerService.get_custom_field_value(custom_fields, "Grama Niladhari Division"),
-    #                 "divisional_secretary_division": GsmbOfficerService.get_custom_field_value(custom_fields, "Divisional Secretary Division"),
-    #                 "administrative_district": GsmbOfficerService.get_custom_field_value(custom_fields, "Administrative District"),
-    #                 "google_location": GsmbOfficerService.get_custom_field_value(custom_fields, "Google location "),
-    #                 "mobile_number": GsmbOfficerService.get_custom_field_value(custom_fields, "Mobile Number"),
-    #                "economic_viability_report": attachment_urls.get("Economic Viability Report"),
-    #                 "detailed_mine_restoration_plan": attachment_urls.get("Detailed Mine Restoration Plan"),
-    #                 "deed_and_survey_plan": attachment_urls.get("Deed and Survey Plan"),
-    #                 "payment_receipt": attachment_urls.get("Payment Receipt"),
-    #                 "license_boundary_survey":attachment_urls.get("License Boundary Survey")
-
-    #             }
-
-    #             # Remove keys with None values
-    #             formatted_mls.append(ml_data)
-
-    #         return formatted_mls, None
-
-    #     except Exception as e:
-    #         return None, f"Server error: {str(e)}"
-
-
-    @staticmethod
-    def get_mining_license_requests(token):
-        try:
-            user_api_key = JWTUtils.get_api_key_from_token(token)
-            if not user_api_key:
-                return None, "Invalid or missing API key in the token"
-
-            REDMINE_URL = os.getenv("REDMINE_URL")
-            if not REDMINE_URL:
-                return None, "Environment variable 'REDMINE_URL' is not set"
-
-            # Get all mining licenses except those with status_id=7 (i.e., not "Valid")
-            ml_issues_url = f"{REDMINE_URL}/issues.json?tracker_id=4&project_id=1&status_id=!7"
-            response = requests.get(
-                ml_issues_url,
-                headers={"X-Redmine-API-Key": user_api_key, "Content-Type": "application/json"}
-            )
-
-            if response.status_code != 200:
-                return None, f"Failed to fetch ML issues: {response.status_code} - {response.text}"
-
-            issues = response.json().get("issues", [])
-            formatted_mls = []
-
-            for issue in issues:
-                custom_fields = issue.get("custom_fields", [])
-                custom_field_map = {field["name"]: field.get("value") for field in custom_fields}
-                attachment_urls = GsmbOfficerService.get_attachment_urls(user_api_key, REDMINE_URL, custom_fields)
-
-                assigned_to = issue.get("assigned_to", {})
-
-                ml_data = {
-                    "id": issue.get("id"),
-                    "subject": issue.get("subject"),
-                    "status": issue.get("status", {}).get("name"),
-                    "assigned_to": assigned_to.get("name"),
-                    "created_on": issue.get("created_on"),
-
-                    # From custom field map
-                    "exploration_licence_no": custom_field_map.get("Exploration Licence No"),
-                    "land_name": custom_field_map.get("Land Name(Licence Details)"),
-                    "land_owner_name": custom_field_map.get("Land owner name"),
-                    "village_name": custom_field_map.get("Name of village "),
-                    "grama_niladhari_division": custom_field_map.get("Grama Niladhari Division"),
-                    "divisional_secretary_division": custom_field_map.get("Divisional Secretary Division"),
-                    "administrative_district": custom_field_map.get("Administrative District"),
-                    "google_location": custom_field_map.get("Google location "),
-                    "mobile_number": custom_field_map.get("Mobile Number"),
-
-                    # From attachment URLs
-
-                    # "assigned_to_details": {
-                    #     "id": assigned_to_details.get("id"),
-                    #     "name": f"{assigned_to_details.get('firstname', '')} {assigned_to_details.get('lastname', '')}".strip(),
-                    #     "email": assigned_to_details.get("mail"),
-                    #     "custom_fields": assigned_to_details.get("custom_fields", [])
-                    # } if assigned_to_details else None,
-                    "exploration_licence_no": GsmbOfficerService.get_custom_field_value(custom_fields, "Exploration Licence No"),
-                    "land_name": GsmbOfficerService.get_custom_field_value(custom_fields, "Land Name(Licence Details)"),
-                    "land_owner_name": GsmbOfficerService.get_custom_field_value(custom_fields, "Land owner name"),
-                    "village_name": GsmbOfficerService.get_custom_field_value(custom_fields, "Name of village "),
-                    "grama_niladhari_division": GsmbOfficerService.get_custom_field_value(custom_fields, "Grama Niladhari Division"),
-                    "divisional_secretary_division": GsmbOfficerService.get_custom_field_value(custom_fields, "Divisional Secretary Division"),
-                    "administrative_district": GsmbOfficerService.get_custom_field_value(custom_fields, "Administrative District"),
-                    "google_location": GsmbOfficerService.get_custom_field_value(custom_fields, "Google location "),
-                    "mobile_number": GsmbOfficerService.get_custom_field_value(custom_fields, "Mobile Number"),
-                    "economic_viability_report": attachment_urls.get("Economic Viability Report"),
-                    "detailed_mine_restoration_plan": attachment_urls.get("Detailed Mine Restoration Plan"),
-                    "deed_and_survey_plan": attachment_urls.get("Deed and Survey Plan"),
-                    "payment_receipt": attachment_urls.get("Payment Receipt"),
-                    "license_boundary_survey": attachment_urls.get("License Boundary Survey"),
-
-                }
-
-                formatted_mls.append(ml_data)
-
             return formatted_mls, None
 
         except Exception as e:
@@ -432,7 +411,7 @@ class GsmbOfficerService:
                 "start_date": issue.get("start_date"),
                 "due_date": issue.get("due_date"),
                 "exploration_licence_no": custom_field_map.get("Exploration Licence No"),
-                "applicant_or_company_name": custom_field_map.get("Name of Applicant OR Company"),
+                # "applicant_or_company_name": custom_field_map.get("Name of Applicant OR Company"),
                 "land_name": custom_field_map.get("Land Name(Licence Details)"),
                 "land_owner_name": custom_field_map.get("Land owner name"),
                 "village_name": custom_field_map.get("Name of village "),
@@ -446,10 +425,11 @@ class GsmbOfficerService:
                 "license_number": custom_field_map.get("Mining License Number"),
                 "mining_license_number": custom_field_map.get("Mining License Number"),
                 "mobile_number": custom_field_map.get("Mobile Number"),
+                "reason_for_hold":custom_field_map.get("Reason For Hold"),
                 "economic_viability_report": attachments.get("Economic Viability Report"),
                 "license_fee_receipt": attachments.get("License fee receipt"),
                 "detailed_mine_restoration_plan": attachments.get("Detailed Mine Restoration Plan"),
-                "professional": attachments.get("Professional"),
+                # "professional": attachments.get("Professional"),
                 "deed_and_survey_plan": attachments.get("Deed and Survey Plan"),
                 "payment_receipt": attachments.get("Payment Receipt"),
                 "license_boundary_survey": attachments.get("License Boundary Survey")
@@ -489,10 +469,11 @@ class GsmbOfficerService:
             for issue in issues:
                 custom_fields = issue.get("custom_fields", [])
 
-                # Extract Lorry Number and Mobile Number from custom fields
+                # Extract relevant fields
                 lorry_number = None
                 mobile_number = None
                 role = None
+                resolved = None  # ✅ NEW
 
                 for field in custom_fields:
                     if field.get("name") == "Lorry Number":
@@ -501,26 +482,26 @@ class GsmbOfficerService:
                         mobile_number = field.get("value")
                     elif field.get("name") == "Role":
                         role = field.get("value")
-
-
+                    elif field.get("name") == "Resolved":  # ✅ NEW
+                        resolved = field.get("value")
 
                 # 🛠️ Format complaint_date
                 created_on = issue.get("created_on")
                 complaint_date = None
                 if created_on:
                     try:
-                        # Parse ISO datetime and format it
                         dt = datetime.strptime(created_on, "%Y-%m-%dT%H:%M:%SZ")
-                        complaint_date = dt.strftime("%Y-%m-%d %H:%M:%S")  # 👈 this adds the space
+                        complaint_date = dt.strftime("%Y-%m-%d %H:%M:%S")
                     except Exception as e:
-                        complaint_date = created_on  # fallback if parsing fails
+                        complaint_date = created_on
 
                 formatted_complaint = {
-                    "id": issue.get("id"), 
+                    "id": issue.get("id"),
                     "lorry_number": lorry_number,
                     "mobile_number": mobile_number,
                     "complaint_date": complaint_date,
                     "role": role,
+                    "resolved": resolved  # ✅ Add to response
                 }
                 formatted_complaints.append(formatted_complaint)
 
@@ -529,35 +510,33 @@ class GsmbOfficerService:
         except Exception as e:
             return None, str(e)
 
-
     # @staticmethod
     # def get_attachment_urls(api_key, redmine_url, custom_fields):
     #     try:
-    #         # Define the mapping of custom field names to their attachment IDs
-    #         file_fields = {
-    #             "Economic Viability Report": None,
-    #             "License fee receipt": None,
-    #             "Detailed Mine Restoration Plan": None,
-    #             "Professional": None,
-    #             "Deed and Survey Plan": None,
-    #             "Payment Receipt": None
+    #         # Only process fields that represent actual file uploads
+    #         upload_field_names = {
+    #             "Economic Viability Report",
+    #             # "License fee receipt",
+    #             "Detailed Mine Restoration Plan",
+    #             "Professional",
+    #             "Deed and Survey Plan",
+    #             "License Boundary Survey",
+    #             "Payment Receipt"
     #         }
 
-    #         # Extract attachment IDs from custom fields
+    #         file_urls = {}
+
     #         for field in custom_fields:
     #             field_name = field.get("name")
-    #             attachment_id = field.get("value")
+    #             raw_value = field.get("value")
 
-    #             print("Checking field:", field_name, "with attachment ID:", attachment_id)
+    #             if field_name not in upload_field_names:
+    #                 continue  # Skip irrelevant fields
 
+    #             attachment_id = str(raw_value).strip() if raw_value else ""
+               
 
-    #             if field_name in file_fields and attachment_id.isdigit():
-    #                 file_fields[field_name] = attachment_id
-
-    #         # Fetch URLs for valid attachment IDs
-    #         file_urls = {}
-    #         for field_name, attachment_id in file_fields.items():
-    #             if attachment_id:
+    #             if attachment_id.isdigit():
     #                 attachment_url = f"{redmine_url}/attachments/{attachment_id}.json"
     #                 response = requests.get(
     #                     attachment_url,
@@ -567,19 +546,62 @@ class GsmbOfficerService:
     #                 if response.status_code == 200:
     #                     attachment_data = response.json().get("attachment", {})
     #                     file_urls[field_name] = attachment_data.get("content_url", "")
+    #                 else:
+                       
+    #                     file_urls[field_name] = None
 
     #         return file_urls
 
     #     except Exception as e:
+    #         print(f"[EXCEPTION] Failed to get attachment URLs: {str(e)}")
+    #         return {}
+
+# WORKING BY USING API KEY IN THE URL
+    # @staticmethod
+    # def get_attachment_urls(api_key, redmine_url, custom_fields):
+    #     try:
+    #         upload_field_names = {
+    #             "Economic Viability Report",
+    #             "Detailed Mine Restoration Plan",
+    #             "Professional",
+    #             "Deed and Survey Plan",
+    #             "License Boundary Survey",
+    #             "Payment Receipt"
+    #         }
+
+    #         file_urls = {}
+
+    #         for field in custom_fields:
+    #             field_name = field.get("name")
+    #             raw_value = field.get("value")
+
+    #             if field_name not in upload_field_names:
+    #                 continue
+
+    #             if not raw_value:
+    #                 file_urls[field_name] = None
+    #                 continue
+
+    #             attachment_id = str(raw_value).strip()
+    #             if attachment_id.isdigit():
+    #                 # Create authenticated download URL
+    #                 file_urls[field_name] = (
+    #                     f"{redmine_url}/attachments/download/{attachment_id}?key={api_key}"
+    #                 )
+    #             else:
+    #                 file_urls[field_name] = None
+
+    #         return file_urls
+
+    #     except Exception as e:
+    #         print(f"[ERROR] Failed to get attachment URLs: {str(e)}")
     #         return {}
 
     @staticmethod
     def get_attachment_urls(api_key, redmine_url, custom_fields):
         try:
-            # Only process fields that represent actual file uploads
             upload_field_names = {
                 "Economic Viability Report",
-                # "License fee receipt",
                 "Detailed Mine Restoration Plan",
                 "Professional",
                 "Deed and Survey Plan",
@@ -594,31 +616,20 @@ class GsmbOfficerService:
                 raw_value = field.get("value")
 
                 if field_name not in upload_field_names:
-                    continue  # Skip irrelevant fields
+                    continue
 
-                attachment_id = str(raw_value).strip() if raw_value else ""
-               
+                if not raw_value:
+                    file_urls[field_name] = None
+                    continue
 
-                if attachment_id.isdigit():
-                    attachment_url = f"{redmine_url}/attachments/{attachment_id}.json"
-                    response = requests.get(
-                        attachment_url,
-                        headers={"X-Redmine-API-Key": api_key, "Content-Type": "application/json"}
-                    )
-
-                    if response.status_code == 200:
-                        attachment_data = response.json().get("attachment", {})
-                        file_urls[field_name] = attachment_data.get("content_url", "")
-                    else:
-                       
-                        file_urls[field_name] = None
+                attachment_id = str(raw_value).strip()
+                file_urls[field_name] = int(attachment_id) if attachment_id.isdigit() else None
 
             return file_urls
 
         except Exception as e:
-            print(f"[EXCEPTION] Failed to get attachment URLs: {str(e)}")
+            print(f"[ERROR] Failed to get attachment IDs: {str(e)}")
             return {}
-
 
 
     @staticmethod
@@ -847,6 +858,7 @@ class GsmbOfficerService:
         except Exception as e:
             return False, str(e)
         
+  
     @staticmethod
     def reject_mining_request(token, data):
         try:
@@ -857,20 +869,13 @@ class GsmbOfficerService:
                 return False, "Environment variable 'REDMINE_URL' is not set"
 
             mining_request_id = data.get("mining_request_id")
-            comments = data.get("comments")
 
-            if not mining_request_id or not comments:
-                return False, "Missing required fields (mining_request_id or comments)"
+            if not mining_request_id:
+                return False, "Missing required field (mining_request_id)"
 
             update_payload = {
                 "issue": {
-                    "status_id": 6,  # Rejected
-                    "custom_fields": [
-                        {
-                            "id": 103,  # Comments field
-                            "value": comments
-                        }
-                    ]
+                    "status_id": 6  # Rejected
                 }
             }
 
@@ -1175,3 +1180,209 @@ class GsmbOfficerService:
 
         except Exception as e:
             return None, f"Server error: {str(e)}"
+
+    @staticmethod
+    def mark_complaint_resolved(token, issue_id):
+        try:
+            user_api_key = JWTUtils.get_api_key_from_token(token)
+            if not user_api_key:
+                return None, "Invalid or missing API key"
+
+            REDMINE_URL = os.getenv("REDMINE_URL")
+            if not REDMINE_URL:
+                return None, "Environment variable 'REDMINE_URL' is not set"
+
+            # Prepare the custom field update payload
+            update_payload = {
+                "issue": {
+                    "custom_fields": [
+                        {
+                            "id": 107,  # Custom field ID for "Resolved"
+                            "value": "1"
+                        }
+                    ]
+                }
+            }
+
+            response = requests.put(
+                f"{REDMINE_URL}/issues/{issue_id}.json",
+                headers={
+                    "X-Redmine-API-Key": user_api_key,
+                    "Content-Type": "application/json"
+                },
+                data=json.dumps(update_payload)
+            )
+
+            if response.status_code not in (200, 204):
+                return None, f"Failed to update issue: {response.status_code} - {response.text}"
+
+            return True, None
+
+        except Exception as e:
+            return None, f"Server error: {str(e)}"
+        
+
+    @staticmethod
+    def get_mining_license_request(token):
+        try:
+            user_api_key = JWTUtils.get_api_key_from_token(token)
+            if not user_api_key:
+                return None, "Invalid or missing API key in token"
+
+            REDMINE_URL = os.getenv("REDMINE_URL")
+            if not REDMINE_URL:
+                return None, "Environment variable 'REDMINE_URL' is not set"
+
+            url = f"{REDMINE_URL}/issues.json?tracker_id=4&project_id=1&status_id=!7"
+            response = requests.get(
+                url,
+                headers={"X-Redmine-API-Key": user_api_key, "Content-Type": "application/json"}
+            )
+
+            if response.status_code != 200:
+                return None, f"Failed to fetch mining license issues: {response.status_code} - {response.text}"
+
+            issues = response.json().get("issues", [])
+            summary_list = []
+
+            for issue in issues:
+                custom_fields = issue.get("custom_fields", [])
+                assigned_to = issue.get("assigned_to", {})
+
+                summary_list.append({
+                    "id": issue.get("id"),
+                    "subject": issue.get("subject"),
+                    "assigned_to": assigned_to.get("name"),
+                    "assigned_to_id": assigned_to.get("id"),
+                    "mobile": GsmbOfficerService.get_custom_field_value(custom_fields, "Mobile Number"),
+                    "district": GsmbOfficerService.get_custom_field_value(custom_fields, "Administrative District"),
+                    "date_created": issue.get("created_on"),
+                    "status": issue.get("status", {}).get("name")
+                })
+
+            return summary_list, None
+
+        except Exception as e:
+            return None, f"Server error: {str(e)}"
+    
+    @staticmethod
+    def get_miningRequest_view_button(token, issue_id):
+        try:
+            
+            api_key = JWTUtils.get_api_key_from_token(token)
+            if not api_key:
+                return None, "Invalid or missing API key"
+
+            REDMINE_URL = os.getenv("REDMINE_URL")
+            if not REDMINE_URL:
+                return None, "REDMINE_URL environment variable not set"
+
+            issue_url = f"{REDMINE_URL}/issues/{issue_id}.json?include=attachments"
+            response = requests.get(
+                issue_url,
+                headers={"X-Redmine-API-Key": api_key, "Content-Type": "application/json"}
+            )
+
+            if response.status_code != 200:
+                return None, f"Failed to fetch issue: {response.status_code} - {response.text}"
+
+            issue = response.json().get("issue")
+            if not issue:
+                return None, "Issue data not found"
+
+            custom_fields = issue.get("custom_fields", [])
+            custom_field_map = {field["name"]: field.get("value") for field in custom_fields}
+
+            attachments = GsmbOfficerService.get_attachment_urls(api_key, REDMINE_URL, custom_fields)
+
+            formatted_issue = {
+                "id": issue.get("id"),
+                "subject": issue.get("subject"),
+                "status": issue.get("status", {}).get("name"),
+                "assigned_to": issue.get("assigned_to", {}).get("name"),
+                "land_name": custom_field_map.get("Land Name(Licence Details)"),
+                "land_owner_name": custom_field_map.get("Land owner name"),
+                "village_name": custom_field_map.get("Name of village "),
+                "grama_niladhari_division": custom_field_map.get("Grama Niladhari Division"),
+                "divisional_secretary_division": custom_field_map.get("Divisional Secretary Division"),
+                "administrative_district": custom_field_map.get("Administrative District"),
+                "mining_license_number": custom_field_map.get("Mining License Number"),
+                "mobile_number": custom_field_map.get("Mobile Number"),
+                "economic_viability_report": attachments.get("Economic Viability Report"),
+                "license_fee_receipt": attachments.get("License fee receipt"),
+                "detailed_mine_restoration_plan": attachments.get("Detailed Mine Restoration Plan"),
+                "deed_and_survey_plan": attachments.get("Deed and Survey Plan"),
+                "payment_receipt": attachments.get("Payment Receipt"),
+                "license_boundary_survey": attachments.get("License Boundary Survey")
+            }
+
+            return formatted_issue, None
+
+        except Exception as e:
+            return None, f"Server error: {str(e)}"
+        
+
+    @staticmethod
+    def get_miningLicense_view_button(token, issue_id):
+        try:
+            
+            api_key = JWTUtils.get_api_key_from_token(token)
+            if not api_key:
+                return None, "Invalid or missing API key"
+
+            REDMINE_URL = os.getenv("REDMINE_URL")
+            if not REDMINE_URL:
+                return None, "REDMINE_URL environment variable not set"
+
+            issue_url = f"{REDMINE_URL}/issues/{issue_id}.json?include=attachments"
+            response = requests.get(
+                issue_url,
+                headers={"X-Redmine-API-Key": api_key, "Content-Type": "application/json"}
+            )
+
+            if response.status_code != 200:
+                return None, f"Failed to fetch issue: {response.status_code} - {response.text}"
+
+            issue = response.json().get("issue")
+            if not issue:
+                return None, "Issue data not found"
+
+            custom_fields = issue.get("custom_fields", [])
+            custom_field_map = {field["name"]: field.get("value") for field in custom_fields}
+
+            attachments = GsmbOfficerService.get_attachment_urls(api_key, REDMINE_URL, custom_fields)
+
+            formatted_issue = {
+                "id": issue.get("id"),
+                "subject": issue.get("subject"),
+                "start_date": issue.get("start_date"),
+                "due_date": issue.get("due_date"),
+                "status": issue.get("status", {}).get("name"),
+                "assigned_to": issue.get("assigned_to", {}).get("name"),
+                "land_name": custom_field_map.get("Land Name(Licence Details)"),
+                "land_owner_name": custom_field_map.get("Land owner name"),
+                "village_name": custom_field_map.get("Name of village "),
+                "grama_niladhari_division": custom_field_map.get("Grama Niladhari Division"),
+                "capacity": custom_field_map.get("Capacity"),
+                "used": custom_field_map.get("Used"),
+                "remaining": custom_field_map.get("Remaining"),
+                "exploration_licence_no": custom_field_map.get("Exploration Licence No"),
+                "royalty": custom_field_map.get("Royalty"),
+                "divisional_secretary_division": custom_field_map.get("Divisional Secretary Division"),
+                "administrative_district": custom_field_map.get("Administrative District"),
+                "mining_license_number": custom_field_map.get("Mining License Number"),
+                "mobile_number": custom_field_map.get("Mobile Number"),
+                "economic_viability_report": attachments.get("Economic Viability Report"),
+                "license_fee_receipt": attachments.get("License fee receipt"),
+                "detailed_mine_restoration_plan": attachments.get("Detailed Mine Restoration Plan"),
+                "deed_and_survey_plan": attachments.get("Deed and Survey Plan"),
+                "payment_receipt": attachments.get("Payment Receipt"),
+                "license_boundary_survey": attachments.get("License Boundary Survey")
+            }
+
+            return formatted_issue, None
+
+        except Exception as e:
+            return None, f"Server error: {str(e)}"
+
+

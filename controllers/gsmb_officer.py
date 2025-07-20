@@ -7,6 +7,11 @@ import os
 from werkzeug.utils import secure_filename
 import tempfile
 from utils.user_utils import UserUtils
+import requests  # For making HTTP requests to Redmine
+from flask import Response  # For streaming file responses in Flask
+from utils.jwt_utils import JWTUtils
+from werkzeug.http import parse_options_header
+
 
 
 # Define the Blueprint for gsmb_officer
@@ -83,6 +88,8 @@ def add_new_license():
     
 
            # Fetch a single license by ID
+
+
 @gsmb_officer_bp.route('/get-license/<int:licenseId>', methods=['GET'])
 @check_token
 @role_required(['GSMBOfficer'])
@@ -107,6 +114,8 @@ def get_license_details(licenseId):
 
 
            # Update a license by ID
+
+
 @gsmb_officer_bp.route('/update-license/<int:licenseId>', methods=['PUT'])
 @check_token
 @role_required(['GSMBOfficer'])
@@ -343,28 +352,47 @@ def get_mining_license_by_id(issue_id):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-
-@gsmb_officer_bp.route('/get-mining-license-requests', methods=['GET'])
+                                                                                
+@gsmb_officer_bp.route('/download-attachment/<int:attachment_id>', methods=['GET'])
 @check_token
 @role_required(['GSMBOfficer'])
-def get_mining_license_requests():
+def download_attachment(attachment_id):
     try:
         token = request.headers.get('Authorization')
+        api_key = JWTUtils.get_api_key_from_token(token)
+        # api_key = os.getenv("REDMINE_ADMIN_API_KEY")
 
-        if not token:
-            return jsonify({"error": "Authorization token is missing"}), 400
+        REDMINE_URL = os.getenv("REDMINE_URL")
+        attachment_url = f"{REDMINE_URL}/attachments/download/{attachment_id}"
 
-        mining_licenses, error = GsmbOfficerService.get_mining_license_requests(token)
+        response = requests.get(
+            attachment_url,
+            headers={"X-Redmine-API-Key": api_key},
+            stream=True
+        )
 
-        if error:
-            return jsonify({"error": error}), 500
+        if response.status_code != 200:
+            return jsonify({"error": "Failed to fetch attachment"}), response.status_code
 
-        return jsonify({"success": True, "data": mining_licenses}), 200
+        # Extract filename
+        content_disposition = response.headers.get('Content-Disposition', '')
+        filename = f'attachment_{attachment_id}'  # Default fallback
+        if content_disposition:
+            _, params = parse_options_header(content_disposition)
+            filename = params.get('filename', filename)
 
+        # Use fallback content type
+        content_type = response.headers.get('Content-Type', 'application/octet-stream')
+
+        return Response(
+            response.iter_content(chunk_size=1024),
+            content_type=content_type,
+            headers={
+                'Content-Disposition': f'attachment; filename="{filename}"'
+            }
+        )
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 @gsmb_officer_bp.route('/get-complaints', methods=['GET'])
 @check_token
@@ -518,15 +546,9 @@ def reject_physical_document():
         if not token:
             return jsonify({"error": "Authorization token is missing"}), 400
 
-        # Extract form-data
-        comments = request.form.get('comments')
         mining_request_id = request.form.get('mining_request_id')
 
-        if not comments or not mining_request_id:
-            return jsonify({"error": "Missing comments or mining_request_id"}), 400
-
         data = {
-            "comments": comments,
             "mining_request_id": mining_request_id
         }
 
@@ -637,10 +659,11 @@ def approve_license():
 
         data = request.get_json()
         issue_id = data.get('issue_id')
-        new_status_id = data.get('new_status_id')
+        # Use default value 7 if not provided
+        new_status_id = data.get('new_status_id', 7)
 
-        if not all([issue_id, new_status_id]):
-            return jsonify({"error": "Missing required parameters"}), 400
+        if not issue_id:
+            return jsonify({"error": "Missing required parameter: issue_id"}), 400
 
         result = GsmbOfficerService.approve_mining_license(
             token=token,
@@ -651,7 +674,6 @@ def approve_license():
         # Handle response
         if not result.get('success'):
             return jsonify({"error": result.get('message', 'Approval failed')}), 500
-
 
         return jsonify({"success": True}), 200
 
@@ -684,6 +706,68 @@ def update_issue_status():
             return jsonify({"error": error}), 500
 
         return jsonify({"success": True}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+
+@gsmb_officer_bp.route('/complaint/<int:issue_id>/resolve', methods=['PUT'])
+@check_token
+@role_required(['GSMBOfficer'])
+def mark_complaint_resolved(issue_id):
+    try:
+        token = request.headers.get('Authorization')
+        if not token:
+            return jsonify({"error": "Authorization token is missing"}), 400
+
+        result, error = GsmbOfficerService.mark_complaint_resolved(token, issue_id)
+
+        if error:
+            return jsonify({"error": error}), 500
+
+        return jsonify({"success": True, "message": "Complaint marked as resolved"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+
+
+@gsmb_officer_bp.route('/get-mining-license-request', methods=['GET'])
+@check_token
+@role_required(['GSMBOfficer'])
+def get_mining_license_request():
+    try:
+        token = request.headers.get('Authorization')
+
+        if not token:
+            return jsonify({"error": "Authorization token is missing"}), 400
+
+        summary_data, error = GsmbOfficerService.get_mining_license_request(token)
+
+        if error:
+            return jsonify({"error": error}), 500
+
+        return jsonify({"success": True, "data": summary_data}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@gsmb_officer_bp.route('/get-miningRequest-view-button/<int:issue_id>', methods=['GET'])
+@check_token
+@role_required(['GSMBOfficer'])
+def get_miningRequest_view_button(issue_id):
+    try:
+        token = request.headers.get('Authorization')
+        if not token:
+            return jsonify({"error": "Authorization token is missing"}), 400
+
+        # Fetch issue details
+        mining_license, error = GsmbOfficerService.get_miningLicense_view_button(token, issue_id)
+
+        if error:
+            return jsonify({"error": error}), 500
+
+        return jsonify({"success": True, "data": mining_license}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500

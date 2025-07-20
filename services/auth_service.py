@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime, timedelta
 import smtplib
 from email.mime.text import MIMEText
-from services.general_public_service import cache  # Import the existing cache instance
+from services.cache import cache  # Import the existing cache instance
 import logging
 
 # Configure logging
@@ -37,7 +37,7 @@ class AuthService:
             )
 
             if response.status_code != 200:
-                return None, None, 'Invalid credentials'
+                return None, None, 'Invalid credentials. Check the Username and password and try again.'
 
             user_data = response.json().get('user')
             if not user_data:
@@ -78,6 +78,7 @@ class AuthService:
 
             # Extract email from the token info
             email = id_info.get('email')
+    
             if not email:
                 return None, "Email not found in Google token"
 
@@ -91,27 +92,14 @@ class AuthService:
             if users_response.status_code != 200 or not users_response.json().get('users'):
                 return None, "User not found in Redmine"
 
+            
             user_id = users_response.json()['users'][0]['id']
             user_data = users_response.json()['users'][0] 
-
-            user_details_response = requests.get(
-                f"{REDMINE_URL}/users/{user_id}.json",
-                headers={"X-Redmine-API-Key": REDMINE_API_KEY}
-            )
-
-            if user_details_response.status_code != 200:
-                return None, "Failed to fetch user details"
-
-            # Extract API key from the user details response
-            user_details = user_details_response.json().get('user', {})
-            api_key = user_details.get('api_key')
-            if not api_key:
-                return None, "API key not found for the user"
 
             # Get User Role from Redmine Memberships
             memberships_response = requests.get(
               
-                f"{REDMINE_URL}/projects/GSMB/memberships.json",
+                f"{REDMINE_URL}/projects/mmpro-gsmb/memberships.json",
                 headers={"X-Redmine-API-Key": REDMINE_API_KEY}
             )
 
@@ -119,7 +107,7 @@ class AuthService:
                 return None, "Failed to fetch Redmine memberships"
 
             memberships = memberships_response.json().get('memberships', [])
-
+    
             # Find the role associated with the user_id
             gsm_project_role = None
             for membership in memberships:
@@ -128,13 +116,90 @@ class AuthService:
 
             if not gsm_project_role:
                 return None, "User role not found in Redmine"
+            
+            print("gsm_project_role",gsm_project_role)
 
-            return user_id,user_data,gsm_project_role,api_key
+            print("user_id", user_id)
+
+            return user_id, user_data,gsm_project_role
 
         except ValueError as e:
             return None, f"Invalid Google token: {str(e)}"
         except Exception as e:
             return None, f"Server error: {str(e)}"
+
+    # @staticmethod
+    # def authenticate_google_token(token):
+    #     try:
+    #         # 1. Verify Google token
+    #         id_info = id_token.verify_oauth2_token(
+    #             token,
+    #             google_requests.Request(),
+    #             GOOGLE_CLIENT_ID
+    #         )
+            
+    #         if not (email := id_info.get('email')):
+    #             return None, "Email not found in Google token"
+
+    #         # 2. Find user in Redmine
+    #         users_response = requests.get(
+    #             f"{REDMINE_URL}/users.json",
+    #             params={"mail": email},
+    #             headers={"X-Redmine-API-Key": REDMINE_API_KEY},
+    #             timeout=10
+    #         )
+    #         users_response.raise_for_status()
+            
+    #         if not (users := users_response.json().get('users', [])):
+    #             return None, "User not found in Redmine"
+
+    #         user = users[0]
+    #         user_id = user['id']
+
+    #         print("user_id", user_id)
+    #         # 3. Get user API key
+    #         user_details_response = requests.get(
+    #             f"{REDMINE_URL}/users/{user_id}.json",
+    #             headers={"X-Redmine-API-Key": REDMINE_API_KEY},
+    #             timeout=10
+    #         )
+    #         user_details_response.raise_for_status()
+
+    #         if not (api_key := user_details_response.json().get('user', {}).get('api_key')):
+    #             return None, "API key not found for the user"
+
+    #         # 4. Check project membership and role
+    #         memberships_response = requests.get(
+    #             f"{REDMINE_URL}/users/{user_id}/memberships.json",
+    #             params={"project_id": 1},  # MMPRO-GSMB project
+    #             headers={"X-Redmine-API-Key": REDMINE_API_KEY},
+    #             timeout=10
+    #         )
+    #         memberships_response.raise_for_status()
+
+    #         memberships = memberships_response.json().get('memberships', [])
+
+    #         print("memberships",memberships)
+    #         if not memberships:
+    #             return None, "User is not a member of the required project"
+
+    #         # Get all roles from all memberships
+    #         roles = []
+    #         for membership in memberships:
+    #             roles.extend(membership.get('roles', []))
+
+    #         if not roles:
+    #             return None, "User has no roles in the project"
+
+    #         # Return first role found
+    #         return user_id, user, roles[0].get('name'), api_key
+
+    #     except ValueError as e:
+    #         return None, f"Invalid Google token: {str(e)}"
+    #     except requests.exceptions.RequestException as e:
+    #         return None, f"Redmine API error: {str(e)}"
+    #     except Exception as e:
+    #         return None, f"Server error: {str(e)}"
         
     @staticmethod
     def authenticate_google_access_token(access_token):
@@ -167,18 +232,18 @@ class AuthService:
             user_id = users_response.json()['users'][0]['id']
             user_data = users_response.json()['users'][0]
 
-            user_details_response = requests.get(
-                f"{REDMINE_URL}/users/{user_id}.json",
-                headers={"X-Redmine-API-Key": REDMINE_API_KEY}
-            )
+            # user_details_response = requests.get(
+            #     f"{REDMINE_URL}/users/{user_id}.json",
+            #     headers={"X-Redmine-API-Key": REDMINE_API_KEY}
+            # )
 
-            if user_details_response.status_code != 200:
-                return None, "Failed to fetch user details"
+            # if user_details_response.status_code != 200:
+            #     return None, "Failed to fetch user details"
 
-            user_details = user_details_response.json().get('user', {})
-            api_key = user_details.get('api_key')
-            if not api_key:
-                return None, "API key not found for the user"
+            # user_details = user_details_response.json().get('user', {})
+            # api_key = user_details.get('api_key')
+            # if not api_key:
+            #     return None, "API key not found for the user"
 
             memberships_response = requests.get(
               
@@ -200,13 +265,13 @@ class AuthService:
             if not gsm_project_role:
                 return None, "User role not found in Redmine"
 
-            return user_id, user_data, gsm_project_role, api_key
+            return user_id, user_data, gsm_project_role
 
         except Exception as e:
             return None, f"Error: {str(e)}"
         
     @staticmethod
-    def initiate_password_reset(email):
+    def initiate_password_reset(email,redirect_base_url=None):
         """
         Initiates the password reset process.
         - Checks if the email exists.
@@ -229,7 +294,11 @@ class AuthService:
         cache.set(cache_key, email, expires_in)
 
         # Send the reset link to the user's email
-        reset_link = f"http://localhost:5173/reset-password?token={reset_token}"
+        if redirect_base_url:
+            reset_link = f"{redirect_base_url}?token={reset_token}"
+        else:
+
+            reset_link = f"https://mmpro.aasait.lk/reset-password?token={reset_token}"
         AuthService.send_reset_email(email, reset_link)
 
         return {'message': 'Password reset initiated'} 
@@ -395,31 +464,31 @@ class AuthService:
         else:
             return None, response.json()
         
-    @staticmethod
-    def upload_file_to_redmine(file):
+    # @staticmethod
+    # def upload_file_to_redmine(file):
      
-        """
-        Uploads a file to Redmine and returns the attachment ID.
-        """
-        REDMINE_URL = os.getenv("REDMINE_URL")
-        admin_api_key = os.getenv("REDMINE_ADMIN_API_KEY")
+    #     """
+    #     Uploads a file to Redmine and returns the attachment ID.
+    #     """
+    #     REDMINE_URL = os.getenv("REDMINE_URL")
+    #     admin_api_key = os.getenv("REDMINE_ADMIN_API_KEY")
         
 
-        url = f"{REDMINE_URL}/uploads.json?filename={file.filename}"
+    #     url = f"{REDMINE_URL}/uploads.json?filename={file.filename}"
 
-        headers = {
-            "X-Redmine-API-Key": admin_api_key,
-            "Content-Type":"application/octet-stream",
-            "Accept": "application/json"
-        }
+    #     headers = {
+    #         "X-Redmine-API-Key": admin_api_key,
+    #         "Content-Type":"application/octet-stream",
+    #         "Accept": "application/json"
+    #     }
 
 
-        response = requests.post(url, headers=headers, data=file.stream)
+    #     response = requests.post(url, headers=headers, data=file.stream)
 
-        if response.status_code == 201:
-             return response.json().get("upload", {}).get("id")   # Attachment ID
-        else:
-            return None  # Handle failed upload
+    #     if response.status_code == 201:
+    #          return response.json().get("upload", {}).get("id")   # Attachment ID
+    #     else:
+    #         return None  # Handle failed upload
 
     @staticmethod   
     def assign_role(user_id, role_name):
@@ -427,7 +496,7 @@ class AuthService:
             # The role ID corresponding to the "PoliceOfficer" role in your project
             role_ids = {
                 "PoliceOfficer": 7, 
-                "GSMBOfficer":6 ,# Role ID for "PoliceOfficer" as per your Redmine API response
+                "GSMBOfficer":6 ,
                 "MLOwner":8,
                 "miningEngineer":10
             }
@@ -472,7 +541,7 @@ class AuthService:
                 "firstname": first_name,
                 "lastname": last_name,
                 "mail": email,
-                "status": 3, 
+                "status": 1, 
                 "password": password,
                 "custom_fields": custom_fields
             }
@@ -524,35 +593,80 @@ class AuthService:
         else:
             return None  # Handle failed upload
 
+    # @staticmethod
+    # def register_company(login, first_name, last_name, email, password, custom_fields):
+    #     """
+    #     Registers a mining license company in Redmine.
+    #     """
+    #     REDMINE_URL = os.getenv("REDMINE_URL")
+    #     admin_api_key = os.getenv("REDMINE_ADMIN_API_KEY")
+
+    #     url = f"{REDMINE_URL}/users.json"
+    #     headers = {
+    #         "X-Redmine-API-Key": admin_api_key,
+    #         "Content-Type": "application/json"
+    #     }
+
+    #     payload = {
+    #         "user": {
+    #             "login": login,
+    #             "firstname": first_name,
+    #             "lastname": last_name,
+    #             "mail": email,
+    #             "password": password,
+    #             "custom_fields": custom_fields
+    #         }
+    #     }
+
+    #     response = requests.post(url, headers=headers, json=payload)
+
+    #     if response.status_code in [200, 201]:
+    #         return response.json(), None
+    #     else:
+    #         return None, response.json()
+        
     @staticmethod
-    def register_company(login, first_name, last_name, email, password, custom_fields):
+    def reset_password_with_email(email, new_password):
         """
-        Registers a mining license company in Redmine.
+        Resets the user's password using their email (for OTP-based reset).
         """
-        REDMINE_URL = os.getenv("REDMINE_URL")
-        admin_api_key = os.getenv("REDMINE_ADMIN_API_KEY")
+        if not email:
+            return {'success': False, 'error': 'Email is required'}
 
-        url = f"{REDMINE_URL}/users.json"
+        try:
+            users_response = requests.get(
+                f"{REDMINE_URL}/users.json",
+                params={"mail": email},
+                headers={"X-Redmine-API-Key": REDMINE_API_KEY}
+            )
+            users_response.raise_for_status()  # Raise an exception for HTTP errors
+
+            users = users_response.json().get('users', [])
+            if not users:
+                return {'success': False, 'error': 'User not found in Redmine'}
+
+            user_id = users[0]['id']
+        except requests.exceptions.RequestException as e:
+            print(f"Failed to fetch user details: {e}")
+            return {'success': False, 'error': 'Failed to fetch user details from Redmine'}
+
+        # Step 2: Update the user's password
+        update_url = f"{REDMINE_URL}/users/{user_id}.json"
         headers = {
-            "X-Redmine-API-Key": admin_api_key,
-            "Content-Type": "application/json"
+            'X-Redmine-API-Key': REDMINE_API_KEY,
+            'Content-Type': 'application/json'
         }
-
         payload = {
-            "user": {
-                "login": login,
-                "firstname": first_name,
-                "lastname": last_name,
-                "mail": email,
-                "password": password,
-                "custom_fields": custom_fields
+            'user': {
+                'password': new_password
             }
         }
 
-        response = requests.post(url, headers=headers, json=payload)
-
-        if response.status_code in [200, 201]:
-            return response.json(), None
-        else:
-            return None, response.json()
-        
+        try:
+            response = requests.put(update_url, headers=headers, json=payload)
+            response.raise_for_status()  # Raise an exception for HTTP errors
+            print(f"Password updated successfully for user {email}")
+            return {'success': True}
+        except requests.exceptions.RequestException as e:
+            print(f"Failed to update password: {e}")
+            return {'success': False, 'error': 'Failed to update password in Redmine'}

@@ -724,11 +724,7 @@ class GsmbManagmentService:
                     for field in custom_fields
                     if field.get("value")
                 }
-            
-                # Get attachment URLs
-                attachment_urls = GsmbManagmentService.get_attachment_urls(api_key, REDMINE_URL, custom_fields)
-            
-                # Create officer object following your response pattern
+
                 officer = {
                     "id": user["id"],
                     "name": f"{user.get('firstname', '')} {user.get('lastname', '')}".strip(),
@@ -737,11 +733,11 @@ class GsmbManagmentService:
                     "custom_fields": {
                         "Designation": custom_fields_dict.get("Designation"),
                         "Mobile Number": custom_fields_dict.get("Mobile Number"),
-                        "NIC back image": attachment_urls.get("NIC back image") or custom_fields_dict.get("NIC back image"),
-                        "NIC front image": attachment_urls.get("NIC front image") or custom_fields_dict.get("NIC front image"),
+                        "NIC back image":custom_fields_dict.get("NIC back image"),
+                        "NIC front image": custom_fields_dict.get("NIC front image"),
                         "National Identity Card": custom_fields_dict.get("National Identity Card"),
                         "User Type": custom_fields_dict.get("User Type"),
-                        "work ID": attachment_urls.get("work ID") or custom_fields_dict.get("work ID")
+                        "work ID": custom_fields_dict.get("work ID")
                     }
                 }
                 officers.append(officer)
@@ -755,8 +751,159 @@ class GsmbManagmentService:
             print(f"Unexpected Error: {str(e)}")
             return None, f"Processing error occurred"    
         
+
     @staticmethod
-    def activate_gsmb_officer(token,id,update_data):
+    def get_users_by_type(token, user_type):
+        try:
+            REDMINE_URL = os.getenv("REDMINE_URL", "http://gsmb.aasait.lk")
+            api_key = JWTUtils.get_api_key_from_token(token)
+
+            if not api_key:
+                return None, "API Key is missing"
+
+            headers = {
+                "X-Redmine-API-Key": api_key,
+                "Content-Type": "application/json",
+                "User-Agent": "GSMB-Management-Service/1.0"
+            }
+
+            all_users = []
+            offset = 0
+            limit = 100  # Redmine's max per page
+            
+            while True:
+                params = {
+                    "status": 3, 
+                    "include": "custom_fields",
+                    "offset": offset,
+                    "limit": limit
+                }
+                
+                response = requests.get(
+                    f"{REDMINE_URL}/users.json",
+                    headers=headers,
+                    params=params,
+                    timeout=10
+                )
+
+                if response.status_code != 200:
+                    return None, f"API request failed (Status {response.status_code})"
+
+                data = response.json()
+                users = data.get("users", [])
+                all_users.extend(users)
+                
+                # Check if we've got all users
+                total_count = data.get("total_count", 0)
+                if len(all_users) >= total_count or len(users) < limit:
+                    break
+                    
+                offset += limit
+
+            # Filter users by type
+            matched_users = []
+            for user in all_users:
+                custom_fields = user.get("custom_fields", [])
+                custom_fields_dict = {
+                    field["name"]: field["value"]
+                    for field in custom_fields
+                    if field.get("value")
+                }
+
+                if custom_fields_dict.get("User Type") == user_type:
+                    matched_users.append({
+                        "id": user["id"],
+                        "name": f"{user.get('firstname', '')} {user.get('lastname', '')}".strip(),
+                        "email": user.get("mail", ""),
+                        "status": user.get("status", 1),
+                        **custom_fields_dict
+                    })
+
+            return matched_users, None
+
+        except requests.exceptions.RequestException as e:
+            return None, f"Network error occurred: {str(e)}"
+        except Exception as e:
+            return None, f"Unexpected error: {str(e)}"
+        
+
+    @staticmethod
+    def get_active_ml_owners(token):
+        try:
+            REDMINE_URL = os.getenv("REDMINE_URL", "http://gsmb.aasait.lk")
+            api_key = JWTUtils.get_api_key_from_token(token)
+
+            if not api_key:
+                return None, "API Key is missing"
+
+            headers = {
+                "X-Redmine-API-Key": api_key,
+                "Content-Type": "application/json",
+                "User-Agent": "GSMB-Management-Service/1.0"
+            }
+
+            limit = 100
+            offset = 0
+            all_users = []
+
+            while True:
+                params = {
+                    "status": 1,  # active users
+                    "include": "custom_fields",
+                    "limit": limit,
+                    "offset": offset
+                }
+
+                response = requests.get(
+                    f"{REDMINE_URL}/users.json",
+                    headers=headers,
+                    params=params,
+                    timeout=10
+                )
+
+                if response.status_code != 200:
+                    return None, f"API request failed (Status {response.status_code})"
+
+                users_page = response.json().get("users", [])
+                all_users.extend(users_page)
+
+                if len(users_page) < limit:
+                    break  # no more pages
+
+                offset += limit
+
+            matched_users = []
+
+            for user in all_users:
+                custom_fields = user.get("custom_fields", [])
+                custom_fields_dict = {
+                    field["name"]: field["value"]
+                    for field in custom_fields
+                    if field.get("value")
+                }
+
+                user_type = custom_fields_dict.get("User Type", "")
+
+                if user_type == "mlOwner":
+                    matched_users.append({
+                        "id": user["id"],
+                        "name": f"{user.get('firstname', '')} {user.get('lastname', '')}".strip(),
+                        "email": user.get("mail", ""),
+                        "status": user.get("status", 1),
+                        **custom_fields_dict
+                    })
+
+            return matched_users, None
+
+        except requests.exceptions.RequestException as e:
+            return None, f"Network error occurred"
+        except Exception as e:
+            return None, f"Unexpected error: {str(e)}"
+
+
+        
+    @staticmethod
+    def activate_gsmb_officer(token,id):
         try:
             REDMINE_URL = os.getenv("REDMINE_URL")
             API_KEY = JWTUtils.get_api_key_from_token(token)
@@ -798,42 +945,73 @@ class GsmbManagmentService:
             return None, f"Unexpected error: {str(e)}"
         
 
+    # @staticmethod
+    # def get_attachment_urls(api_key, redmine_url, custom_fields):
+    #     try:
+    #         # Define the mapping of custom field names to their attachment IDs
+    #         file_fields = {
+    #             "NIC back image": None,
+    #             "NIC front image": None,
+    #             "work ID": None
+                
+    #         }
+
+    #         # Extract attachment IDs from custom fields
+    #         for field in custom_fields:
+    #             field_name = field.get("name")
+    #             attachment_id = field.get("value")
+
+    #             if field_name in file_fields and attachment_id.isdigit():
+    #                 file_fields[field_name] = attachment_id
+
+    #         # Fetch URLs for valid attachment IDs
+    #         file_urls = {}
+    #         for field_name, attachment_id in file_fields.items():
+    #             if attachment_id:
+    #                 attachment_url = f"{redmine_url}/attachments/{attachment_id}.json"
+    #                 response = requests.get(
+    #                     attachment_url,
+    #                     headers={"X-Redmine-API-Key": api_key, "Content-Type": "application/json"}
+    #                 )
+
+    #                 if response.status_code == 200:
+    #                     attachment_data = response.json().get("attachment", {})
+    #                     file_urls[field_name] = attachment_data.get("content_url", "")
+
+    #         return file_urls
+
+    #     except Exception as e:
+    #         return {}
+        
     @staticmethod
-    def get_attachment_urls(api_key, redmine_url, custom_fields):
+    def get_attachment_urls(custom_fields):
         try:
-            # Define the mapping of custom field names to their attachment IDs
-            file_fields = {
+            upload_field_names = {
                 "NIC back image": None,
                 "NIC front image": None,
                 "work ID": None
-                
             }
 
-            # Extract attachment IDs from custom fields
+            file_urls = {}
+
             for field in custom_fields:
                 field_name = field.get("name")
-                attachment_id = field.get("value")
+                raw_value = field.get("value")
 
-                if field_name in file_fields and attachment_id.isdigit():
-                    file_fields[field_name] = attachment_id
+                if field_name not in upload_field_names:
+                    continue
 
-            # Fetch URLs for valid attachment IDs
-            file_urls = {}
-            for field_name, attachment_id in file_fields.items():
-                if attachment_id:
-                    attachment_url = f"{redmine_url}/attachments/{attachment_id}.json"
-                    response = requests.get(
-                        attachment_url,
-                        headers={"X-Redmine-API-Key": api_key, "Content-Type": "application/json"}
-                    )
+                if not raw_value:
+                    file_urls[field_name] = None
+                    continue
 
-                    if response.status_code == 200:
-                        attachment_data = response.json().get("attachment", {})
-                        file_urls[field_name] = attachment_data.get("content_url", "")
+                attachment_id = str(raw_value).strip()
+                file_urls[field_name] = int(attachment_id) if attachment_id.isdigit() else None
 
             return file_urls
 
         except Exception as e:
+            print(f"[ERROR] Failed to get attachment IDs: {str(e)}")
             return {}
     
     @staticmethod
