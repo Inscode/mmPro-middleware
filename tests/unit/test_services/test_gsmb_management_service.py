@@ -324,7 +324,7 @@ def test_complaint_counts_success():
 
 @pytest.mark.usefixtures("mock_env")
 def test_role_counts_success(monkeypatch):
-    monkeypatch.setenv("REDMINE_URL", "http://fake-redmine-url")
+    monkeypatch.setenv("REDMINE_URL", "https://fake-redmine-url")
 
     mock_page1 = {
         "memberships": [
@@ -414,9 +414,9 @@ def test_unactive_gsmb_officers_success():
 
     # Mock attachment URLs
     mock_attachment_urls = {
-        "NIC back image": "http://fake-redmine-url/attachments/nic-back.jpg",
-        "NIC front image": "http://fake-redmine-url/attachments/nic-front.jpg",
-        "work ID": "http://fake-redmine-url/attachments/work-id.jpg"
+        "NIC back image": "https://fake-redmine-url/attachments/nic-back.jpg",
+        "NIC front image": "https://fake-redmine-url/attachments/nic-front.jpg",
+        "work ID": "https://fake-redmine-url/attachments/work-id.jpg"
     }
 
     with patch("utils.jwt_utils.JWTUtils.get_api_key_from_token", return_value="fake-api-key"), \
@@ -441,7 +441,7 @@ def test_license_expired_with_future_date():
 
 @pytest.fixture
 def mock_env(monkeypatch):
-    monkeypatch.setenv("REDMINE_URL", "http://fake-redmine.com")
+    monkeypatch.setenv("REDMINE_URL", "https://fake-redmine.com")
 
 
 @pytest.fixture

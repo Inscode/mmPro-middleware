@@ -1,11 +1,21 @@
 # tests/unit/test_auth_controller.py
 
+import os
+from dotenv import load_dotenv
 import pytest
 from unittest.mock import patch
 from flask import url_for
 import jwt
 from config import Config
 import io
+
+load_dotenv()
+
+TEST_USERNAME = os.getenv("TEST_USERNAME")
+TEST_PASSWORD = os.getenv("TEST_PASSWORD")
+
+INVALID_TEST_USERNAME = os.getenv("INVALID_TEST_USERNAME")
+INVALID_TEST_PASSWORD = os.getenv("INVALID_TEST_PASSWORD")
 
 def test_login_success(client):
     mock_user_data = {
@@ -25,8 +35,8 @@ def test_login_success(client):
     with patch('services.auth_service.AuthService.authenticate_user', return_value=(mock_user_data, mock_user_role, mock_api_key)):
         with patch('utils.jwt_utils.JWTUtils.create_jwt_token', return_value=mock_tokens):
             response = client.post('/auth/login', json={
-                'username': 'testuser',
-                'password': 'testpass'
+                'username': TEST_USERNAME,
+                'password': TEST_PASSWORD
             })
             assert response.status_code == 200
             json_data = response.get_json()
@@ -48,8 +58,8 @@ def test_login_missing_credentials(client):
 def test_login_invalid_credentials(client):
     with patch('services.auth_service.AuthService.authenticate_user', return_value=(None, None, 'Invalid credentials')):
         response = client.post('auth/login', json={
-            'username': 'wronguser',
-            'password': 'wrongpass'
+            'username': INVALID_TEST_USERNAME,
+            'password': INVALID_TEST_PASSWORD
         })
         assert response.status_code == 401
         json_data = response.get_json()

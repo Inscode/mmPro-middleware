@@ -9,6 +9,8 @@ import smtplib
 from email.mime.text import MIMEText
 from services.cache import cache
 import random
+import secrets  
+
 
 auth_bp = Blueprint('auth_controller', __name__)
 
@@ -101,9 +103,9 @@ def refresh_token():
       
         user_role = decoded_payload["role"]
        
-        api_key = UserUtils.get_user_api_key(user_id)
+        # api_key = UserUtils.get_user_api_key(user_id)
        
-        new_access_token = JWTUtils.create_access_token(user_id, user_role, api_key)
+        new_access_token = JWTUtils.create_access_token(user_id, user_role)
 
         return jsonify({
             'access_token': new_access_token  
@@ -625,7 +627,7 @@ def mobile_forgot_password():
         return jsonify({'message': 'Email is required'}), 400
 
     # Generate 6-digit OTP
-    otp = str(random.randint(100000, 999999))
+    otp = str(secrets.randbelow(100000, 999999))
     cache.set(f"otp:{email}", otp, expire=300)  # 5 minutes expiry
 
     # Send OTP via email
@@ -697,7 +699,7 @@ def mobile_reset_password():
 @auth_bp.route('/ping', methods=['GET'])
 def ping():
     print("✅ /ping endpoint hit")
-    return jsonify({ "message": "Ping received successfully 🎯" })
+    return jsonify({ "message": "Ping successful 🎯" })
 
     
 

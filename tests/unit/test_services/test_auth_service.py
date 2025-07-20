@@ -7,7 +7,7 @@ from unittest.mock import patch, MagicMock, ANY
 import requests
 import io
 
-REDMINE_URL = "http://test.redmine.url"
+REDMINE_URL = "https://test.redmine.url"
 REDMINE_API_KEY = "test_api_key"
 REDMINE_ADMIN_API_KEY = "test_admin_api_key"
 
@@ -314,7 +314,7 @@ def test_send_reset_email_success():
         mock_server = MagicMock()
         mock_smtp.return_value.__enter__.return_value = mock_server
         
-        AuthService.send_reset_email('test@example.com', 'http://reset.link')
+        AuthService.send_reset_email('test@example.com', 'https://reset.link')
         
         mock_smtp.assert_called_once_with('smtp.gmail.com', 587)
         mock_server.starttls.assert_called_once()
@@ -327,7 +327,7 @@ def test_send_reset_email_failure():
         mock_smtp.side_effect = Exception("SMTP Error")
         
         # This should not raise an exception
-        AuthService.send_reset_email('test@example.com', 'http://reset.link')
+        AuthService.send_reset_email('test@example.com', 'https://reset.link')
 
 @pytest.fixture
 def mock_env(monkeypatch):
