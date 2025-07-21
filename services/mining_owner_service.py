@@ -1138,7 +1138,6 @@ class MLOwnerService:
                         {"id": 29, "value": data.get("land_owner_name", "")},
                         {"id": 30, "value": data.get("village_name", "")},
                         {"id": 31, "value": data.get("grama_niladari", "")},
-                        {"id": 31, "value": data.get("grama_niladari", "")},
                         {"id": 32, "value": data.get("divisional_secretary_division", "")},
                         {"id": 33, "value": data.get("administrative_district", "")},   
                         {"id": 92, "value": data.get("google_location", "")}, 
