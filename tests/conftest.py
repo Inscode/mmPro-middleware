@@ -23,5 +23,5 @@ def runner(app):
 
 @pytest.fixture
 def mock_env(monkeypatch):
-    monkeypatch.setenv("REDMINE_URL", "http://fake-redmine")
+    monkeypatch.setenv("REDMINE_URL", "https://fake-redmine")
     monkeypatch.setenv("REDMINE_ADMIN_API_KEY", "fake-api-key")

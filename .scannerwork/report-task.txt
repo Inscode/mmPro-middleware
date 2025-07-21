@@ -1,0 +1,6 @@
+projectKey=Mmpro-middleware
+serverUrl=https://jenkins.aasait.lk
+serverVersion=9.9.8.100196
+dashboardUrl=https://jenkins.aasait.lk/dashboard?id=Mmpro-middleware
+ceTaskId=AZgrLkSmSCnbSw6iEO2N
+ceTaskUrl=https://jenkins.aasait.lk/api/ce/task?id=AZgrLkSmSCnbSw6iEO2N

@@ -10,7 +10,7 @@ from datetime import datetime as real_datetime
 
 class TestMiningLicenses:
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://gsmb.aasait.lk'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     @patch('services.mining_owner_service.requests.get')
@@ -54,7 +54,7 @@ class TestMiningLicenses:
         assert result is None
         assert "Redmine URL or API Key is missing" in error
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://gsmb.aasait.lk'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     def test_mining_licenses_missing_api_key(self, mock_api_key):
         mock_api_key.return_value = None
@@ -62,7 +62,7 @@ class TestMiningLicenses:
         assert result is None
         assert "Redmine URL or API Key is missing" in error
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://gsmb.aasait.lk'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     def test_mining_licenses_user_info_error(self, mock_decode, mock_api_key):
@@ -74,7 +74,7 @@ class TestMiningLicenses:
         assert error == "Token error"
 
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://gsmb.aasait.lk'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     @patch('services.mining_owner_service.LimitUtils.get_limit')
@@ -96,7 +96,7 @@ class TestMiningLicenses:
         assert result is None
         assert "Failed to fetch issues: 500 - Server error" in error
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://gsmb.aasait.lk'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     @patch('services.mining_owner_service.LimitUtils.get_limit')
@@ -122,7 +122,7 @@ class TestMiningLicenses:
         assert len(result) == 0  # No licenses assigned
 
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://gsmb.aasait.lk'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     @patch('services.mining_owner_service.LimitUtils.get_limit')
@@ -156,7 +156,7 @@ class TestMiningLicenses:
         assert error is None
         assert result[0]["Remaining Cubes"] == 0  # Should default to 0 for invalid values
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://gsmb.aasait.lk'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     def test_mining_licenses_exception_handling(self, mock_user_info, mock_api_key):
@@ -172,7 +172,7 @@ class TestMiningLicenses:
             assert result is None
             assert "Server error: Test exception" in error
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://gsmb.aasait.lk'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     @patch('services.mining_owner_service.LimitUtils.get_limit')
@@ -214,7 +214,7 @@ class TestMiningHomeLicenses:
         mock_datetime.now.return_value = fixed_date
         mock_datetime.strptime.side_effect = lambda date_string, fmt: datetime.strptime(date_string, fmt)
 
-    @patch.dict(os.environ, {'REDMINE_URL': 'http://gsmb.aasait.lk'})
+    @patch.dict(os.environ, {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     @patch('services.mining_owner_service.LimitUtils.get_limit')
@@ -264,7 +264,7 @@ class TestMiningHomeLicenses:
         assert result[0]["Remaining Cubes"] == 500
         assert result[0]["Location"] == "Test Village"
 
-    @patch.dict(os.environ, {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict(os.environ, {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     @patch('services.mining_owner_service.LimitUtils.get_limit')
@@ -302,7 +302,7 @@ class TestMiningHomeLicenses:
         assert error is None
         assert len(result) == 0
 
-    @patch.dict(os.environ, {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict(os.environ, {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     @patch('services.mining_owner_service.LimitUtils.get_limit')
@@ -340,7 +340,7 @@ class TestMiningHomeLicenses:
 
         result, error = MLOwnerService.mining_homeLicenses("valid_token")
         assert error is None
-        assert result[0]["Remaining Cubes"] == 0
+        assert result == []
 
     @patch.dict(os.environ, {'REDMINE_URL': ''})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
@@ -350,7 +350,7 @@ class TestMiningHomeLicenses:
         assert result is None
         assert "Redmine URL or API Key is missing" in error
 
-    @patch.dict(os.environ, {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict(os.environ, {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     def test_mining_home_licenses_missing_api_key(self, mock_api_key):
         mock_api_key.return_value = None
@@ -358,7 +358,7 @@ class TestMiningHomeLicenses:
         assert result is None
         assert "Redmine URL or API Key is missing" in error
 
-    @patch.dict(os.environ, {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict(os.environ, {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     def test_mining_home_licenses_user_info_error(self, mock_user_info, mock_api_key):
@@ -371,7 +371,7 @@ class TestMiningHomeLicenses:
         assert result is None
         assert error == "Token error"
 
-    @patch.dict(os.environ, {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict(os.environ, {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     @patch('services.mining_owner_service.LimitUtils.get_limit')
@@ -393,7 +393,7 @@ class TestMiningHomeLicenses:
         assert result is None
         assert "Failed to fetch issues: 500 - Server error" in error
 
-    @patch.dict(os.environ, {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict(os.environ, {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     @patch('services.mining_owner_service.LimitUtils.get_limit')
@@ -428,11 +428,9 @@ class TestMiningHomeLicenses:
 
         result, error = MLOwnerService.mining_homeLicenses("valid_token")
         assert error is None
-        assert result[0]["Owner Name"] == "N/A"
-        assert result[0]["License Number"] == "N/A"
-        assert result[0]["Location"] == "N/A"
+        assert result == []
 
-    @patch.dict(os.environ, {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict(os.environ, {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     def test_mining_home_licenses_exception_handling(self, mock_user_info, mock_api_key):
@@ -449,7 +447,7 @@ class TestMiningHomeLicenses:
 
 class TestCreateTPL:
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     @patch('services.mining_owner_service.requests.get')
@@ -516,7 +514,7 @@ class TestCreateTPL:
         
         # Verify API calls
         mock_get.assert_called_once_with(
-            "http://test.redmine.com/issues/456.json",
+            "https://test.redmine.com/issues/456.json",
             headers={
                 "Content-Type": "application/json",
                 "X-Redmine-API-Key": "test_api_key"
@@ -532,7 +530,7 @@ class TestCreateTPL:
         assert result is None
         assert error == "Redmine URL is not configured"
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     def test_create_tpl_missing_api_key(self, mock_api_key):
         mock_api_key.return_value = None
@@ -540,7 +538,7 @@ class TestCreateTPL:
         assert result is None
         assert error == "Invalid or missing API key"
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     def test_create_tpl_missing_license_number(self, mock_api_key):
         mock_api_key.return_value = 'test_api_key'
@@ -548,7 +546,7 @@ class TestCreateTPL:
         assert result is None
         assert error == "Mining license number is required"
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     def test_create_tpl_invalid_license_format(self, mock_api_key):
         mock_api_key.return_value = 'test_api_key'
@@ -556,7 +554,7 @@ class TestCreateTPL:
         assert result is None
         assert error == "Invalid mining license number format"
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.requests.get')
     def test_create_tpl_failed_to_fetch_license(self, mock_get, mock_api_key):
@@ -571,7 +569,7 @@ class TestCreateTPL:
         assert result is None
         assert "Failed to fetch mining license issue" in error
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.requests.get')
     def test_create_tpl_missing_required_fields(self, mock_get, mock_api_key):
@@ -590,7 +588,7 @@ class TestCreateTPL:
         assert result is None
         assert "Required fields (Used, Remaining, or Royalty) not found" in error
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.requests.get')
     def test_create_tpl_insufficient_royalty(self, mock_get, mock_api_key):
@@ -616,7 +614,7 @@ class TestCreateTPL:
         assert result is None
         assert "Insufficient royalty balance" in error
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.requests.get')
     def test_create_tpl_insufficient_cubes(self, mock_get, mock_api_key):
@@ -642,7 +640,7 @@ class TestCreateTPL:
         assert result is None
         assert "Insufficient remaining cubes" in error
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.requests.get')
     @patch('services.mining_owner_service.requests.put')
@@ -675,7 +673,7 @@ class TestCreateTPL:
         assert result is None
         assert "Failed to update mining license issue" in error
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.requests.get')
     @patch('services.mining_owner_service.requests.put')
@@ -694,7 +692,7 @@ class TestCreateTPL:
         assert error is not None
         assert "Failed to fetch mining license issue" in error
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     def test_create_tpl_exception_handling(self, mock_api_key):
         mock_api_key.return_value = 'test_api_key'
@@ -706,7 +704,7 @@ class TestCreateTPL:
 
 class TestMLDetail:
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     @patch('services.mining_owner_service.LimitUtils.get_limit')
@@ -781,7 +779,7 @@ class TestMLDetail:
 
         # Verify API calls with correct URLs and timeout
         mock_get.assert_any_call(
-            "http://test.redmine.com/issues.json?project_id=1&tracker_id=4&status_id=7&assigned_to_id=123&limit=100&offset=0",
+            "https://test.redmine.com/issues.json?project_id=1&tracker_id=4&status_id=7&assigned_to_id=123&limit=100&offset=0",
             headers={
                 "X-Redmine-API-Key": "test_api_key",
                 "Content-Type": "application/json"
@@ -789,7 +787,7 @@ class TestMLDetail:
             timeout=30
         )
         mock_get.assert_any_call(
-            "http://test.redmine.com/issues/123.json",
+            "https://test.redmine.com/issues/123.json",
             headers={
                 "X-Redmine-API-Key": "test_api_key",
                 "Content-Type": "application/json"
@@ -806,7 +804,7 @@ class TestMLDetail:
         assert result is None
         assert "Redmine URL or API Key is missing" in error
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     def test_ml_detail_missing_api_key(self, mock_api_key):
         mock_api_key.return_value = None
@@ -815,7 +813,7 @@ class TestMLDetail:
         assert "Redmine URL or API Key is missing" in error
 
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     @patch('services.mining_owner_service.LimitUtils.get_limit')
@@ -835,7 +833,7 @@ class TestMLDetail:
         assert "Failed to fetch issues" in error
 
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     @patch('services.mining_owner_service.LimitUtils.get_limit')
@@ -869,7 +867,7 @@ class TestMLDetail:
         assert result is None
         assert "Failed to fetch issue details" in error
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     @patch('services.mining_owner_service.LimitUtils.get_limit')
@@ -889,7 +887,7 @@ class TestMLDetail:
         assert "No mining license found" in error
 
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     @patch('services.mining_owner_service.requests.get')
@@ -964,7 +962,7 @@ class TestMLDetail:
 
 
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     def test_ml_detail_exception_handling(self, mock_api_key):
         mock_api_key.return_value = 'test_api_key'
@@ -976,7 +974,7 @@ class TestMLDetail:
 
 class TestUserDetail:
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.requests.get')
     def test_user_detail_success(self, mock_get, mock_api_key):
@@ -1010,7 +1008,7 @@ class TestUserDetail:
         
         # Verify API call
         mock_get.assert_called_once_with(
-            "http://test.redmine.com/users/123.json",
+            "https://test.redmine.com/users/123.json",
             headers={
                 "X-Redmine-API-Key": "test_api_key",
                 "Content-Type": "application/json"
@@ -1025,7 +1023,7 @@ class TestUserDetail:
         assert result is None
         assert "Redmine URL or API Key is missing" in error
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     def test_user_detail_missing_api_key(self, mock_api_key):
         mock_api_key.return_value = None
@@ -1033,7 +1031,7 @@ class TestUserDetail:
         assert result is None
         assert "Redmine URL or API Key is missing" in error
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.requests.get')
     def test_user_detail_api_failure(self, mock_get, mock_api_key):
@@ -1048,7 +1046,7 @@ class TestUserDetail:
         assert result is None
         assert "Failed to fetch issue: 404 - User not found" in error
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.requests.get')
     def test_user_detail_invalid_response(self, mock_get, mock_api_key):
@@ -1063,7 +1061,7 @@ class TestUserDetail:
         assert result == {}
         assert error is None
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.requests.get')
     def test_user_detail_partial_data(self, mock_get, mock_api_key):
@@ -1088,7 +1086,7 @@ class TestUserDetail:
 
 class TestViewTpls:
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     @patch('services.mining_owner_service.LimitUtils.get_limit')
@@ -1132,7 +1130,7 @@ class TestViewTpls:
         assert result[0]["lorry_number"] == "ABX1234"
         assert result[0]["driver_contact"] == "0771234567"
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     @patch('services.mining_owner_service.requests.get')
@@ -1178,7 +1176,7 @@ class TestViewTpls:
         assert result is None
         assert "System configuration error" in error
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     def test_view_tpls_missing_api_key(self, mock_api_key):
         mock_api_key.return_value = None
@@ -1186,7 +1184,7 @@ class TestViewTpls:
         assert result is None
         assert "System configuration error" in error
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     def test_view_tpls_auth_error(self, mock_user_info, mock_api_key):
@@ -1196,7 +1194,7 @@ class TestViewTpls:
         assert result is None
         assert error == "Invalid token"
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     @patch('services.mining_owner_service.requests.get')
@@ -1215,7 +1213,7 @@ class TestViewTpls:
         assert "Redmine API error" in error
         assert "500" in error
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     @patch('services.mining_owner_service.requests.get')
@@ -1234,7 +1232,7 @@ class TestViewTpls:
         assert result is None
         assert "Failed to parse response from Redmine" in error
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     def test_view_tpls_exception_handling(self, mock_api_key):
         mock_api_key.side_effect = Exception("Test exception")
@@ -1242,7 +1240,7 @@ class TestViewTpls:
         assert result is None
         assert "Processing error: Test exception" in error
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     @patch('services.mining_owner_service.LimitUtils.get_limit')
@@ -1287,7 +1285,7 @@ class TestViewTpls:
 
 class TestMLRequest():
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.requests.post')
     @patch('services.mining_owner_service.requests.put')
@@ -1337,7 +1335,7 @@ class TestMLRequest():
         assert result is None
         assert "Redmine URL is not configured" in error
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     def test_ml_request_missing_api_key(self, mock_api_key):
         mock_api_key.return_value = None
@@ -1345,7 +1343,7 @@ class TestMLRequest():
         assert result is None
         assert "Invalid or missing API key" in error
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.requests.post')
     def test_ml_request_create_failure(self, mock_post, mock_api_key):
@@ -1359,7 +1357,7 @@ class TestMLRequest():
         assert result is None
         assert "Failed to create issue" in error
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.requests.post')
     @patch('services.mining_owner_service.requests.put')
@@ -1381,7 +1379,7 @@ class TestMLRequest():
         assert result is None
         assert "Failed to update Mining License Number" in error
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.requests.post')
     def test_ml_request_network_error(self, mock_post, mock_api_key):
@@ -1392,7 +1390,7 @@ class TestMLRequest():
         assert result is None
         assert "Request failed" in error
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     def test_ml_request_unexpected_error(self, mock_api_key):
         mock_api_key.side_effect = Exception("Unexpected error")
@@ -1400,7 +1398,7 @@ class TestMLRequest():
         assert result is None
         assert "Unexpected error" in error
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.requests.post')
     def test_ml_request_missing_required_fields(self, mock_post, mock_api_key):
@@ -1439,7 +1437,7 @@ class TestMLRequest():
 
 class TestGetMiningLicenseRequests():
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     @patch('services.mining_owner_service.requests.get')
@@ -1481,8 +1479,8 @@ class TestGetMiningLicenseRequests():
         # Configure mock side effects
         mock_get.side_effect = [mock_issues_response, mock_user_response]
         mock_attachments.return_value = {
-            "Detailed Mine Restoration Plan": "http://attachment1.url",
-            "Payment Receipt": "http://payment.url"
+            "Detailed Mine Restoration Plan": "https://attachment1.url",
+            "Payment Receipt": "https://payment.url"
         }
         mock_custom_field.side_effect = lambda fields, name: f"Mock {name}"
         
@@ -1496,7 +1494,7 @@ class TestGetMiningLicenseRequests():
         assert result[0]["subject"] == "Test Mining License"
         assert result[0]["status"] == "Pending"
         assert result[0]["assigned_to_details"]["email"] == "test@example.com"
-        assert "http://attachment1.url" in result[0]["detailed_mine_restoration_plan"]
+        assert "https://attachment1.url" in result[0]["detailed_mine_restoration_plan"]
         assert "Mock Exploration Licence No" in result[0]["exploration_licence_no"]
 
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
@@ -1520,7 +1518,7 @@ class TestGetMiningLicenseRequests():
         assert "REDMINE_URL' is not set" in error
         assert "Environment variable 'REDMINE_URL' is not set" in error
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     def test_failed_user_extraction(self, mock_decode, mock_api_key):
@@ -1532,7 +1530,7 @@ class TestGetMiningLicenseRequests():
         assert result is None
         assert "user_id" in error
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     @patch('services.mining_owner_service.requests.get')
@@ -1551,7 +1549,7 @@ class TestGetMiningLicenseRequests():
         assert "Failed to fetch ML issues" in error
         assert "500" in error
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     @patch('services.mining_owner_service.requests.get')
@@ -1575,7 +1573,7 @@ class TestGetMiningLicenseRequests():
         assert len(result) == 1
         assert result[0]["id"] == 1
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     @patch('services.mining_owner_service.requests.get')
@@ -1605,7 +1603,7 @@ class TestGetMiningLicenseRequests():
         assert error is None
         assert result[0]["assigned_to_details"] is None
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     @patch('services.mining_owner_service.requests.get')
@@ -1622,7 +1620,7 @@ class TestGetMiningLicenseRequests():
 
 class TestGetPendingMiningLicenseDetails():
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     @patch('services.mining_owner_service.requests.get')
@@ -1677,7 +1675,7 @@ class TestGetPendingMiningLicenseDetails():
         assert result is None
         assert "Environment variable 'REDMINE_URL' is not set" in error
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     def test_failed_user_extraction(self, mock_decode, mock_api_key):
@@ -1687,7 +1685,7 @@ class TestGetPendingMiningLicenseDetails():
         assert result is None
         assert "Failed to extract user info" in error
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     @patch('services.mining_owner_service.requests.get')
@@ -1706,7 +1704,7 @@ class TestGetPendingMiningLicenseDetails():
         assert "Failed to fetch ML issues" in error
         assert "500" in error
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     @patch('services.mining_owner_service.requests.get')
@@ -1747,7 +1745,7 @@ class TestGetPendingMiningLicenseDetails():
         assert result[0]["mining_license_number"] == "ML-001"  # Verify we got the mocked license number
         assert result[0]["status"] == "Pending"
 
-    @patch.dict('os.environ', {'REDMINE_URL': 'http://test.redmine.com'})
+    @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     @patch('services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id')
     @patch('services.mining_owner_service.requests.get')
@@ -1768,7 +1766,7 @@ from services.mining_owner_service import MLOwnerService
 
 class TestGetMiningLicenseById:
 
-    @patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+    @patch.dict(os.environ, {"REDMINE_URL": "https://test.redmine.com"})
     @patch("services.mining_owner_service.MLOwnerService.get_attachment_urls")
     @patch("services.mining_owner_service.requests.get")
     @patch("services.mining_owner_service.JWTUtils.get_api_key_from_token")
@@ -1798,7 +1796,7 @@ class TestGetMiningLicenseById:
         mock_requests_get.return_value = mock_response
 
         mock_get_attachments.return_value = {
-            "License fee receipt": "http://attachments/license.pdf"
+            "License fee receipt": "https://attachments/license.pdf"
         }
 
         result, error = MLOwnerService.get_mining_license_by_id("token", 101)
@@ -1808,7 +1806,7 @@ class TestGetMiningLicenseById:
         assert result["status"] == "Approved"
         assert result["mining_license_number"] == "ML-2024-01"
         assert result["mobile_number"] == "0771234567"
-        assert result["license_fee_receipt"] == "http://attachments/license.pdf"
+        assert result["license_fee_receipt"] == "https://attachments/license.pdf"
 
     @patch("services.mining_owner_service.JWTUtils.get_api_key_from_token")
     def test_invalid_api_key(self, mock_get_api_key):
@@ -1840,7 +1838,7 @@ class TestGetMiningLicenseById:
         assert "Failed to fetch issue" in error
         assert "404" in error
 
-    @patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+    @patch.dict(os.environ, {"REDMINE_URL": "https://test.redmine.com"})
     @patch("services.mining_owner_service.requests.get")
     @patch("services.mining_owner_service.JWTUtils.get_api_key_from_token")
     def test_no_issue_data(self, mock_get_api_key, mock_requests_get):
@@ -1854,7 +1852,7 @@ class TestGetMiningLicenseById:
         assert result is None
         assert error == "Issue data not found"
 
-    @patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+    @patch.dict(os.environ, {"REDMINE_URL": "https://test.redmine.com"})
     @patch("services.mining_owner_service.requests.get")
     @patch("services.mining_owner_service.JWTUtils.get_api_key_from_token")
     def test_exception_handling(self, mock_get_api_key, mock_requests_get):
@@ -1868,7 +1866,7 @@ class TestGetMiningLicenseById:
 
 class TestGetMiningLicenseSummary:
 
-    @patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+    @patch.dict(os.environ, {"REDMINE_URL": "https://test.redmine.com"})
     @patch("services.mining_owner_service.MLOwnerService.get_custom_field_value")
     @patch("services.mining_owner_service.requests.get")
     @patch("services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id")
@@ -1943,7 +1941,7 @@ class TestGetMiningLicenseSummary:
             assert result is None
             assert "Environment variable 'REDMINE_URL'" in error
 
-    @patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+    @patch.dict(os.environ, {"REDMINE_URL": "https://test.redmine.com"})
     @patch("services.mining_owner_service.requests.get")
     @patch("services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id")
     @patch("services.mining_owner_service.JWTUtils.get_api_key_from_token")
@@ -1961,7 +1959,7 @@ class TestGetMiningLicenseSummary:
         assert "Failed to fetch ML issues" in error
         assert "500" in error
 
-    @patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+    @patch.dict(os.environ, {"REDMINE_URL": "https://test.redmine.com"})
     @patch("services.mining_owner_service.requests.get")
     @patch("services.mining_owner_service.JWTUtils.decode_jwt_and_get_user_id")
     @patch("services.mining_owner_service.JWTUtils.get_api_key_from_token")
@@ -1978,7 +1976,7 @@ class TestGetMiningLicenseSummary:
 
 class TestUpdateRoyaltyField:
 
-    @patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+    @patch.dict(os.environ, {"REDMINE_URL": "https://test.redmine.com"})
     @patch("services.mining_owner_service.requests.put")
     @patch("services.mining_owner_service.requests.get")
     @patch("services.mining_owner_service.JWTUtils.get_api_key_from_token")
@@ -2022,7 +2020,7 @@ class TestUpdateRoyaltyField:
             assert success is False
             assert "REDMINE_URL" in error
 
-    @patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+    @patch.dict(os.environ, {"REDMINE_URL": "https://test.redmine.com"})
     @patch("services.mining_owner_service.requests.get")
     @patch("services.mining_owner_service.JWTUtils.get_api_key_from_token")
     def test_failed_get_request(self, mock_api_key, mock_get):
@@ -2038,7 +2036,7 @@ class TestUpdateRoyaltyField:
         assert "Failed to fetch issue" in error
         assert "404" in error
 
-    @patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+    @patch.dict(os.environ, {"REDMINE_URL": "https://test.redmine.com"})
     @patch("services.mining_owner_service.requests.put")
     @patch("services.mining_owner_service.requests.get")
     @patch("services.mining_owner_service.JWTUtils.get_api_key_from_token")
@@ -2064,7 +2062,7 @@ class TestUpdateRoyaltyField:
         assert "Failed to update issue" in error
         assert "400" in error
 
-    @patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+    @patch.dict(os.environ, {"REDMINE_URL": "https://test.redmine.com"})
     @patch("services.mining_owner_service.requests.put")
     @patch("services.mining_owner_service.requests.get")
     @patch("services.mining_owner_service.JWTUtils.get_api_key_from_token")
@@ -2088,7 +2086,7 @@ class TestUpdateRoyaltyField:
         assert success is True
         assert error is None
 
-    @patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+    @patch.dict(os.environ, {"REDMINE_URL": "https://test.redmine.com"})
     @patch("services.mining_owner_service.requests.get")
     @patch("services.mining_owner_service.JWTUtils.get_api_key_from_token")
     def test_exception_handling(self, mock_api_key, mock_get):

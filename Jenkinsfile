@@ -12,11 +12,11 @@ pipeline {
         GIT_CREDENTIALS = 'git-ssh-key'
 
         // K8s manifest files
-        DEPLOYMENT_FILE = 'deployment.yaml'
-        ARGOCD_APP_FILE = 'argocd-app.yaml'
+        DEPLOYMENT_FILE = 'k8s/deployment.yaml'
+        ARGOCD_APP_FILE = 'k8s/argocd-app.yaml'
 
         // ArgoCD config
-        ARGOCD_SERVER = 'argocd.aasait.lk'
+        ARGOCD_SERVER = '124.43.163.209'
         ARGOCD_APP_NAME = 'mmpro-application'
     }
 
@@ -113,13 +113,15 @@ pipeline {
         stage('Trigger ArgoCD Sync') {
             steps {
                 withCredentials([string(credentialsId: 'argocd-api-token', variable: 'ARGOCD_TOKEN')]) {
-                    sh '''
+                     sh '''
                         curl -sS -X POST \
                         -H "Authorization: Bearer ${ARGOCD_TOKEN}" \
                         -H "Content-Type: application/json" \
+                        --insecure \
                         --data '{}' \
                         https://${ARGOCD_SERVER}/api/v1/applications/${ARGOCD_APP_NAME}/sync
                     '''
+
                 }
             }
         }

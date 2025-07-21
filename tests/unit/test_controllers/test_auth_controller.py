@@ -1,11 +1,21 @@
 # tests/unit/test_auth_controller.py
 
+import os
+from dotenv import load_dotenv
 import pytest
 from unittest.mock import patch
 from flask import url_for
 import jwt
 from config import Config
 import io
+
+load_dotenv()
+
+TEST_USERNAME = os.getenv("TEST_USERNAME")
+TEST_PASSWORD = os.getenv("TEST_PASSWORD")
+
+INVALID_TEST_USERNAME = os.getenv("INVALID_TEST_USERNAME")
+INVALID_TEST_PASSWORD = os.getenv("INVALID_TEST_PASSWORD")
 
 def test_login_success(client):
     mock_user_data = {
@@ -25,8 +35,8 @@ def test_login_success(client):
     with patch('services.auth_service.AuthService.authenticate_user', return_value=(mock_user_data, mock_user_role, mock_api_key)):
         with patch('utils.jwt_utils.JWTUtils.create_jwt_token', return_value=mock_tokens):
             response = client.post('/auth/login', json={
-                'username': 'testuser',
-                'password': 'testpass'
+                'username': TEST_USERNAME,
+                'password': TEST_PASSWORD
             })
             assert response.status_code == 200
             json_data = response.get_json()
@@ -48,8 +58,8 @@ def test_login_missing_credentials(client):
 def test_login_invalid_credentials(client):
     with patch('services.auth_service.AuthService.authenticate_user', return_value=(None, None, 'Invalid credentials')):
         response = client.post('auth/login', json={
-            'username': 'wronguser',
-            'password': 'wrongpass'
+            'username': INVALID_TEST_USERNAME,
+            'password': INVALID_TEST_PASSWORD
         })
         assert response.status_code == 401
         json_data = response.get_json()
@@ -323,13 +333,21 @@ def test_register_individual_mlowner_success(client):
 
 def test_mobile_forgot_password_success(client):
     email = 'test@example.com'
+
+    # Patch the SMTP and cache set methods
     with patch('smtplib.SMTP') as mock_smtp:
         with patch('services.cache.cache.set') as mock_cache_set:
+            # Perform the POST request
             response = client.post('/auth/mobile-forgot-password', json={'email': email})
+
+            # Assert response code and message
             assert response.status_code == 200
             json_data = response.get_json()
             assert json_data['message'] == 'OTP sent to email if it exists'
+
+            # Ensure cache.set was called once with expected arguments
             mock_cache_set.assert_called_once()
+            # Ensure SMTP was called once (i.e., email sending was attempted)
             mock_smtp.assert_called_once()
 
 def test_mobile_verify_otp_success(client):
