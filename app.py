@@ -7,6 +7,9 @@ from controllers import (
     mining_enginer_bp, gsmb_management_bp,
     director_general_bp
 )
+from flask_wtf import CSRFProtect
+
+csrf = CSRFProtect()
 
 def create_app():
     app = Flask(__name__)
