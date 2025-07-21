@@ -333,13 +333,21 @@ def test_register_individual_mlowner_success(client):
 
 def test_mobile_forgot_password_success(client):
     email = 'test@example.com'
+
+    # Patch the SMTP and cache set methods
     with patch('smtplib.SMTP') as mock_smtp:
         with patch('services.cache.cache.set') as mock_cache_set:
+            # Perform the POST request
             response = client.post('/auth/mobile-forgot-password', json={'email': email})
+
+            # Assert response code and message
             assert response.status_code == 200
             json_data = response.get_json()
             assert json_data['message'] == 'OTP sent to email if it exists'
+
+            # Ensure cache.set was called once with expected arguments
             mock_cache_set.assert_called_once()
+            # Ensure SMTP was called once (i.e., email sending was attempted)
             mock_smtp.assert_called_once()
 
 def test_mobile_verify_otp_success(client):
