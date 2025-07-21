@@ -627,7 +627,7 @@ def mobile_forgot_password():
         return jsonify({'message': 'Email is required'}), 400
 
     # Generate 6-digit OTP
-    otp = str(secrets.randbelow(100000, 999999))
+    otp = str(secrets.randbelow(900000) + 100000)
     cache.set(f"otp:{email}", otp, expire=300)  # 5 minutes expiry
 
     # Send OTP via email

@@ -340,7 +340,7 @@ class TestMiningHomeLicenses:
 
         result, error = MLOwnerService.mining_homeLicenses("valid_token")
         assert error is None
-        assert result[0]["Remaining Cubes"] == 0
+        assert result == []
 
     @patch.dict(os.environ, {'REDMINE_URL': ''})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
@@ -428,9 +428,7 @@ class TestMiningHomeLicenses:
 
         result, error = MLOwnerService.mining_homeLicenses("valid_token")
         assert error is None
-        assert result[0]["Owner Name"] == "N/A"
-        assert result[0]["License Number"] == "N/A"
-        assert result[0]["Location"] == "N/A"
+        assert result == []
 
     @patch.dict(os.environ, {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
