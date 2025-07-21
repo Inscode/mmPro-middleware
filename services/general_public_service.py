@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 from twilio.rest import Client
 from twilio.base.exceptions import TwilioException
 from utils.jwt_utils import JWTUtils
-import random
 from services.cache import cache
 # from datetime import datetime, timedelta, UTC, timezone
 from datetime import datetime, timedelta, timezone
