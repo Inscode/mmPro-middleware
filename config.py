@@ -10,3 +10,4 @@ class Config:
     REDMINE_URL = os.getenv('REDMINE_URL','http://gsmb.aasait.lk')
     PROJECT_ID = 1
     MINING_LICENSE_TRACKER_ID = 4
+    ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', '')

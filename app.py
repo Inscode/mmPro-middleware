@@ -1,6 +1,6 @@
 from flask import Flask
 from flask_cors import CORS
-import os
+from config import Config
 from controllers import (
     auth_bp, mining_owner_bp, gsmb_officer_bp, 
     police_officer_bp, general_public_bp, 
@@ -8,21 +8,19 @@ from controllers import (
     director_general_bp
 )
 
-def create_app(config_filename='.env'):
+def create_app():
     app = Flask(__name__)
     
-    # Load configuration
-    app.config.from_pyfile(config_filename)
+    app.config.from_object(Config)
     
-    # Parse allowed origins from .env
-    allowed_origins = []
-    if 'ALLOWED_ORIGINS' in app.config:
-        allowed_origins = [
-            origin.strip() 
-            for origin in app.config['ALLOWED_ORIGINS'].split(',')
-            if origin.strip()
-        ]
-    
+
+    allowed_origins = [
+        origin.strip()
+        for origin in app.config['ALLOWED_ORIGINS'].split(',')
+        if origin.strip()
+    ]
+
+    print(allowed_origins)
     # Secure CORS configuration
     CORS(app, resources={
         r"/*": {
