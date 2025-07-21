@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 from twilio.rest import Client
 from twilio.base.exceptions import TwilioException
 from utils.jwt_utils import JWTUtils
-import random
 from services.cache import cache
 # from datetime import datetime, timedelta, UTC, timezone
 from datetime import datetime, timedelta, timezone
@@ -115,7 +114,7 @@ class GeneralPublicService:
 
     @staticmethod
     def generate_otp():
-        return str(secrets.randbelow(100000, 999999))  # Generate a 6-digit OTP
+        return str(secrets.randbelow(900000) + 100000)  # Generate a 6-digit OTP
 
     @staticmethod
     def send_verification_code(phone):
