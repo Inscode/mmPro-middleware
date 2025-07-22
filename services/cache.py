@@ -1,13 +1,14 @@
 from diskcache import Cache
 import os
 from pathlib import Path
+from tempfile import gettempdir
 
 def get_cache():
     # Priority order for cache directories
     possible_dirs = [
         os.getenv('OTP_CACHE_DIR'),  # 1. Jenkins-specific
         os.getenv('CACHE_DIR'),      # 2. General cache dir
-        '/tmp/otp_cache',            # 3. System temp
+        os.path.join(gettempdir(), 'otp_cache'),            # 3. System temp
         str(Path.home() / '.cache/otp')  # 4. User cache
     ]
     

@@ -1823,7 +1823,7 @@ class TestGetMiningLicenseById:
             assert result is None
             assert error == "REDMINE_URL environment variable not set"
 
-    @patch.dict(os.environ, {"REDMINE_URL": "http://test.redmine.com"})
+    @patch.dict(os.environ, {"REDMINE_URL": "https://test.redmine.com"})
     @patch("services.mining_owner_service.requests.get")
     @patch("services.mining_owner_service.JWTUtils.get_api_key_from_token")
     def test_redmine_http_error(self, mock_get_api_key, mock_requests_get):

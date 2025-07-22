@@ -1,4 +1,5 @@
 from flask import Flask
+from flask_wtf import CSRFProtect
 from flask_cors import CORS
 from config import Config
 from controllers import (
@@ -8,11 +9,14 @@ from controllers import (
     director_general_bp
 )
 
+csrf = CSRFProtect()
+
 def create_app():
     app = Flask(__name__)
     
     app.config.from_object(Config)
     
+    csrf.init_app(app)
 
     allowed_origins = [
         origin.strip()
