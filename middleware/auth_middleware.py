@@ -33,7 +33,7 @@ def check_token(f):
     return decorated_function
 
 
-# def role_required(allowed_roles):
+
 #     def wrapper(f):
 #         @wraps(f)
 #         def decorated_function(*args, **kwargs):
@@ -54,7 +54,7 @@ def check_token(f):
 #             except jwt.InvalidTokenError:
 #                 return jsonify({"message": "Invalid token"}), 401
 
-#             return f(*args, **kwargs)
+
         
 #         return decorated_function
 #     return wrapper
