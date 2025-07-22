@@ -1,6 +1,8 @@
 import os
 import requests
+from dotenv import load_dotenv
 
+load_dotenv()
 
 class LimitUtils:
     @staticmethod
@@ -8,7 +10,7 @@ class LimitUtils:
         try:
             # REDMINE_URL = os.getenv("REDMINE_URL")
             # API_KEY = os.getenv("REDMINE_ADMIN_API_KEY")
-            REDMINE_URL = "http://redmine.aasait.lk"
+            REDMINE_URL = os.getenv("REDMINE_URL")
             API_KEY = "3042ca9b23e30cdadd71d1e23fa35eb46a3487a9"
             if not REDMINE_URL or not API_KEY:
                 return None, "Redmine URL or API Key is missing"

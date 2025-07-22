@@ -682,7 +682,7 @@ class GsmbManagmentService:
     @staticmethod
     def unactive_gsmb_officers(token):
         try:
-            REDMINE_URL = os.getenv("REDMINE_URL", "http://gsmb.aasait.lk")
+            REDMINE_URL = os.getenv("REDMINE_URL")
             api_key = JWTUtils.get_api_key_from_token(token)
 
             if not api_key:
@@ -755,7 +755,7 @@ class GsmbManagmentService:
     @staticmethod
     def get_users_by_type(token, user_type):
         try:
-            REDMINE_URL = os.getenv("REDMINE_URL", "http://gsmb.aasait.lk")
+            REDMINE_URL = os.getenv("REDMINE_URL")
             api_key = JWTUtils.get_api_key_from_token(token)
 
             if not api_key:
@@ -830,7 +830,7 @@ class GsmbManagmentService:
     @staticmethod
     def get_active_ml_owners(token):
         try:
-            REDMINE_URL = os.getenv("REDMINE_URL", "http://gsmb.aasait.lk")
+            REDMINE_URL = os.getenv("REDMINE_URL")
             api_key = JWTUtils.get_api_key_from_token(token)
 
             if not api_key:
