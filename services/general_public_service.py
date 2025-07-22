@@ -5,7 +5,7 @@ from twilio.rest import Client
 from twilio.base.exceptions import TwilioException
 from utils.jwt_utils import JWTUtils
 from services.cache import cache
-# from datetime import datetime, timedelta, UTC, timezone
+
 from datetime import datetime, timedelta, timezone
 import secrets
 
@@ -29,7 +29,7 @@ class GeneralPublicService:
     #         if not REDMINE_URL or not API_KEY:
     #             return None, "Redmine URL or API Key is missing"
 
-    #         headers = {"X-Redmine-API-Key": API_KEY}
+    
 
     #         # Fetch all TPL licenses (tracker_id = 8)
     #         tpl_params = {"tracker_id": 8}
@@ -38,9 +38,9 @@ class GeneralPublicService:
     #         if tpl_response.status_code != 200:
     #             return None, f"Failed to fetch TPL issues: {tpl_response.status_code} - {tpl_response.text}"
 
-    #         tpl_issues = tpl_response.json().get("issues", [])
+    
 
-    #         lorry_number_lower = lorry_number.lower()
+    
 
     #         # Check if any TPL license matches the given lorry number (cf_13)
     #         tpl_license_exists = any(
@@ -48,7 +48,7 @@ class GeneralPublicService:
     #             for issue in tpl_issues
     #         )
 
-    #         return tpl_license_exists, None  # Return True if exists, False if not
+    
 
     #     except Exception as e:
     #         return None, f"Server error: {str(e)}"

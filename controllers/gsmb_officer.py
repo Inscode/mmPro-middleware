@@ -1,4 +1,4 @@
-# from flask_cors import CORS
+
 from tabnanny import check
 from flask import Blueprint, jsonify, request
 from middleware.auth_middleware import role_required, check_token
@@ -360,7 +360,7 @@ def download_attachment(attachment_id):
     try:
         token = request.headers.get('Authorization')
         api_key = JWTUtils.get_api_key_from_token(token)
-        # api_key = os.getenv("REDMINE_ADMIN_API_KEY")
+        
 
         REDMINE_URL = os.getenv("REDMINE_URL")
         attachment_url = f"{REDMINE_URL}/attachments/download/{attachment_id}"
