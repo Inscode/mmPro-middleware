@@ -2,5 +2,5 @@ projectKey=Mmpro-middleware-02
 serverUrl=https://projects.aasait.lk
 serverVersion=9.9.8.100196
 dashboardUrl=https://projects.aasait.lk/dashboard?id=Mmpro-middleware-02
-ceTaskId=AZgscP9nSCnbSw6iEO3G
-ceTaskUrl=https://projects.aasait.lk/api/ce/task?id=AZgscP9nSCnbSw6iEO3G
+ceTaskId=AZgwIojOSCnbSw6iEO3U
+ceTaskUrl=https://projects.aasait.lk/api/ce/task?id=AZgwIojOSCnbSw6iEO3U
