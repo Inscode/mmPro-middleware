@@ -5,6 +5,7 @@ from twilio.rest import Client
 from services.cache import cache
 from datetime import datetime, timedelta, timezone
 import secrets
+from utils.constants import REDMINE_API_ERROR_MSG
 
 
 load_dotenv()
@@ -27,7 +28,7 @@ class GeneralPublicService:
             api_key = API_KEY
 
             if not REDMINE_URL or not api_key:
-                return None, "Redmine URL or API Key is missing"
+                return None, REDMINE_API_ERROR_MSG
 
             headers = {"X-Redmine-API-Key": api_key}
 
