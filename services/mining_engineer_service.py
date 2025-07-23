@@ -8,6 +8,7 @@ from utils.jwt_utils import JWTUtils
 from werkzeug.utils import secure_filename 
 import json
 from utils.jwt_utils import JWTUtils
+from utils.constants import REDMINE_API_ERROR_MSG
 
 
 load_dotenv()
@@ -23,8 +24,8 @@ class MiningEnginerService:
             API_KEY = JWTUtils.get_api_key_from_token(token)
 
             if not REDMINE_URL or not API_KEY:
-                return None, "Redmine URL or API Key is missing"
-            
+                return None, REDMINE_API_ERROR_MSG
+
             payload = {
             "issue": {
                 "status_id": update_data.get("status_id", 31),  # Default status ID
@@ -68,7 +69,7 @@ class MiningEnginerService:
             API_KEY = JWTUtils.get_api_key_from_token(token)
 
             if not REDMINE_URL or not API_KEY:
-                return None, "Redmine URL or API Key is missing"
+                return None, REDMINE_API_ERROR_MSG
 
             headers = {"X-Redmine-API-Key": API_KEY}
             
@@ -170,8 +171,8 @@ class MiningEnginerService:
             API_KEY = JWTUtils.get_api_key_from_token(token)
 
             if not REDMINE_URL or not API_KEY:
-                return None, "Redmine URL or API Key is missing"
-            
+                return None, REDMINE_API_ERROR_MSG
+
             headers = {
                 "Content-Type": "application/json",
                 "X-Redmine-API-Key": API_KEY
@@ -260,8 +261,8 @@ class MiningEnginerService:
             API_KEY = JWTUtils.get_api_key_from_token(token)
 
             if not REDMINE_URL or not API_KEY:
-                return None, "Redmine URL or API Key is missing"
-            
+                return None, REDMINE_API_ERROR_MSG
+
             # Prepare payload for rejection
             payload = {
                 "issue": {
@@ -337,7 +338,7 @@ class MiningEnginerService:
             # 1. Get Redmine configuration
             REDMINE_URL = os.getenv("REDMINE_URL")
             if not REDMINE_URL:
-                return None, "Redmine URL not configured"
+                return None, REDMINE_API_ERROR_MSG
 
             # 2. Extract API key and user info from token
             api_key = JWTUtils.get_api_key_from_token(token)
@@ -427,7 +428,7 @@ class MiningEnginerService:
 
             REDMINE_URL = os.getenv("REDMINE_URL")
             if not REDMINE_URL:
-                return None, "Environment variable 'REDMINE_URL' is not set"
+                return None, REDMINE_API_ERROR_MSG
 
             update_payload = {
                 "issue": {
@@ -464,7 +465,7 @@ class MiningEnginerService:
             API_KEY = JWTUtils.get_api_key_from_token(token)
 
             if not REDMINE_URL or not API_KEY:
-                return None, "Redmine URL or API Key is missing"
+                return None, REDMINE_API_ERROR_MSG
 
             # Query parameters for Redmine
             params = {
@@ -621,7 +622,7 @@ class MiningEnginerService:
             API_KEY = JWTUtils.get_api_key_from_token(token)
 
             if not REDMINE_URL or not API_KEY:
-                return None, "Redmine URL or API Key is missing"
+                return None, REDMINE_API_ERROR_MSG
 
             user_id, error = MLOUtils.get_user_info_from_token(token)
             if not user_id:
@@ -708,7 +709,7 @@ class MiningEnginerService:
             API_KEY = JWTUtils.get_api_key_from_token(token)
 
             if not REDMINE_URL or not API_KEY:
-                return {"error": "Redmine URL or API Key is missing"}
+                return {"error": REDMINE_API_ERROR_MSG}
 
         
             user_id, error = MLOUtils.get_user_info_from_token(token)
@@ -782,7 +783,7 @@ class MiningEnginerService:
             API_KEY = JWTUtils.get_api_key_from_token(token)
 
             if not REDMINE_URL or not API_KEY:
-                return None, "Redmine URL or API Key is missing"
+                return None, REDMINE_API_ERROR_MSG
 
             # Step 1: Extract user_id from the token
             user_id, error = MLOUtils.get_user_info_from_token(token)
@@ -862,7 +863,7 @@ class MiningEnginerService:
 
             REDMINE_URL = os.getenv("REDMINE_URL")
             if not REDMINE_URL:
-                return False, "Environment variable 'REDMINE_URL' is not set"
+                return False, REDMINE_API_ERROR_MSG
 
             # 1. Set current issue to Hold
             hold_status_id = 39
@@ -946,9 +947,7 @@ class MiningEnginerService:
             API_KEY = JWTUtils.get_api_key_from_token(token)
 
             if not REDMINE_URL or not API_KEY:
-                return None, "Redmine URL or API Key is missing"
-
-            
+                return None, REDMINE_API_ERROR_MSG
 
             headers = {
                 "X-Redmine-API-Key": API_KEY
@@ -1035,7 +1034,7 @@ class MiningEnginerService:
 
             REDMINE_URL = os.getenv("REDMINE_URL")
             if not REDMINE_URL:
-                return None, "REDMINE_URL environment variable not set"
+                return None, REDMINE_API_ERROR_MSG
 
             issue_url = f"{REDMINE_URL}/issues/{issue_id}.json?include=attachments"
             response = requests.get(
@@ -1133,7 +1132,7 @@ class MiningEnginerService:
             API_KEY = JWTUtils.get_api_key_from_token(token)
 
             if not REDMINE_URL or not API_KEY:
-                return None, "Redmine URL or API Key is missing"
+                return None, REDMINE_API_ERROR_MSG
 
             headers = {"X-Redmine-API-Key": API_KEY}
             params = {"project_id": 1, "tracker_id": 4, "offset": 0, "limit": 100}

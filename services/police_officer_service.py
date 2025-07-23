@@ -4,6 +4,7 @@ import requests
 from dotenv import load_dotenv
 from utils.jwt_utils import JWTUtils
 from utils.user_utils import UserUtils
+from utils.constants import REDMINE_API_ERROR_MSG
 
 load_dotenv()
 
@@ -16,7 +17,7 @@ class PoliceOfficerService:
             API_KEY = JWTUtils.get_api_key_from_token(token)
 
             if not REDMINE_URL or not API_KEY:
-                return None, "Redmine URL or API Key is missing"
+                return None,  REDMINE_API_ERROR_MSG
 
             headers = {"X-Redmine-API-Key": API_KEY}
             current_time_utc = datetime.now(timezone.utc)

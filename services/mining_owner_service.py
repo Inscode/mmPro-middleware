@@ -12,6 +12,7 @@ from utils.limit_utils import LimitUtils
 from werkzeug.utils import secure_filename
 import time
 from hashlib import md5
+from utils.constants import REDMINE_API_ERROR_MSG
 
 load_dotenv()
 
@@ -28,7 +29,7 @@ class MLOwnerService:
             API_KEY = JWTUtils.get_api_key_from_token(token)
 
             if not REDMINE_URL or not API_KEY:
-                return None, "Redmine URL or API Key is missing"
+                return None, REDMINE_API_ERROR_MSG
 
             result = JWTUtils.decode_jwt_and_get_user_id(token)
             if not result['success']:
@@ -127,7 +128,7 @@ class MLOwnerService:
             API_KEY = JWTUtils.get_api_key_from_token(token)
 
             if not REDMINE_URL or not API_KEY:
-                return None, "Redmine URL or API Key is missing"
+                return None, REDMINE_API_ERROR_MSG
 
             result = JWTUtils.decode_jwt_and_get_user_id(token)
             if not result['success']:
@@ -232,7 +233,7 @@ class MLOwnerService:
             # Get the Redmine URL from environment variables
             REDMINE_URL = os.getenv("REDMINE_URL")
             if not REDMINE_URL:
-                return None, "Redmine URL is not configured"
+                return None, REDMINE_API_ERROR_MSG
 
 
             # Get the API key from the token
@@ -461,7 +462,7 @@ class MLOwnerService:
             API_KEY = os.getenv("REDMINE_ADMIN_API_KEY")
 
             if not REDMINE_URL or not API_KEY:
-                return None, "Redmine URL or API Key is missing"
+                return None, REDMINE_API_ERROR_MSG
             headers = {
                 "X-Redmine-API-Key": API_KEY,  # Include the token for authorization
                 "Content-Type": "application/json"
@@ -502,7 +503,7 @@ class MLOwnerService:
             REDMINE_URL = os.getenv("REDMINE_URL")
             API_KEY    = JWTUtils.get_api_key_from_token(token)
             if not REDMINE_URL or not API_KEY:
-                return None, "Redmine URL or API Key is missing"
+                return None, REDMINE_API_ERROR_MSG
 
             # Decode token to get user ID
             result = JWTUtils.decode_jwt_and_get_user_id(token)
@@ -602,7 +603,7 @@ class MLOwnerService:
             REDMINE_URL = os.getenv("REDMINE_URL")
 
             if not REDMINE_URL or not api_key:
-                return None, "Redmine URL or API Key is missing"
+                return None, REDMINE_API_ERROR_MSG
             headers = {
                 "X-Redmine-API-Key": api_key,  # Include the token for authorization
                 "Content-Type": "application/json"
