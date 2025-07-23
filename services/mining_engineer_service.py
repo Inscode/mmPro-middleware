@@ -129,45 +129,6 @@ class MiningEnginerService:
             return None, f"Server error: {str(e)}"
 
 
-    
-    # @staticmethod
-    # def get_attachment_urls(api_key, redmine_url, custom_fields):
-    #     try:
-    #         # Define the mapping of custom field names to their attachment IDs
-    #         file_fields = {
-    #             "Detailed Mine Restoration Plan": None,
-    #             "Deed and Survey Plan": None,
-    #             "Payment Receipt": None     
-    #         }
-
-    #         # Extract attachment IDs from custom fields
-    #         for field in custom_fields:
-    #             field_name = field.get("name")
-    #             attachment_id = field.get("value")
-
-    #             if field_name in file_fields and attachment_id.isdigit():
-    #                 file_fields[field_name] = attachment_id
-
-    #         # Fetch URLs for valid attachment IDs
-    #         file_urls = {}
-    #         for field_name, attachment_id in file_fields.items():
-    #             if attachment_id:
-    #                 attachment_url = f"{redmine_url}/attachments/{attachment_id}.json"
-    #                 response = requests.get(
-    #                     attachment_url,
-    #                     headers={"X-Redmine-API-Key": api_key, "Content-Type": "application/json"}
-    #                 )
-
-    #                 if response.status_code == 200:
-    #                     attachment_data = response.json().get("attachment", {})
-    #                     file_urls[field_name] = attachment_data.get("content_url", "")
-
-    #         return file_urls
-
-    #     except Exception as e:
-    #         return {}
-
-
     @staticmethod
     def get_attachment_urls(custom_fields):
         try:

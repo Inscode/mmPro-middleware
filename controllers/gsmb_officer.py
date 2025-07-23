@@ -762,7 +762,7 @@ def get_miningRequest_view_button(issue_id):
             return jsonify({"error": "Authorization token is missing"}), 400
 
         # Fetch issue details
-        mining_license, error = GsmbOfficerService.get_miningLicense_view_button(token, issue_id)
+        mining_license, error = GsmbOfficerService.get_mining_License_view_button(token, issue_id)
 
         if error:
             return jsonify({"error": error}), 500
