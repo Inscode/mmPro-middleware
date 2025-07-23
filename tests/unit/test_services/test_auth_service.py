@@ -79,11 +79,7 @@ def test_authenticate_google_token_success():
         ]
     }
     
-    # mock_user_details_response = {
-    #     'user': {
-    #         'api_key': 'mock_api_key'
-    #     }
-    # }
+    
     
     mock_memberships_response = {
         'memberships': [

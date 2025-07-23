@@ -328,12 +328,11 @@ def get_mining_license_refined():
 #         if not issue_id or royalty_amount is None:
 #             return jsonify({"error": "Missing 'issue_id' or 'royalty_amount'"}), 400
 
-#         success, error = MLOwnerService.update_royalty_field(token, issue_id, royalty_amount)
+
 
 #         if error:
 #             return jsonify({"error": error}), 500
 
-#         return jsonify({"success": True, "message": "Royalty updated successfully"}), 200
 
 #     except Exception as e:
 #         return jsonify({"error": str(e)}), 500
