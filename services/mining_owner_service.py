@@ -122,7 +122,7 @@ class MLOwnerService:
 
 
     @staticmethod
-    def mining_homeLicenses(token):
+    def get_mining_home_licenses(token):
         try:
             REDMINE_URL = os.getenv("REDMINE_URL")
             API_KEY = JWTUtils.get_api_key_from_token(token)
@@ -456,7 +456,7 @@ class MLOwnerService:
 
 
    
-    def update_issue(issue_id, data):
+    def update_issue(self, issue_id, data):
         try:
             REDMINE_URL = os.getenv("REDMINE_URL")
             API_KEY = os.getenv("REDMINE_ADMIN_API_KEY")
@@ -467,7 +467,7 @@ class MLOwnerService:
                 "X-Redmine-API-Key": API_KEY,  # Include the token for authorization
                 "Content-Type": "application/json"
             }
-            update_data = {"issue": data}  # Ensure "issue" is wrapped correctly
+            
 
             url = f"{REDMINE_URL}/issues/{issue_id}.json"
            
