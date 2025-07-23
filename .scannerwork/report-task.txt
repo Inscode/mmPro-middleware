@@ -4,3 +4,4 @@ serverVersion=9.9.8.100196
 dashboardUrl=https://projects.aasait.lk/dashboard?id=Mmpro-middleware-02
 ceTaskId=AZg1mxkfk89VtQ6DnIdW
 ceTaskUrl=https://projects.aasait.lk/api/ce/task?id=AZg1mxkfk89VtQ6DnIdW
+

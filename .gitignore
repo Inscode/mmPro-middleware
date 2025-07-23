@@ -6,6 +6,7 @@ otp_cache/cache.db-wal
 .env
 tempCodeRunnerFile.py
 
+
 # Logs and caches
 /otp_cache/
 /logs/
@@ -21,3 +22,4 @@ tempCodeRunnerFile.py
 # SonarQube
 .scannerwork/
 coverage.xml
+.scannerwork/

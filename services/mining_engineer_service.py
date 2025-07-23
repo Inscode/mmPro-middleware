@@ -129,9 +129,6 @@ class MiningEnginerService:
             return None, f"Server error: {str(e)}"
 
 
-    
-    
-
     @staticmethod
     def get_attachment_urls(custom_fields):
         try:
