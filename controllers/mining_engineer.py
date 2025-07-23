@@ -34,7 +34,7 @@ def update_miningOwner_appointment(issue_id):
             return {"error": "No update data provided"}, 400
         
         # Call service to update the appointment
-        result, error = MiningEnginerService.update_miningOwner_appointment(
+        result, error = MiningEnginerService.update_mining_owner_appointment(
             token=token,
             issue_id=issue_id,
             update_data=update_data
@@ -389,7 +389,7 @@ def get_mining_request_view_button(issue_id):
             return jsonify({"error": "Authorization token is missing"}), 400
 
         # Fetch issue details
-        mining_license, error = MiningEnginerService.get_miningLicense_view_button(token, issue_id)
+        mining_license, error = MiningEnginerService.get_mining_license_view_button(token, issue_id)
 
         if error:
             return jsonify({"error": error}), 500

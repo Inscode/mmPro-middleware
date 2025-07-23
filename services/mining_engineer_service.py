@@ -17,8 +17,15 @@ class MiningEnginerService:
 
     ORS_API_KEY = os.getenv("ORS_API_KEY")
     
+    ECONOMIC_VIABILITY_REPORT = "Economic Viability Report"
+    DETAILED_MINE_RESTORATION_PLAN = "Detailed Mine Restoration Plan"
+    PROFESSIONAL = "Professional"
+    DEED_AND_SURVEY_PLAN = "Deed and Survey Plan"
+    LICENSE_BOUNDARY_SURVEY = "License Boundary Survey"
+    PAYMENT_RECEIPT = "Payment Receipt"
+    
     @staticmethod
-    def update_miningOwner_appointment(token,issue_id,update_data):
+    def update_mining_owner_appointment(token, issue_id, update_data):
         try:
             REDMINE_URL = os.getenv("REDMINE_URL")
             API_KEY = JWTUtils.get_api_key_from_token(token)
@@ -52,7 +59,7 @@ class MiningEnginerService:
                 try:
                     error_data = response.json()
                     error_msg += f", Error: {error_data.get('errors', 'Unknown error')}"
-                except:
+                except ValueError: 
                     error_msg += f", Response: {response.text}"
                 return None, error_msg
 
@@ -134,12 +141,12 @@ class MiningEnginerService:
     def get_attachment_urls(custom_fields):
         try:
             upload_field_names = {
-                "Economic Viability Report",
-                "Detailed Mine Restoration Plan",
-                "Professional",
-                "Deed and Survey Plan",
-                "License Boundary Survey",
-                "Payment Receipt"
+                MiningEnginerService.ECONOMIC_VIABILITY_REPORT,
+                MiningEnginerService.DETAILED_MINE_RESTORATION_PLAN,
+                MiningEnginerService.PROFESSIONAL,
+                MiningEnginerService.DEED_AND_SURVEY_PLAN,
+                MiningEnginerService.LICENSE_BOUNDARY_SURVEY,
+                MiningEnginerService.PAYMENT_RECEIPT
             }
 
             file_urls = {}
@@ -533,9 +540,9 @@ class MiningEnginerService:
                     "Capacity": custom_fields.get(34),
                     "Mobile_Numbe": custom_fields.get(66),
                     "Google_location": custom_fields.get(92),
-                    "Detailed_Plan": attachment_urls.get("Detailed Mine Restoration Plan") or custom_fields.get(72),
-                    "Payment_Receipt": attachment_urls.get("Payment Receipt") or custom_fields.get(80),
-                    "Deed_Plan": attachment_urls.get("Deed and Survey Plan") or custom_fields.get(90),
+                    "Detailed_Plan": attachment_urls.get(MiningEnginerService.DETAILED_MINE_RESTORATION_PLAN) or custom_fields.get(72),
+                    "Payment_Receipt": attachment_urls.get(MiningEnginerService.PAYMENT_RECEIPT) or custom_fields.get(80),
+                    "Deed_Plan": attachment_urls.get(MiningEnginerService.DEED_AND_SURVEY_PLAN) or custom_fields.get(90),
                 })
 
             return processed_issues, None
@@ -686,9 +693,9 @@ class MiningEnginerService:
                         "Capacity": custom_fields.get(34),
                         "Mobile_Numbe": custom_fields.get(66),
                         "Google_location": custom_fields.get(92),
-                        "Detailed_Plan": attachment_urls.get("Detailed Mine Restoration Plan") or custom_fields.get(72),
-                        "Payment_Receipt": attachment_urls.get("Payment Receipt") or custom_fields.get(80),
-                        "Deed_Plan": attachment_urls.get("Deed and Survey Plan") or custom_fields.get(90),
+                        "Detailed_Plan": attachment_urls.get(MiningEnginerService.DETAILED_MINE_RESTORATION_PLAN) or custom_fields.get(72),
+                        "Payment_Receipt": attachment_urls.get(MiningEnginerService.PAYMENT_RECEIPT) or custom_fields.get(80),
+                        "Deed_Plan": attachment_urls.get(MiningEnginerService.DEED_AND_SURVEY_PLAN) or custom_fields.get(90),
                         "mining_license_number": custom_fields.get(101),
                     })
 
@@ -762,9 +769,9 @@ class MiningEnginerService:
                 "Capacity": custom_fields.get(34),
                 "Mobile_Numbe": custom_fields.get(66),
                 "Google_location": custom_fields.get(92),
-                "Detailed_Plan": attachment_urls.get("Detailed Mine Restoration Plan") or custom_fields.get(72),
-                "Payment_Receipt": attachment_urls.get("Payment Receipt") or custom_fields.get(80),
-                "Deed_Plan": attachment_urls.get("Deed and Survey Plan") or custom_fields.get(90),
+                "Detailed_Plan": attachment_urls.get(MiningEnginerService.DETAILED_MINE_RESTORATION_PLAN) or custom_fields.get(72),
+                "Payment_Receipt": attachment_urls.get(MiningEnginerService.PAYMENT_RECEIPT) or custom_fields.get(80),
+                "Deed_Plan": attachment_urls.get(MiningEnginerService.DEED_AND_SURVEY_PLAN) or custom_fields.get(90),
                 "mining_license_number": custom_fields.get(101),
             }
 
@@ -1009,9 +1016,9 @@ class MiningEnginerService:
                         "Google_location": custom_fields.get(92),
                         "Mining_license_Number": custom_fields.get(101),
                         "hold": custom_fields.get(106),
-                        "Detailed_Plan": attachment_urls.get("Detailed Mine Restoration Plan") or custom_fields.get(72),
-                        "Payment_Receipt": attachment_urls.get("Payment Receipt") or custom_fields.get(80),
-                        "Deed_Plan": attachment_urls.get("Deed and Survey Plan") or custom_fields.get(90),
+                        "Detailed_Plan": attachment_urls.get(MiningEnginerService.DETAILED_MINE_RESTORATION_PLAN) or custom_fields.get(72),
+                        "Payment_Receipt": attachment_urls.get(MiningEnginerService.PAYMENT_RECEIPT) or custom_fields.get(80),
+                        "Deed_Plan": attachment_urls.get(MiningEnginerService.DEED_AND_SURVEY_PLAN) or custom_fields.get(90),
                     })
 
                 offset += len(issues)  # move to next page
@@ -1025,7 +1032,7 @@ class MiningEnginerService:
 
 
     @staticmethod
-    def get_miningLicense_view_button(token, issue_id):
+    def get_mining_license_view_button(token, issue_id):
         try:
             
             api_key = JWTUtils.get_api_key_from_token(token)
@@ -1077,53 +1084,18 @@ class MiningEnginerService:
                 "administrative_district": custom_field_map.get("Administrative District"),
                 "mining_license_number": custom_field_map.get("Mining License Number"),
                 "mobile_number": custom_field_map.get("Mobile Number"),
-                "economic_viability_report": attachments.get("Economic Viability Report"),
+                "economic_viability_report": attachments.get(MiningEnginerService.ECONOMIC_VIABILITY_REPORT),
                 "license_fee_receipt": attachments.get("License fee receipt"),
-                "detailed_mine_restoration_plan": attachments.get("Detailed Mine Restoration Plan"),
-                "deed_and_survey_plan": attachments.get("Deed and Survey Plan"),
-                "payment_receipt": attachments.get("Payment Receipt"),
-                "license_boundary_survey": attachments.get("License Boundary Survey")
+                "detailed_mine_restoration_plan": attachments.get(MiningEnginerService.DETAILED_MINE_RESTORATION_PLAN),
+                "deed_and_survey_plan": attachments.get(MiningEnginerService.DEED_AND_SURVEY_PLAN),
+                "payment_receipt": attachments.get(MiningEnginerService.PAYMENT_RECEIPT),
+                "license_boundary_survey": attachments.get(MiningEnginerService.LICENSE_BOUNDARY_SURVEY)
             }
 
             return formatted_issue, None
 
         except Exception as e:
             return None, f"Server error: {str(e)}"
-
-    @staticmethod
-    def get_attachment_urls(custom_fields):
-        try:
-            upload_field_names = {
-                "Economic Viability Report",
-                "Detailed Mine Restoration Plan",
-                "Professional",
-                "Deed and Survey Plan",
-                "License Boundary Survey",
-                "Payment Receipt"
-            }
-
-            file_urls = {}
-
-            for field in custom_fields:
-                field_name = field.get("name")
-                raw_value = field.get("value")
-
-                if field_name not in upload_field_names:
-                    continue
-
-                if not raw_value:
-                    file_urls[field_name] = None
-                    continue
-
-                attachment_id = str(raw_value).strip()
-                file_urls[field_name] = int(attachment_id) if attachment_id.isdigit() else None
-
-            return file_urls
-
-        except Exception as e:
-            print(f"[ERROR] Failed to get attachment IDs: {str(e)}")
-            return {}
-        
 
     @staticmethod
     def get_me_reject_licenses(token):
@@ -1168,30 +1140,11 @@ class MiningEnginerService:
                     if str(field.get('value', '')).strip()
                 }
 
-                attachment_urls = MiningEnginerService.get_attachment_urls(
-                     issue.get("custom_fields", [])
-                )
-
                 processed_issues.append({
                     "id": issue.get("id"),
-                    # "subject": issue.get("subject"),
                     "status": issue.get("status", {}).get("name"),
                     "assigned_to": issue.get("assigned_to", {}).get("name"),
-                    # "exploration_license_no": custom_fields.get(19),
-                    # "Land_Name": custom_fields.get(28),
-                    # "Land_owner_name": custom_fields.get(29),
-                    # "Name_of_village": custom_fields.get(30),
-                    # "Grama_Niladhari": custom_fields.get(31),
-                    # "Divisional_Secretary_Division": custom_fields.get(32),
-                    # "administrative_district": custom_fields.get(33),
-                    # "Capacity": custom_fields.get(34),
-                    # "Mobile_Numbe": custom_fields.get(66),
                     "Google_location": custom_fields.get(92),
-                    # "Detailed_Plan": int(custom_fields.get(72)),
-                    # "Payment_Receipt":int(custom_fields.get(80)),
-                    # "Deed_Plan": int(custom_fields.get(90)),
-                    # "License Boundary Survey":int(custom_fields.get(105)),
-                    # "Economic Viability Report":int(custom_fields.get(100)),
                     "mining_number": custom_fields.get(101),
                 })
 
