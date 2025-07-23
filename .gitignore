@@ -5,7 +5,7 @@ otp_cache/cache.db-shm
 otp_cache/cache.db-wal
 .env
 tempCodeRunnerFile.py
-.scannerwork/
+
 
 # Logs and caches
 /otp_cache/
