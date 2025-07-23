@@ -1500,7 +1500,7 @@ class TestGetMiningLicenseViewButton:
             "License Boundary Survey": "https://file6.com"
         }
 
-        result, error = GsmbOfficerService.get_miningLicense_view_button("token", 1)
+        result, error = GsmbOfficerService.get_mining_License_view_button("token", 1)
 
         assert error is None
         assert result["id"] == 1
@@ -1511,14 +1511,14 @@ class TestGetMiningLicenseViewButton:
     @patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
     def test_missing_api_key(self, mock_get_token):
         mock_get_token.return_value = None
-        result, error = GsmbOfficerService.get_miningLicense_view_button("token", 1)
+        result, error = GsmbOfficerService.get_mining_License_view_button("token", 1)
         assert result is None
         assert "Invalid or missing API key" in error
 
     def test_missing_env_variable(self):
         with patch.dict(os.environ, {}, clear=True):
             with patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token", return_value="key"):
-                result, error = GsmbOfficerService.get_miningLicense_view_button("token", 1)
+                result, error = GsmbOfficerService.get_mining_License_view_button("token", 1)
                 assert result is None
                 assert "REDMINE_URL" in error
 
@@ -1529,7 +1529,7 @@ class TestGetMiningLicenseViewButton:
         mock_get_token.return_value = "valid_api_key"
         mock_get.return_value = MagicMock(status_code=404, text="Not Found")
 
-        result, error = GsmbOfficerService.get_miningLicense_view_button("token", 1)
+        result, error = GsmbOfficerService.get_mining_License_view_button("token", 1)
 
         assert result is None
         assert "Failed to fetch issue" in error
@@ -1541,7 +1541,7 @@ class TestGetMiningLicenseViewButton:
         mock_get_token.return_value = "valid_api_key"
         mock_get.return_value = MagicMock(status_code=200, json=lambda: {})
 
-        result, error = GsmbOfficerService.get_miningLicense_view_button("token", 1)
+        result, error = GsmbOfficerService.get_mining_License_view_button("token", 1)
 
         assert result is None
         assert "Issue data not found" in error
