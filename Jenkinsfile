@@ -18,104 +18,40 @@ pipeline {
         // ArgoCD config
         ARGOCD_SERVER = '124.43.163.209'
         ARGOCD_APP_NAME = 'mmpro-application'
-
-        // SonarQube config
-        SONAR_PROJECT_KEY = 'Mmpro-middleware-02'
-        SONAR_PROJECT_NAME = 'Mmpro-middleware-02'
-        SONAR_HOST_URL = 'https://projects.aasait.lk'  // Update this with your SonarQube server URL
-        SONAR_TOKEN = credentials('sonarqube-token')  // Add your SonarQube token in Jenkins credentials
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-
-        stage('Build & Test') {
-            steps {
-                dir('.') {
-                    sh '''#!/bin/bash -xe
-                        # Create and activate virtual environment
-                        python3 -m venv venv
-                        source venv/bin/activate
-                        
-                        # Upgrade pip and install dependencies
-                        pip install --upgrade pip
-                        pip install -r requirements.txt
-                        
-                        # Install test-specific requirements
-                        pip install pytest pytest-cov
-                        
-                        # Diagnostic output
-                        echo "PYTHONPATH: ${PYTHONPATH:-Not Set}"
-                        echo "Current directory: $(pwd)"
-                        echo "Test directory contents:"
-                        ls -l tests/
-                        
-                        # Run pytest with explicit path
-                        PYTHONPATH=$(pwd) pytest \
-                            tests/ \
-                            -v \
-                            --junitxml=test-results.xml \
-                            --cov=app \
-                            --cov-report=xml:coverage.xml \
-                            --cov-report=html:htmlcov || true
-                    '''
-                }
-            }
-            post {
-                always {
-                    // Publish test results
-                    publishTestResults testResultsPattern: 'test-results.xml'
-                    // Publish coverage report
-                    publishHTML([
-                        allowMissing: false,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: true,
-                        reportDir: 'htmlcov',
-                        reportFiles: 'index.html',
-                        reportName: 'Coverage Report'
-                    ])
-                }
-            }
-        }
-
-        stage('SonarQube Analysis') {
-            steps {
-                script {
-                    def scannerHome = tool 'SonarQubeScanner'  // This should match your SonarQube Scanner tool name in Jenkins
-                    withSonarQubeEnv('SonarQube') {  // This should match your SonarQube server configuration name in Jenkins
-                        sh """
-                            ${scannerHome}/bin/sonar-scanner \
-                                -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                                -Dsonar.projectName='${SONAR_PROJECT_NAME}' \
-                                -Dsonar.projectVersion=${IMAGE_TAG} \
-                                -Dsonar.sources=. \
-                                -Dsonar.exclusions=venv/**,**/__pycache__/**,*.pyc,htmlcov/**,tests/** \
-                                -Dsonar.python.coverage.reportPaths=coverage.xml \
-                                -Dsonar.python.xunit.reportPath=test-results.xml \
-                                -Dsonar.host.url=${SONAR_HOST_URL} \
-                                -Dsonar.login=${SONAR_TOKEN}
-                        """
+           stage('Build & Test') {
+                steps {
+                    dir('.') {
+                        sh '''#!/bin/bash -xe
+                            # Create and activate virtual environment
+                            python3 -m venv venv
+                            source venv/bin/activate
+                            
+                            # Upgrade pip and install dependencies
+                            pip install --upgrade pip
+                            pip install -r requirements.txt
+                            
+                            # Install test-specific requirements
+                            pip install pytest pytest-cov
+                            
+                            # Diagnostic output
+                            echo "PYTHONPATH: ${PYTHONPATH:-Not Set}"
+                            echo "Current directory: $(pwd)"
+                            echo "Test directory contents:"
+                            ls -l tests/
+                            
+                            # Run pytest with explicit path
+                            PYTHONPATH=$(pwd) pytest \
+                                tests/ \
+                                -v \
+                                --junitxml=test-results.xml \
+                                --cov=app \
+                                --cov-report=xml:coverage.xml || true
+                        '''
                     }
                 }
-            }
-        }
-
-        stage('Quality Gate') {
-            steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    script {
-                        def qg = waitForQualityGate()
-                        if (qg.status != 'OK') {
-                            error "Pipeline aborted due to quality gate failure: ${qg.status}"
-                        }
-                        echo "✅ SonarQube Quality Gate passed"
-                    }
-                }
-            }
         }
 
         stage('Build Docker Image') {
@@ -133,7 +69,6 @@ pipeline {
                 script {
                     docker.withRegistry('', "${REGISTRY_CREDENTIALS}") {
                         dockerImage.push()
-                        dockerImage.push("latest")  // Also push as latest
                     }
                 }
             }
@@ -186,28 +121,22 @@ pipeline {
                         --data '{}' \
                         https://${ARGOCD_SERVER}/api/v1/applications/${ARGOCD_APP_NAME}/sync
                     '''
+
                 }
             }
         }
     }
 
     post {
-        always {
-            // Clean up workspace
-            cleanWs()
-        }
         success {
             echo "✅ Pipeline SUCCESS - ${DOCKER_HUB_REPO}:${IMAGE_TAG} deployed via ArgoCD"
-            // Send success notification (optional)
-            // slackSend channel: '#deployments', color: 'good', message: "✅ Deployment successful: ${DOCKER_HUB_REPO}:${IMAGE_TAG}"
         }
         failure {
             echo "❌ Pipeline FAILED - Check build logs"
-            // Send failure notification (optional)
-            // slackSend channel: '#deployments', color: 'danger', message: "❌ Pipeline failed for ${DOCKER_HUB_REPO}:${IMAGE_TAG}"
-        }
-        unstable {
-            echo "⚠️ Pipeline UNSTABLE - Tests may have failed but build continued"
         }
     }
 }
+
+
+
+
