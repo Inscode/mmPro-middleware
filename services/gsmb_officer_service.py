@@ -6,6 +6,7 @@ from datetime import datetime
 from utils.jwt_utils import JWTUtils
 from utils.MLOUtils import MLOUtils
 from flask import request
+from utils.constants import REDMINE_API_ERROR_MSG
 
 from utils.limit_utils import LimitUtils
 
@@ -26,7 +27,7 @@ class GsmbOfficerService:
             # 🌐 Get Redmine URL
             REDMINE_URL = os.getenv("REDMINE_URL")
             if not REDMINE_URL:
-                return None, "Environment variable 'REDMINE_URL' is not set"
+                return None, REDMINE_API_ERROR_MSG
 
             # 1️⃣ Fetch all users with admin API key
             users_url = f"{REDMINE_URL}/users.json?status=1&limit=100"
@@ -88,7 +89,7 @@ class GsmbOfficerService:
 
             REDMINE_URL = os.getenv("REDMINE_URL")
             if not REDMINE_URL:
-                return None, "Environment variable 'REDMINE_URL' is not set"
+                return None, REDMINE_API_ERROR_MSG
 
             # 🚀 Fetch TPL issues from Redmine
             tpl_issues_url = f"{REDMINE_URL}/issues.json?tracker_id=5&project_id=1"
@@ -140,7 +141,7 @@ class GsmbOfficerService:
             # 🌐 Get Redmine URL
             REDMINE_URL = os.getenv("REDMINE_URL")
             if not REDMINE_URL:
-                return None, "Environment variable 'REDMINE_URL' is not set"
+                return None, REDMINE_API_ERROR_MSG
 
             # 🚀 Fetch all ML issues from Redmine
             ml_issues_url = f"{REDMINE_URL}/issues.json?tracker_id=4&project_id=1&status_id=7"
@@ -200,7 +201,7 @@ class GsmbOfficerService:
             # 🌍 Load Redmine URL from environment
             REDMINE_URL = os.getenv("REDMINE_URL")
             if not REDMINE_URL:
-                return None, "REDMINE_URL environment variable not set"
+                return None, REDMINE_API_ERROR_MSG
 
             # 🔗 Fetch issue details
             issue_url = f"{REDMINE_URL}/issues/{issue_id}.json?include=attachments"
@@ -273,7 +274,7 @@ class GsmbOfficerService:
             # 🌐 Get Redmine URL
             REDMINE_URL = os.getenv("REDMINE_URL")
             if not REDMINE_URL:
-                return None, "Environment variable 'REDMINE_URL' is not set"
+                return None, REDMINE_API_ERROR_MSG
 
             # 🚀 Fetch Complaint issues
             complaints_url = f"{REDMINE_URL}/issues.json?tracker_id=6&project_id=1"
@@ -387,7 +388,7 @@ class GsmbOfficerService:
             # 🌐 Get Redmine URL
             REDMINE_URL = os.getenv("REDMINE_URL")
             if not REDMINE_URL:
-                return None, "Environment variable 'REDMINE_URL' is not set"
+                return None, REDMINE_API_ERROR_MSG
 
             # 🚀 Fetch ML issues from Redmine
             ml_issues_url = f"{REDMINE_URL}/issues.json?tracker_id=4&project_id=1"
@@ -550,7 +551,7 @@ class GsmbOfficerService:
             REDMINE_URL = os.getenv("REDMINE_URL")
             
             if not REDMINE_URL:
-                return False, "Environment variable 'REDMINE_URL' is not set"
+                return False, REDMINE_API_ERROR_MSG
 
             mining_request_id = data.get("mining_request_id")
             comments = data.get("comments")
@@ -602,7 +603,7 @@ class GsmbOfficerService:
             REDMINE_URL = os.getenv("REDMINE_URL")
 
             if not REDMINE_URL:
-                return False, "Environment variable 'REDMINE_URL' is not set"
+                return False, REDMINE_API_ERROR_MSG
 
             mining_request_id = data.get("mining_request_id")
 
@@ -649,7 +650,7 @@ class GsmbOfficerService:
 
             REDMINE_URL = os.getenv("REDMINE_URL")
             if not REDMINE_URL:
-                return None, "Environment variable 'REDMINE_URL' is not set"
+                return None, REDMINE_API_ERROR_MSG
 
             memberships_url = f"{REDMINE_URL}/projects/mmpro-gsmb/memberships.json"
             memberships_response = requests.get(
@@ -715,7 +716,7 @@ class GsmbOfficerService:
 
             REDMINE_URL = os.getenv("REDMINE_URL")
             if not REDMINE_URL:
-                return None, "Environment variable 'REDMINE_URL' is not set"
+                return None, REDMINE_API_ERROR_MSG
 
             # 🔁 Tracker ID for Appointment = 11
             appointment_issues_url = f"{REDMINE_URL}/issues.json?tracker_id=11&project_id=1"
@@ -762,7 +763,7 @@ class GsmbOfficerService:
 
             REDMINE_URL = os.getenv("REDMINE_URL")
             if not REDMINE_URL:
-                return None, "Environment variable 'REDMINE_URL' is not set"
+                return None, REDMINE_API_ERROR_MSG
 
             issue_payload = {
                 "issue": {
@@ -892,7 +893,7 @@ class GsmbOfficerService:
 
             REDMINE_URL = os.getenv("REDMINE_URL")
             if not REDMINE_URL:
-                return None, "Environment variable 'REDMINE_URL' is not set"
+                return None, REDMINE_API_ERROR_MSG
 
             update_payload = {
                 "issue": {
@@ -926,7 +927,7 @@ class GsmbOfficerService:
 
             REDMINE_URL = os.getenv("REDMINE_URL")
             if not REDMINE_URL:
-                return None, "Environment variable 'REDMINE_URL' is not set"
+                return None, REDMINE_API_ERROR_MSG
 
             # Prepare the custom field update payload
             update_payload = {
@@ -967,7 +968,7 @@ class GsmbOfficerService:
 
             REDMINE_URL = os.getenv("REDMINE_URL")
             if not REDMINE_URL:
-                return None, "Environment variable 'REDMINE_URL' is not set"
+                return None, REDMINE_API_ERROR_MSG
 
             url = f"{REDMINE_URL}/issues.json?tracker_id=4&project_id=1&status_id=!7"
             response = requests.get(
@@ -1011,7 +1012,7 @@ class GsmbOfficerService:
 
             REDMINE_URL = os.getenv("REDMINE_URL")
             if not REDMINE_URL:
-                return None, "REDMINE_URL environment variable not set"
+                return None, REDMINE_API_ERROR_MSG
 
             issue_url = f"{REDMINE_URL}/issues/{issue_id}.json?include=attachments"
             response = requests.get(
@@ -1068,7 +1069,7 @@ class GsmbOfficerService:
 
             REDMINE_URL = os.getenv("REDMINE_URL")
             if not REDMINE_URL:
-                return None, "REDMINE_URL environment variable not set"
+                return None, REDMINE_API_ERROR_MSG
 
             issue_url = f"{REDMINE_URL}/issues/{issue_id}.json?include=attachments"
             response = requests.get(
