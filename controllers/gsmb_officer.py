@@ -453,7 +453,7 @@ def upload_mining_license():
             "land_name": request.form.get('land_name'),
             "exploration_licence_no": request.form.get('exploration_licence_no'),
             #"author": request.form.get('author'),
-            "mobile_number": request.form.get('mobile_number'),
+
             "land_owner_name": request.form.get('land_owner_name'),
             "royalty": request.form.get('royalty'),
             "capacity": request.form.get('capacity'),
@@ -470,7 +470,7 @@ def upload_mining_license():
         detailed_plan_file = request.files.get('detailed_mine_restoration_plan')
         economic_report_file = request.files.get('economic_viability_report')
         boundary_survey_file = request.files.get('deed_and_survey_plan')
-        #license_fee_receipt_file = request.files.get('license_fee_receipt')
+       
         payment_receipt_file = request.files.get('payment_receipt')
         license_boundary_survey_file = request.files.get('license_boundary_survey')
 
@@ -566,7 +566,7 @@ def reject_physical_document():
 @gsmb_officer_bp.route('/get-mlownersWithNic', methods=['GET'])
 @check_token
 @role_required(['GSMBOfficer'])
-def get_mlownersWithNic():
+def get_mlowners_with_nic():
     try:
         token = request.headers.get('Authorization')
 
@@ -755,7 +755,7 @@ def get_mining_license_request():
 @gsmb_officer_bp.route('/get-miningRequest-view-button/<int:issue_id>', methods=['GET'])
 @check_token
 @role_required(['GSMBOfficer'])
-def get_miningRequest_view_button(issue_id):
+def get_mining_request_view_button(issue_id):
     try:
         token = request.headers.get('Authorization')
         if not token:

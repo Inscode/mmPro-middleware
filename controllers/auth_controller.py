@@ -542,8 +542,8 @@ def create_issue():
         if 'file' not in request.files:
             return jsonify({'error': 'No file provided'}), 400
             
-        file = request.files['file']
-        if file.filename == '':
+        uploaded_file = request.files['file']
+        if uploaded_file.filename == '':
             return jsonify({'error': 'No selected file'}), 400
 
         start_date = request.form.get('start_date')
@@ -560,7 +560,7 @@ def create_issue():
                 'Content-Type': 'application/octet-stream',
                 'Accept': 'application/json'  # Explicitly accept JSON responses
             },
-            data=file.stream  # Send the file as binary
+            data=uploaded_file.stream  # Send the file as binary
         )
         
         if upload_response.status_code != 201:
@@ -584,8 +584,8 @@ def create_issue():
                 "description": "Issue created via API",
                 "uploads": [{
                     "token": upload_token,
-                    "filename": file.filename,
-                    "content_type": file.content_type,
+                    "filename": uploaded_file.filename,
+                    "content_type": uploaded_file.content_type,
                     "description":"survey report"
                 }]
             }

@@ -1025,7 +1025,7 @@ class GsmbOfficerService:
             return None, f"Server error: {str(e)}"
     
     @staticmethod
-    def get_miningRequest_view_button(token, issue_id):
+    def get_mining_request_view_button(token, issue_id):
         try:
             
             api_key = JWTUtils.get_api_key_from_token(token)

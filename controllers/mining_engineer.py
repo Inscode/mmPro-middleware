@@ -382,7 +382,7 @@ def get_me_appointments():
 @mining_enginer_bp.route('/view-mining-license/<int:issue_id>', methods=['GET'])
 @check_token
 @role_required(['miningEngineer'])
-def get_miningRequest_view_button(issue_id):
+def get_mining_request_view_button(issue_id):
     try:
         token = request.headers.get('Authorization')
         if not token:
