@@ -3,7 +3,9 @@ import os
 from dotenv import load_dotenv
 from utils.jwt_utils import JWTUtils
 from flask import jsonify
-from utils.limit_utils import LimitUtils
+from utils.limit_utils import LimitUtils    
+from utils.constants import REDMINE_API_ERROR_MSG
+
 
 load_dotenv()
 
@@ -15,7 +17,7 @@ class GsmbManagmentService:
             api_key = JWTUtils.get_api_key_from_token(token)
 
             if not REDMINE_URL:
-                return None, "Redmine URL is missing"
+                return None, REDMINE_API_ERROR_MSG
 
             if not api_key:
                 return None, "API Key is missing"
@@ -96,7 +98,7 @@ class GsmbManagmentService:
             api_key = JWTUtils.get_api_key_from_token(token)
 
             if not REDMINE_URL:
-                return None, "Redmine URL is missing"
+                return None, REDMINE_API_ERROR_MSG
 
             if not api_key:
                 return None, "API Key is missing"
@@ -174,7 +176,7 @@ class GsmbManagmentService:
             api_key = JWTUtils.get_api_key_from_token(token)
 
             if not REDMINE_URL:
-                return None, "Redmine URL is missing"
+                return None, REDMINE_API_ERROR_MSG
 
             if not api_key:
                 return None, "API Key is missing"
@@ -257,7 +259,7 @@ class GsmbManagmentService:
             api_key = JWTUtils.get_api_key_from_token(token)
 
             if not REDMINE_URL:
-                return None, "Redmine URL is missing"
+                return None, REDMINE_API_ERROR_MSG
 
             if not api_key:
                 return None, "API Key is missing"
@@ -323,7 +325,7 @@ class GsmbManagmentService:
             api_key = JWTUtils.get_api_key_from_token(token)
 
             if not REDMINE_URL:
-                return None, "Redmine URL is missing"
+                return None, REDMINE_API_ERROR_MSG
 
             if not api_key:
                 return None, "API Key is missing"
@@ -389,7 +391,7 @@ class GsmbManagmentService:
             api_key = JWTUtils.get_api_key_from_token(token)
 
             if not REDMINE_URL:
-                return None, "Redmine URL is missing"
+                return None, REDMINE_API_ERROR_MSG
 
             if not api_key:
                 return None, "API Key is missing"
@@ -455,7 +457,7 @@ class GsmbManagmentService:
             api_key = JWTUtils.get_api_key_from_token(token)
 
             if not REDMINE_URL:
-                return None, "Redmine URL is missing"
+                return None, REDMINE_API_ERROR_MSG
 
             if not api_key:
                 return None, "API Key is missing"
@@ -526,7 +528,7 @@ class GsmbManagmentService:
             
 
             if not REDMINE_URL:
-                return None, "Redmine URL is missing"
+                return None, REDMINE_API_ERROR_MSG
 
             if not api_key:
                 return None, "API Key is missing"
@@ -595,7 +597,7 @@ class GsmbManagmentService:
             api_key = JWTUtils.get_api_key_from_token(token)
 
             if not REDMINE_URL:
-                return None, "Redmine URL is missing"
+                return None, REDMINE_API_ERROR_MSG
 
             if not api_key:
                 return None, "API Key is missing"
@@ -939,44 +941,6 @@ class GsmbManagmentService:
         except Exception as e:
             return None, f"Unexpected error: {str(e)}"
         
-
-    # @staticmethod
-    # def get_attachment_urls(api_key, redmine_url, custom_fields):
-    #     try:
-    #         # Define the mapping of custom field names to their attachment IDs
-    #         file_fields = {
-    #             "NIC back image": None,
-    #             "NIC front image": None,
-    #             "work ID": None
-                
-    #         }
-
-    #         # Extract attachment IDs from custom fields
-    #         for field in custom_fields:
-    #             field_name = field.get("name")
-    #             attachment_id = field.get("value")
-
-    #             if field_name in file_fields and attachment_id.isdigit():
-    #                 file_fields[field_name] = attachment_id
-
-    #         # Fetch URLs for valid attachment IDs
-    #         file_urls = {}
-    #         for field_name, attachment_id in file_fields.items():
-    #             if attachment_id:
-    #                 attachment_url = f"{redmine_url}/attachments/{attachment_id}.json"
-    #                 response = requests.get(
-    #                     attachment_url,
-    #                     headers={"X-Redmine-API-Key": api_key, "Content-Type": "application/json"}
-    #                 )
-
-    #                 if response.status_code == 200:
-    #                     attachment_data = response.json().get("attachment", {})
-    #                     file_urls[field_name] = attachment_data.get("content_url", "")
-
-    
-
-    #     except Exception as e:
-    #         return {}
         
     @staticmethod
     def get_attachment_urls(custom_fields):
