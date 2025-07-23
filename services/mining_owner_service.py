@@ -118,6 +118,8 @@ class MLOwnerService:
         except Exception as e:
             return None, f"Server error: {str(e)}"
 
+
+
     @staticmethod
     def mining_homeLicenses(token):
         try:
@@ -492,8 +494,8 @@ class MLOwnerService:
 
         except Exception as e:
             return None, f"Server error: {str(e)}"
- 
 
+      
     @staticmethod
     def ml_detail(l_number: str, token: str) -> Tuple[Optional[Dict], Optional[str]]:
         try:
@@ -623,7 +625,7 @@ class MLOwnerService:
         except Exception as e:
             return None, f"Server error: {str(e)}"
      
- 
+
     @staticmethod
     def view_tpls(token: str, mining_license_number: str) -> Tuple[Optional[List[Dict]], Optional[str]]:
         try:
@@ -770,7 +772,6 @@ class MLOwnerService:
                         {"id": 28, "value": data.get("land_name", "")},  
                         {"id": 29, "value": data.get("land_owner_name", "")},
                         {"id": 30, "value": data.get("village_name", "")},
-                        {"id": 31, "value": data.get("grama_niladari", "")},
                         {"id": 31, "value": data.get("grama_niladari", "")},
                         {"id": 32, "value": data.get("divisional_secretary_division", "")},
                         {"id": 33, "value": data.get("administrative_district", "")},   

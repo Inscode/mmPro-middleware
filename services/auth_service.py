@@ -177,7 +177,7 @@ class AuthService:
     #         )
     #         memberships_response.raise_for_status()
 
-    #         memberships = memberships_response.json().get('memberships', [])
+    
 
     #         print("memberships",memberships)
     #         if not memberships:
@@ -232,18 +232,18 @@ class AuthService:
             user_id = users_response.json()['users'][0]['id']
             user_data = users_response.json()['users'][0]
 
-            # user_details_response = requests.get(
+            
             #     f"{REDMINE_URL}/users/{user_id}.json",
             #     headers={"X-Redmine-API-Key": REDMINE_API_KEY}
             # )
 
-            # if user_details_response.status_code != 200:
-            #     return None, "Failed to fetch user details"
+            
+            
 
-            # user_details = user_details_response.json().get('user', {})
-            # api_key = user_details.get('api_key')
-            # if not api_key:
-            #     return None, "API key not found for the user"
+            
+            
+            
+            
 
             memberships_response = requests.get(
               
@@ -474,7 +474,7 @@ class AuthService:
     #     admin_api_key = os.getenv("REDMINE_ADMIN_API_KEY")
         
 
-    #     url = f"{REDMINE_URL}/uploads.json?filename={file.filename}"
+    
 
     #     headers = {
     #         "X-Redmine-API-Key": admin_api_key,
@@ -483,7 +483,7 @@ class AuthService:
     #     }
 
 
-    #     response = requests.post(url, headers=headers, data=file.stream)
+    
 
     #     if response.status_code == 201:
     #          return response.json().get("upload", {}).get("id")   # Attachment ID
@@ -593,8 +593,8 @@ class AuthService:
         else:
             return None  # Handle failed upload
 
-    # @staticmethod
-    # def register_company(login, first_name, last_name, email, password, custom_fields):
+    
+    
     #     """
     #     Registers a mining license company in Redmine.
     #     """
@@ -618,7 +618,7 @@ class AuthService:
     #         }
     #     }
 
-    #     response = requests.post(url, headers=headers, json=payload)
+    
 
     #     if response.status_code in [200, 201]:
     #         return response.json(), None

@@ -14,7 +14,7 @@ load_dotenv()
 class GsmbOfficerService:
 
     ORS_API_KEY = os.getenv("ORS_API_KEY")
-     
+    
     @staticmethod
     def get_mlowners(token):
         try:
@@ -128,7 +128,7 @@ class GsmbOfficerService:
         except Exception as e:
             return None, f"Server error: {str(e)}"
         
- 
+  
     @staticmethod
     def get_mining_licenses(token):
         try:
@@ -331,6 +331,7 @@ class GsmbOfficerService:
 
         except Exception as e:
             return None, str(e)
+
 
     @staticmethod
     def get_attachment_urls(api_key, redmine_url, custom_fields):

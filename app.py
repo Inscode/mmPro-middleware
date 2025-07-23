@@ -8,6 +8,7 @@ from controllers import (
     director_general_bp
 )
 
+
 def create_app():
     app = Flask(__name__)
     

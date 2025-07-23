@@ -10,7 +10,10 @@ from email.mime.text import MIMEText
 from services.cache import cache
 import random
 import secrets  
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
 
 auth_bp = Blueprint('auth_controller', __name__)
 
@@ -103,7 +106,6 @@ def refresh_token():
       
         user_role = decoded_payload["role"]
        
-        # api_key = UserUtils.get_user_api_key(user_id)
        
         new_access_token = JWTUtils.create_access_token(user_id, user_role)
 
@@ -478,7 +480,7 @@ def get_tracker_issues():
     - Returns the issues data
     """
     # Your Redmine API configuration
-    REDMINE_API_URL = "http://gsmb.aasait.lk/issues.json"
+    REDMINE_API_URL = os.getenv("REDMINE_API_URL")
     REDMINE_API_KEY = "2fe97b781bc33e9d38305356949639971a921fb0"  # Move this to config in production
     
     # Required parameters
@@ -531,8 +533,8 @@ def create_issue():
     - Creates a new issue in Redmine with attachments
     - Properly handles file uploads to Redmine
     """
-    REDMINE_API_URL = "http://gsmb.aasait.lk/issues.json"
-    REDMINE_UPLOAD_URL = "http://gsmb.aasait.lk/uploads.json"
+    REDMINE_API_URL = os.getenv("REDMINE_API_URL")
+    REDMINE_UPLOAD_URL = os.getenv("REDMINE_UPLOAD_URL")
     REDMINE_API_KEY = "2fe97b781bc33e9d38305356949639971a921fb0"
 
     try:
@@ -699,7 +701,7 @@ def mobile_reset_password():
 @auth_bp.route('/ping', methods=['GET'])
 def ping():
     print("✅ /ping endpoint hit")
-    return jsonify({ "message": "Ping successful 🎯" })
+    return jsonify({ "message": "Ping successfuy 🎯" })
 
     
 

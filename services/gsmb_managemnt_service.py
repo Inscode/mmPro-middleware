@@ -146,12 +146,8 @@ class GsmbManagmentService:
                         (field.get("value") for field in custom_fields if field.get("name") == "Used"), None
                     )
 
-                    # capacity = float(capacity_str) if capacity_str and capacity_str.strip() != "" else 0
-                    # used = float(used_str) if used_str and used_str.strip() != "" else 0
+                    
 
-                    # if owner and capacity > 0:
-                    #     percentage_used = ((used / capacity) * 100) if capacity else 0
-                    #     mining_data.append({"label": owner, "value": round(percentage_used, 2), "capacity": capacity})
                     capacity = safe_float(capacity_str)
                     used = safe_float(used_str)
 
@@ -682,7 +678,7 @@ class GsmbManagmentService:
     @staticmethod
     def unactive_gsmb_officers(token):
         try:
-            REDMINE_URL = os.getenv("REDMINE_URL", "http://gsmb.aasait.lk")
+            REDMINE_URL = os.getenv("REDMINE_URL")
             api_key = JWTUtils.get_api_key_from_token(token)
 
             if not api_key:
@@ -710,8 +706,7 @@ class GsmbManagmentService:
                 return None, f"API request failed (Status {response.status_code})"
 
             users = response.json().get("users", [])
-           # custom_fields = issue.get("custom_fields", [])  # Extract custom fields
-           # attachment_urls = GsmbManagmentService.get_attachment_urls(user_api_key, REDMINE_URL, custom_fields)
+           
         
             # Filter GSMB officers
             officers = []
@@ -755,7 +750,7 @@ class GsmbManagmentService:
     @staticmethod
     def get_users_by_type(token, user_type):
         try:
-            REDMINE_URL = os.getenv("REDMINE_URL", "http://gsmb.aasait.lk")
+            REDMINE_URL = os.getenv("REDMINE_URL")
             api_key = JWTUtils.get_api_key_from_token(token)
 
             if not api_key:
@@ -830,7 +825,7 @@ class GsmbManagmentService:
     @staticmethod
     def get_active_ml_owners(token):
         try:
-            REDMINE_URL = os.getenv("REDMINE_URL", "http://gsmb.aasait.lk")
+            REDMINE_URL = os.getenv("REDMINE_URL")
             api_key = JWTUtils.get_api_key_from_token(token)
 
             if not api_key:
@@ -978,7 +973,7 @@ class GsmbManagmentService:
     #                     attachment_data = response.json().get("attachment", {})
     #                     file_urls[field_name] = attachment_data.get("content_url", "")
 
-    #         return file_urls
+    
 
     #     except Exception as e:
     #         return {}

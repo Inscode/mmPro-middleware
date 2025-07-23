@@ -1,5 +1,5 @@
 # Stage 1: Alpine base
-FROM python:3.13-alpine as base
+FROM python:3.13-alpine AS base
 
 RUN apk add --no-cache --virtual .build-deps gcc musl-dev && \
     adduser -D appuser && \
@@ -14,16 +14,16 @@ ENV PYTHONUNBUFFERED=1 \
     DISKCACHE_DIR="/app/otp_cache"
 
 # Stage 2: Builder (unchanged)
-FROM base as builder
+FROM base AS builder
 USER appuser
 RUN mkdir -p /home/appuser/.local
 COPY requirements.txt .
 RUN pip install --user -r requirements.txt
 
 # Stage 3: Final Image
-FROM base as final
+FROM base AS final
 COPY --from=builder /home/appuser/.local /home/appuser/.local
-COPY . .   # NOSONAR: Safe due to strict .dockerignore
+COPY . .   
 
 # Environment config (updated)
 ENV ENVIRONMENT=development \

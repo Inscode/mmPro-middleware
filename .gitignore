@@ -18,3 +18,8 @@ tempCodeRunnerFile.py
 # IDE/Editor
 .idea/
 .vscode/
+
+# SonarQube
+.scannerwork/
+coverage.xml
+.scannerwork/
