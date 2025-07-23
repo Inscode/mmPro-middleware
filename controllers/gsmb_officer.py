@@ -452,7 +452,8 @@ def upload_mining_license():
             "village_name": request.form.get('village_name'),
             "land_name": request.form.get('land_name'),
             "exploration_licence_no": request.form.get('exploration_licence_no'),
-            #"author": request.form.get('author'),
+
+
 
             "land_owner_name": request.form.get('land_owner_name'),
             "royalty": request.form.get('royalty'),

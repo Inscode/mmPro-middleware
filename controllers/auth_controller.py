@@ -701,7 +701,7 @@ def mobile_reset_password():
 @auth_bp.route('/ping', methods=['GET'])
 def ping():
     print("✅ /ping endpoint hit")
-    return jsonify({ "message": "Ping successful 🎯" })
+    return jsonify({ "message": "Ping successfuy 🎯" })
 
     
 
