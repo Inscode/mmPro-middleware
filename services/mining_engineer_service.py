@@ -172,7 +172,7 @@ class MiningEnginerService:
             return {}
         
     @staticmethod
-    def miningEngineer_approve(token, ml_id, me_appointment_id, update_data, attachments=None):   
+    def mining_engineer_approve(token, ml_id, me_appointment_id, update_data, attachments=None):   
         try:
             REDMINE_URL = os.getenv("REDMINE_URL")
             API_KEY = JWTUtils.get_api_key_from_token(token)
@@ -262,7 +262,7 @@ class MiningEnginerService:
 
 
     @staticmethod
-    def miningEngineer_reject(token, ml_id, me_appointment_id, update_data):   
+    def mining_engineer_reject(token, ml_id, me_appointment_id, update_data):   
         try:
             REDMINE_URL = os.getenv("REDMINE_URL")
             API_KEY = JWTUtils.get_api_key_from_token(token)
@@ -466,7 +466,7 @@ class MiningEnginerService:
 
     
     @staticmethod
-    def get_me_meetingeShedule_licenses(token):  
+    def get_me_meeting_schedule_licenses(token):  
         try:
             REDMINE_URL = os.getenv("REDMINE_URL")
             API_KEY = JWTUtils.get_api_key_from_token(token)

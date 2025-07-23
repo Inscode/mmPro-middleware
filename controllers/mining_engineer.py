@@ -232,7 +232,7 @@ def miningEngineer_approve(me_appointment_issue_id):
         }
         
         # Call service to update the appointment
-        result, error = MiningEnginerService.miningEngineer_approve(
+        result, error = MiningEnginerService.mining_engineer_approve(
             token=token,
             me_appointment_id = me_appointment_issue_id,
             ml_id=ml_request_id,
@@ -287,10 +287,10 @@ def miningEngineer_reject(me_appointment_issue_id):
         }
         
         # Call service to update the issue in Redmine
-        result, error = MiningEnginerService.miningEngineer_reject(
+        result, error = MiningEnginerService.mining_engineer_reject(
             token=token,
             ml_id=ml_request_id,
-            me_appointment_id = me_appointment_issue_id,
+            me_appointment_id=me_appointment_issue_id,
             update_data=update_data
         )
         
@@ -347,7 +347,7 @@ def get_me_meetingeShedule_licenses():
             return jsonify({"error": "token is missing"}), 401
             
         # Fetch Mining Licenses from the service
-        mining_licenses, error = MiningEnginerService.get_me_meetingeShedule_licenses(token)
+        mining_licenses, error = MiningEnginerService.get_me_meeting_schedule_licenses(token)
         
         if error:
             return jsonify({"error": error}), 500 if "Server error" in error else 400
