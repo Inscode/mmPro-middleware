@@ -15,8 +15,6 @@ class GsmbOfficerService:
 
     ORS_API_KEY = os.getenv("ORS_API_KEY")
     
-
-    
     @staticmethod
     def get_mlowners(token):
         try:
@@ -131,9 +129,6 @@ class GsmbOfficerService:
             return None, f"Server error: {str(e)}"
         
   
-
-   
-
     @staticmethod
     def get_mining_licenses(token):
         try:
@@ -176,12 +171,6 @@ class GsmbOfficerService:
                     "assigned_to": issue.get("assigned_to", {}).get("name") if issue.get("assigned_to") else None,
                     "start_date": issue.get("start_date"),
                     "due_date": issue.get("due_date"),
-                    # "exploration_licence_no": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Exploration Licence No"),
-                    # "applicant_or_company_name": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Name of Applicant OR Company"),
-                    # "land_name": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Land Name(Licence Details)"),
-                    # "land_owner_name": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Land owner name"),
-                    # "village_name": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Name of village "),
-                    # "grama_niladhari_division": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Grama Niladhari Division"),
                     "divisional_secretary_division": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Divisional Secretary Division"),
                     # "administrative_district": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Administrative District"),
                     "capacity": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Capacity"),
@@ -191,16 +180,6 @@ class GsmbOfficerService:
                     # "license_number": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Mining License Number"),
                     "mining_license_number": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Mining License Number"),
                     "mobile_number": GsmbOfficerService.get_custom_field_value(issue.get("custom_fields", []), "Mobile Number"),
-
-                    
-                    # Fetching File URLs from Attachments API
-                #     "economic_viability_report": attachment_urls.get("Economic Viability Report"),
-                #     "license_fee_receipt": attachment_urls.get("License fee receipt"),
-                #     "detailed_mine_restoration_plan": attachment_urls.get("Detailed Mine Restoration Plan"),
-                #     "professional": attachment_urls.get("Professional"),
-                #     "deed_and_survey_plan": attachment_urls.get("Deed and Survey Plan"),
-                #     "payment_receipt": attachment_urls.get("Payment Receipt"),
-                #     "license_boundary_survey": attachment_urls.get("License Boundary Survey")
                 }
 
                 formatted_mls.append(formatted_ml)
@@ -352,8 +331,6 @@ class GsmbOfficerService:
 
         except Exception as e:
             return None, str(e)
-
-    
 
 
     @staticmethod
@@ -1082,7 +1059,7 @@ class GsmbOfficerService:
         
 
     @staticmethod
-    def get_miningLicense_view_button(token, issue_id):
+    def get_mining_License_view_button(token, issue_id):
         try:
             
             api_key = JWTUtils.get_api_key_from_token(token)

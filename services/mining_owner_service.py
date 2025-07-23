@@ -18,6 +18,7 @@ load_dotenv()
 class MLOwnerService:
 
     ORS_API_KEY = os.getenv("ORS_API_KEY")
+    INVALID_API_KEY_MSG = "Invalid or missing API key in the token"
     
 
     @staticmethod
@@ -85,7 +86,7 @@ class MLOwnerService:
                     royalty = custom_fields_dict.get("Royalty", "N/A")
                     status = issue.get("status", {}).get("name", "Unknown")
 
-                    # Check if license has expired by comparing current date with due date
+                    # Check if license has expired by comparing current date with due date 
                     if due_date != "N/A":
                         try:
                             due_date_obj = datetime.strptime(due_date, "%Y-%m-%d").date()
@@ -117,10 +118,6 @@ class MLOwnerService:
         except Exception as e:
             return None, f"Server error: {str(e)}"
 
-
-
-
-  
 
 
     @staticmethod
@@ -499,7 +496,6 @@ class MLOwnerService:
             return None, f"Server error: {str(e)}"
 
       
-
     @staticmethod
     def ml_detail(l_number: str, token: str) -> Tuple[Optional[Dict], Optional[str]]:
         try:
@@ -629,8 +625,6 @@ class MLOwnerService:
         except Exception as e:
             return None, f"Server error: {str(e)}"
      
-
-    
 
     @staticmethod
     def view_tpls(token: str, mining_license_number: str) -> Tuple[Optional[List[Dict]], Optional[str]]:
@@ -834,7 +828,7 @@ class MLOwnerService:
         try:
             user_api_key = JWTUtils.get_api_key_from_token(token)
             if not user_api_key:
-                return None, "Invalid or missing API key in the token"
+                return None, MLOwnerService.INVALID_API_KEY_MSG
 
             user_response = JWTUtils.decode_jwt_and_get_user_id(token)
 
@@ -971,7 +965,7 @@ class MLOwnerService:
         try:
             user_api_key = JWTUtils.get_api_key_from_token(token)
             if not user_api_key:
-                return None, "Invalid or missing API key in the token"
+                return None, MLOwnerService.INVALID_API_KEY_MSG
 
             user_response = JWTUtils.decode_jwt_and_get_user_id(token)
             user_id = user_response.get("user_id")
@@ -1060,7 +1054,7 @@ class MLOwnerService:
             # 🔐 Extract API key from JWT token
             api_key = JWTUtils.get_api_key_from_token(token)
             if not api_key:
-                return None, "Invalid or missing API key"
+                return None, MLOwnerService.INVALID_API_KEY_MSG
 
             # 🌍 Load Redmine URL from environment
             REDMINE_URL = os.getenv("REDMINE_URL")
@@ -1132,7 +1126,7 @@ class MLOwnerService:
         try:
             user_api_key = JWTUtils.get_api_key_from_token(token)
             if not user_api_key:
-                return None, "Invalid or missing API key in the token"
+                return None, MLOwnerService.INVALID_API_KEY_MSG
 
             user_response = JWTUtils.decode_jwt_and_get_user_id(token)
             user_id = user_response.get("user_id")
@@ -1190,7 +1184,7 @@ class MLOwnerService:
         try:
             user_api_key = JWTUtils.get_api_key_from_token(token)
             if not user_api_key:
-                return False, "Invalid or missing API key in token"
+                return False, MLOwnerService.INVALID_API_KEY_MSG
 
             REDMINE_URL = os.getenv("REDMINE_URL")
             if not REDMINE_URL:
