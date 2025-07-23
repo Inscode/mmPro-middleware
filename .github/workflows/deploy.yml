@@ -4,12 +4,13 @@ on:
   push:
     branches: [main]
     paths:
-      - 'app.py'            # Watch main app file
-      - 'config.py'         # Watch config
-      - 'requirements.txt'  # Watch dependencies
-      - 'controllers/**'    # Watch controllers
-      - 'services/**'       # Watch services
-      - 'utils/**'          # Watch utils
+      - 'app.py'
+      - 'config.py'
+      - 'requirements.txt'
+      - 'controllers/**'
+      - 'services/**'
+      - 'utils/**'
+      - 'sonar-project.properties'
 
 jobs:
   deploy:
@@ -19,24 +20,44 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Rsync
-        run: sudo apt-get install -y rsync
+      - name: Install dependencies (Python + Rsync)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rsync python3-pip
+          pip install coverage
+
+      - name: Run Tests and Generate Coverage
+        run: |
+          coverage run -m unittest discover -s tests
+          coverage xml
+
+      - name: SonarQube Scan
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: |
+          curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
+          unzip -q sonar-scanner.zip
+          export PATH="$PWD/sonar-scanner-5.0.1.3006-linux/bin:$PATH"
+          sonar-scanner \
+            -Dsonar.login=$SONAR_TOKEN \
+            -Dsonar.host.url=$SONAR_HOST_URL
 
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.7.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Deploy Files
+      - name: Deploy Files to Server
         run: |
           rsync -avz \
-          -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
+            -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
             --exclude='.git/' \
             --exclude='.github/' \
             --exclude='.env' \
             ./ insaf@${{ secrets.SERVER_IP }}:/opt/mmPro-middleware/
 
-      - name: Install Dependencies
+      - name: Install Dependencies on Server
         run: |
           ssh -o StrictHostKeyChecking=no insaf@${{ secrets.SERVER_IP }} "
             cd /opt/mmPro-middleware &&
