@@ -11,7 +11,7 @@ import requests  # For making HTTP requests to Redmine
 from flask import Response  # For streaming file responses in Flask
 from utils.jwt_utils import JWTUtils
 from werkzeug.http import parse_options_header
-from utils.constants import AUTH_TOKEN_INVALID_ERROR,AUTH_TOKEN_MISSING_ERROR
+from utils.constants import AUTH_TOKEN_MISSING_ERROR
 
 
 
