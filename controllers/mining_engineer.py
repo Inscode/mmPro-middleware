@@ -10,6 +10,7 @@ from utils.jwt_utils import JWTUtils
 from flask import send_file
 from io import BytesIO
     
+AUTH_TOKEN_MISSING_ERROR = "Authorization token is missing"
 
 # Define the Blueprint for mining_enginer
 mining_enginer_bp = Blueprint('mining_enginer', __name__)
@@ -22,7 +23,7 @@ def update_miningOwner_appointment(issue_id):
         # Extract token from headers
         auth_header = request.headers.get("Authorization")
         if not auth_header:
-            return {"error": "Authorization token is missing"}, 400
+            return {"error": AUTH_TOKEN_MISSING_ERROR}, 400
         
         token = auth_header.replace("Bearer ", "")
         if not token:
@@ -194,7 +195,7 @@ def miningEngineer_approve(me_appointment_issue_id):
         # Extract token from headers
         auth_header = request.headers.get("Authorization")
         if not auth_header:
-            return {"error": "Authorization token is missing"}, 400
+            return {"error": AUTH_TOKEN_MISSING_ERROR}, 400
         
         token = auth_header.replace("Bearer ", "")
         if not token:
@@ -257,7 +258,7 @@ def miningEngineer_reject(me_appointment_issue_id):
         # Extract token from headers
         auth_header = request.headers.get("Authorization")
         if not auth_header:
-            return {"error": "Authorization token is missing"}, 400
+            return {"error": AUTH_TOKEN_MISSING_ERROR}, 400
         
         token = auth_header.replace("Bearer ", "")
         if not token:
@@ -312,7 +313,7 @@ def update_issue_status():
     try:
         token = request.headers.get('Authorization')
         if not token:
-            return jsonify({"error": "Authorization token is missing"}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         data = request.get_json()
         issue_id = data.get('issue_id')
@@ -386,7 +387,7 @@ def get_mining_request_view_button(issue_id):
     try:
         token = request.headers.get('Authorization')
         if not token:
-            return jsonify({"error": "Authorization token is missing"}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         # Fetch issue details
         mining_license, error = MiningEnginerService.get_mining_license_view_button(token, issue_id)
@@ -485,7 +486,7 @@ def set_license_hold():
 
         token = request.headers.get('Authorization')
         if not token:
-            return jsonify({"error": "Authorization token is missing"}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         success, error = MiningEnginerService.set_license_hold(issue_id, reason_for_hold, token)
         if not success:

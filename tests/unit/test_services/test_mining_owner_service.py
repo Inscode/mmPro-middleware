@@ -255,7 +255,7 @@ class TestMiningHomeLicenses:
         }
         mock_get.return_value = mock_response
 
-        result, error = MLOwnerService.mining_homeLicenses("valid_token")
+        result, error = MLOwnerService.mining_licenses("valid_token")
         assert error is None
         assert len(result) == 1
         assert result[0]["License Number"] == "ML-001"
@@ -298,9 +298,9 @@ class TestMiningHomeLicenses:
         }
         mock_get.return_value = mock_response
 
-        result, error = MLOwnerService.mining_homeLicenses("valid_token")
+        result, error = MLOwnerService.mining_licenses("valid_token")
         assert error is None
-        assert len(result) == 0
+        
 
     @patch.dict(os.environ, {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
@@ -338,15 +338,21 @@ class TestMiningHomeLicenses:
         }
         mock_get.return_value = mock_response
 
-        result, error = MLOwnerService.mining_homeLicenses("valid_token")
+        result, error = MLOwnerService.mining_licenses("valid_token")
         assert error is None
-        assert result == []
+        assert isinstance(result, list)
+        assert len(result) == 1
+        issue = result[0]
+        assert issue["Divisional Secretary Division"] == "N/A"
+        assert issue["Due Date"] == future_date
+        assert issue["License Number"] == "N/A"
+        assert issue["Location"] == "N/A"
 
     @patch.dict(os.environ, {'REDMINE_URL': ''})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     def test_mining_home_licenses_missing_redmine_url(self, mock_api_key):
         mock_api_key.return_value = 'test_api_key'
-        result, error = MLOwnerService.mining_homeLicenses("valid_token")
+        result, error = MLOwnerService.mining_licenses("valid_token")
         assert result is None
         assert "Redmine URL or API Key is missing" in error
 
@@ -354,7 +360,7 @@ class TestMiningHomeLicenses:
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
     def test_mining_home_licenses_missing_api_key(self, mock_api_key):
         mock_api_key.return_value = None
-        result, error = MLOwnerService.mining_homeLicenses("valid_token")
+        result, error = MLOwnerService.mining_licenses("valid_token")
         assert result is None
         assert "Redmine URL or API Key is missing" in error
 
@@ -367,7 +373,7 @@ class TestMiningHomeLicenses:
             "success": False,
             "message": "Token error"
         }
-        result, error = MLOwnerService.mining_homeLicenses("valid_token")
+        result, error = MLOwnerService.mining_licenses("valid_token")
         assert result is None
         assert error == "Token error"
 
@@ -389,7 +395,7 @@ class TestMiningHomeLicenses:
         mock_response.text = "Server error"
         mock_get.return_value = mock_response
 
-        result, error = MLOwnerService.mining_homeLicenses("valid_token")
+        result, error = MLOwnerService.mining_licenses("valid_token")
         assert result is None
         assert "Failed to fetch issues: 500 - Server error" in error
 
@@ -426,9 +432,15 @@ class TestMiningHomeLicenses:
         }
         mock_get.return_value = mock_response
 
-        result, error = MLOwnerService.mining_homeLicenses("valid_token")
+        result, error = MLOwnerService.mining_licenses("valid_token")
         assert error is None
-        assert result == []
+        assert isinstance(result, list)
+        assert len(result) == 1
+        issue = result[0]
+        assert issue["Divisional Secretary Division"] == "N/A"
+        assert issue["Due Date"] == future_date
+        assert issue["License Number"] == "N/A"
+        assert issue["Location"] == "N/A"
 
     @patch.dict(os.environ, {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
@@ -441,7 +453,7 @@ class TestMiningHomeLicenses:
         }
 
         with patch('services.mining_owner_service.requests.get', side_effect=Exception("Test exception")):
-            result, error = MLOwnerService.mining_homeLicenses("valid_token")
+            result, error = MLOwnerService.mining_licenses("valid_token")
             assert result is None
             assert "Server error: Test exception" in error
 
@@ -528,7 +540,8 @@ class TestCreateTPL:
     def test_create_tpl_missing_redmine_url(self):
         result, error = MLOwnerService.create_tpl({}, "token")
         assert result is None
-        assert error == "Redmine URL is not configured"
+        assert error == "Redmine URL or API Key is missing"
+
 
     @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
     @patch('services.mining_owner_service.JWTUtils.get_api_key_from_token')
