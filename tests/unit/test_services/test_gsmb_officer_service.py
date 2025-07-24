@@ -808,7 +808,7 @@ def test_successful_fetch(mock_get_api_key, mock_requests_get):
 
     mock_requests_get.side_effect = [memberships_response, users_response]
 
-    result, error = GsmbOfficerService.get_mlownersDetails("token")
+    result, error = GsmbOfficerService.get_ml_owners_details("token")
 
     assert error is None
     assert isinstance(result, list)
@@ -820,7 +820,7 @@ def test_successful_fetch(mock_get_api_key, mock_requests_get):
 @patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
 def test_missing_user_api_key(mock_get_api_key):
     mock_get_api_key.return_value = None
-    result, error = GsmbOfficerService.get_mlownersDetails("token")
+    result, error = GsmbOfficerService.get_ml_owners_details("token")
     assert result is None
     assert "Invalid or missing API key" in error
 
@@ -829,7 +829,7 @@ def test_missing_user_api_key(mock_get_api_key):
 def test_missing_env_vars(mock_get_api_key):
     mock_get_api_key.return_value = "valid_key"
     with patch.dict(os.environ, {}, clear=True):
-        result, error = GsmbOfficerService.get_mlownersDetails("token")
+        result, error = GsmbOfficerService.get_ml_owners_details("token")
         assert result is None
         assert "REDMINE_ADMIN_API_KEY" in error or "REDMINE_URL" in error
 
@@ -848,7 +848,7 @@ def test_membership_api_failure(mock_get_api_key, mock_requests_get):
     mock_response.text = "Forbidden"
     mock_requests_get.return_value = mock_response
 
-    result, error = GsmbOfficerService.get_mlownersDetails("token")
+    result, error = GsmbOfficerService.get_ml_owners_details("token")
     assert result is None
     assert "Failed to fetch memberships" in error
 
@@ -878,7 +878,7 @@ def test_users_api_failure(mock_get_api_key, mock_requests_get):
 
     mock_requests_get.side_effect = [memberships_response, users_response]
 
-    result, error = GsmbOfficerService.get_mlownersDetails("token")
+    result, error = GsmbOfficerService.get_ml_owners_details("token")
     assert result is None
     assert "Failed to fetch user details" in error
 
@@ -891,7 +891,7 @@ def test_users_api_failure(mock_get_api_key, mock_requests_get):
 def test_exception_handling(mock_get_api_key):
     mock_get_api_key.side_effect = Exception("Something went wrong")
 
-    result, error = GsmbOfficerService.get_mlownersDetails("token")
+    result, error = GsmbOfficerService.get_ml_owners_details("token")
     assert result is None
     assert "Server error: Something went wrong" in error
 
@@ -1500,7 +1500,7 @@ class TestGetMiningLicenseViewButton:
             "License Boundary Survey": "https://file6.com"
         }
 
-        result, error = GsmbOfficerService.get_mining_License_view_button("token", 1)
+        result, error = GsmbOfficerService.get_mining_license_view_button("token", 1)
 
         assert error is None
         assert result["id"] == 1
@@ -1511,14 +1511,14 @@ class TestGetMiningLicenseViewButton:
     @patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
     def test_missing_api_key(self, mock_get_token):
         mock_get_token.return_value = None
-        result, error = GsmbOfficerService.get_mining_License_view_button("token", 1)
+        result, error = GsmbOfficerService.get_mining_license_view_button("token", 1)
         assert result is None
         assert "Invalid or missing API key" in error
 
     def test_missing_env_variable(self):
         with patch.dict(os.environ, {}, clear=True):
             with patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token", return_value="key"):
-                result, error = GsmbOfficerService.get_mining_License_view_button("token", 1)
+                result, error = GsmbOfficerService.get_mining_license_view_button("token", 1)
                 assert result is None
                 assert "REDMINE_URL" in error
 
@@ -1529,7 +1529,7 @@ class TestGetMiningLicenseViewButton:
         mock_get_token.return_value = "valid_api_key"
         mock_get.return_value = MagicMock(status_code=404, text="Not Found")
 
-        result, error = GsmbOfficerService.get_mining_License_view_button("token", 1)
+        result, error = GsmbOfficerService.get_mining_license_view_button("token", 1)
 
         assert result is None
         assert "Failed to fetch issue" in error
@@ -1541,7 +1541,7 @@ class TestGetMiningLicenseViewButton:
         mock_get_token.return_value = "valid_api_key"
         mock_get.return_value = MagicMock(status_code=200, json=lambda: {})
 
-        result, error = GsmbOfficerService.get_mining_License_view_button("token", 1)
+        result, error = GsmbOfficerService.get_mining_license_view_button("token", 1)
 
         assert result is None
         assert "Issue data not found" in error

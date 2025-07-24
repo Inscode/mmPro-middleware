@@ -6,6 +6,8 @@ import requests
 import os
 from flask import Response
 
+AUTH_TOKEN_REQUIRED = "Authorization token is required"
+
 gsmb_management_bp = Blueprint('gsmb_management', __name__) 
 
 
@@ -15,7 +17,7 @@ gsmb_management_bp = Blueprint('gsmb_management', __name__)
 def monthly_total_sand_cubes():
     token = request.headers.get("Authorization")
     if not token:
-        return jsonify({"error": "Authorization token is required"}), 401
+        return jsonify({"error": AUTH_TOKEN_REQUIRED}), 401
 
     issues, error = GsmbManagmentService.monthly_total_sand_cubes(token)
     
@@ -31,7 +33,7 @@ def monthly_total_sand_cubes():
 def fetch_top_mining_holders():
     token = request.headers.get("Authorization")
     if not token:
-        return jsonify({"error": "Authorization token is required"}), 401
+        return jsonify({"error": AUTH_TOKEN_REQUIRED}), 401
 
     issues, error = GsmbManagmentService.fetch_top_mining_holders(token)
     
@@ -47,7 +49,7 @@ def fetch_top_mining_holders():
 def fetch_royalty_counts():
     token = request.headers.get("Authorization")
     if not token:
-        return jsonify({"error": "Authorization token is required"}), 401
+        return jsonify({"error": AUTH_TOKEN_REQUIRED}), 401
 
     # Call the service method
     response, error = GsmbManagmentService.fetch_royalty_counts(token)
@@ -65,7 +67,7 @@ def fetch_royalty_counts():
 def monthly_mining_license_count():
     token = request.headers.get("Authorization")
     if not token:
-        return jsonify({"error": "Authorization token is required"}), 401
+        return jsonify({"error": AUTH_TOKEN_REQUIRED}), 401
 
     issues, error = GsmbManagmentService.monthly_mining_license_count(token)
     
@@ -81,7 +83,7 @@ def monthly_mining_license_count():
 def transport_license_destination():
     token = request.headers.get("Authorization")
     if not token:
-        return jsonify({"error": "Authorization token is required"}), 401
+        return jsonify({"error": AUTH_TOKEN_REQUIRED}), 401
 
     issues, error = GsmbManagmentService.transport_license_destination(token)  # Fix method name
     
@@ -98,7 +100,7 @@ def transport_license_destination():
 def total_location_ml():
     token = request.headers.get("Authorization")
     if not token:
-        return jsonify({"error": "Authorization token is required"}), 401
+        return jsonify({"error": AUTH_TOKEN_REQUIRED}), 401
 
     issues, error = GsmbManagmentService.total_location_ml(token) 
     
@@ -115,7 +117,7 @@ def total_location_ml():
 def complaint_counts():
     token = request.headers.get("Authorization")
     if not token:
-        return jsonify({"error": "Authorization token is required"}), 401
+        return jsonify({"error": AUTH_TOKEN_REQUIRED}), 401
 
     issues, error = GsmbManagmentService.complaint_counts(token) 
     
@@ -132,7 +134,7 @@ def complaint_counts():
 def role_counts():
     token = request.headers.get("Authorization")
     if not token:
-        return jsonify({"error": "Authorization token is required"}), 401
+        return jsonify({"error": AUTH_TOKEN_REQUIRED}), 401
 
     issues, error = GsmbManagmentService.role_counts(token) 
     
@@ -149,7 +151,7 @@ def role_counts():
 def mining_license_count():
     token = request.headers.get("Authorization")
     if not token:
-        return jsonify({"error": "Authorization token is required"}), 401
+        return jsonify({"error": AUTH_TOKEN_REQUIRED}), 401
 
     issues, error = GsmbManagmentService.mining_license_count(token) 
     
@@ -165,7 +167,7 @@ def mining_license_count():
 def unactive_gsmb_officers():
     token = request.headers.get("Authorization")
     if not token:
-        return jsonify({"error": "Authorization token is required"}), 401
+        return jsonify({"error": AUTH_TOKEN_REQUIRED}), 401
 
     # Corrected spelling to GsmbManagementService
     officers, error = GsmbManagmentService.unactive_gsmb_officers(token)
@@ -186,7 +188,7 @@ def unactive_gsmb_officers():
 def get_police_users():
     token = request.headers.get("Authorization")
     if not token:
-        return jsonify({"error": "Authorization token is required"}), 401
+        return jsonify({"error": AUTH_TOKEN_REQUIRED}), 401
 
     users, error = GsmbManagmentService.get_users_by_type(token, "police")
     if error:
@@ -205,7 +207,7 @@ def get_police_users():
 def get_gsmb_officer_users():
     token = request.headers.get("Authorization")
     if not token:
-        return jsonify({"error": "Authorization token is required"}), 401
+        return jsonify({"error": AUTH_TOKEN_REQUIRED}), 401
 
     users, error = GsmbManagmentService.get_users_by_type(token, "gsmbOfficer")
     if error:
@@ -224,7 +226,7 @@ def get_gsmb_officer_users():
 def get_mining_engineer_users():
     token = request.headers.get("Authorization")
     if not token:
-        return jsonify({"error": "Authorization token is required"}), 401
+        return jsonify({"error": AUTH_TOKEN_REQUIRED}), 401
 
     users, error = GsmbManagmentService.get_users_by_type(token, "miningEngineer")
     if error:
@@ -243,7 +245,7 @@ def get_mining_engineer_users():
 def get_ml_owner_users():
     token = request.headers.get("Authorization")
     if not token:
-        return jsonify({"error": "Authorization token is required"}), 401
+        return jsonify({"error": AUTH_TOKEN_REQUIRED}), 401
 
     users, error = GsmbManagmentService.get_active_ml_owners(token)
     if error:
@@ -263,7 +265,7 @@ def get_ml_owner_users():
 def active_gsmb_officers(id):  # Parameter name should match the route parameter 'id'
     token = request.headers.get("Authorization")
     if not token:
-        return jsonify({"error": "Authorization token is required"}), 401
+        return jsonify({"error": AUTH_TOKEN_REQUIRED}), 401
 
     try:
         # Activate the officer by changing status from 3 to 1

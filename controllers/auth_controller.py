@@ -14,6 +14,8 @@ from dotenv import load_dotenv
 import os
 
 load_dotenv()
+REQUIRED_FIELDS_ERROR = "Missing required fields"
+JSON_CONTENT_TYPE = 'application/json'
 
 auth_bp = Blueprint('auth_controller', __name__)
 
@@ -117,7 +119,7 @@ def refresh_token():
         return jsonify({"message": "Refresh token has expired"}), 401
     except jwt.InvalidTokenError:
         return jsonify({"message": "Invalid token"}), 401
-    except Exception as e:
+    except Exception:
        
         return jsonify({"message": "Internal server error"}), 500
 
@@ -184,7 +186,7 @@ def register_police_officer():
         user_Type = request.form.get('user_Type')
 
         if not all([login, first_name, last_name, email, password, nic_number, mobile_number, designation]):
-            return jsonify({"error": "Missing required fields"}), 400
+            return jsonify({"error": REQUIRED_FIELDS_ERROR}), 400
 
         nic_front_file = request.files.get('nic_front')
         nic_back_file = request.files.get('nic_back')
@@ -249,7 +251,7 @@ def register_gsmb_officer():
         user_Type = request.form.get('user_Type')
 
         if not all([login, first_name, last_name, email, password, nic_number, mobile_number, designation]):
-            return jsonify({"error": "Missing required fields"}), 400
+            return jsonify({"error": REQUIRED_FIELDS_ERROR}), 400
 
         nic_front_file = request.files.get('nic_front') 
         nic_back_file = request.files.get('nic_back')
@@ -310,7 +312,7 @@ def register_mining_engineer():
         user_Type = request.form.get('user_Type')
 
         if not all([login, first_name, last_name, email, password, nic_number, mobile_number, designation]):
-            return jsonify({"error": "Missing required fields"}), 400
+            return jsonify({"error": REQUIRED_FIELDS_ERROR}), 400
 
         nic_front_file = request.files.get('nic_front') 
         nic_back_file = request.files.get('nic_back')
@@ -431,7 +433,7 @@ def register_company():
 
         # Validate required fields
         if not all([login, first_name, last_name, email, password, country_of_incorporation, head_office, address_of_registered_company]):
-            return jsonify({"error": "Missing required fields"}), 400
+            return jsonify({"error": REQUIRED_FIELDS_ERROR}), 400
 
         # Handle file uploads (Articles of Association & Annual Reports)
         articles_file = request.files.get('articles_of_association')
@@ -498,7 +500,7 @@ def get_tracker_issues():
             },
             headers={
                 'X-Redmine-API-Key': REDMINE_API_KEY,
-                'Content-Type': 'application/json'
+                'Content-Type': JSON_CONTENT_TYPE
             }
         )
         
@@ -558,7 +560,7 @@ def create_issue():
             headers={
                 'X-Redmine-API-Key': REDMINE_API_KEY,
                 'Content-Type': 'application/octet-stream',
-                'Accept': 'application/json'  # Explicitly accept JSON responses
+                'Accept': JSON_CONTENT_TYPE  # Explicitly accept JSON responses
             },
             data=uploaded_file.stream  # Send the file as binary
         )
@@ -595,7 +597,7 @@ def create_issue():
             REDMINE_API_URL,
             headers={
                 'X-Redmine-API-Key': REDMINE_API_KEY,
-                'Content-Type': 'application/json'
+                'Content-Type': JSON_CONTENT_TYPE
             },
             json=issue_data
         )
