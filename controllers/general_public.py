@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 from services.general_public_service import GeneralPublicService
 from middleware.auth_middleware import role_required
 from utils.jwt_utils import JWTUtils
+from utils.constants import INTERNAL_SERVER_ERROR
 
 general_public_bp = Blueprint('general_public', __name__)
 
@@ -18,7 +19,7 @@ def validate_lorry_number():
         if "No TPL with this lorry number" in error:
             return jsonify({"valid": False}), 200  # Return False if not found
         else:
-            return jsonify({"error": "Internal Server Error"}), 500  # Hide technical errors
+            return jsonify({"error": INTERNAL_SERVER_ERROR}), 500  # Hide technical errors
 
     return jsonify({"valid": tpl_license_exists}), 200  # Return True if valid
 
