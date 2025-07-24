@@ -25,7 +25,7 @@ def test_validate_lorry_number_error(mock_is_valid, client):
     mock_is_valid.return_value = (False, "Database connection error")
     response = client.get('/general-public/validate-lorry-number?lorry_number=ERROR123')
     assert response.status_code == 500
-    assert response.get_json() == {"error": "Internal Server Error"}
+    assert response.get_json() == {"error": "Internal server error"}
 
 @patch('services.general_public_service.GeneralPublicService.create_complaint')
 def test_create_complaint_success(mock_create, client):
