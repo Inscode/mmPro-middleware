@@ -8,7 +8,7 @@ from utils.user_utils import UserUtils
 from hashlib import sha256
 import time
 import requests
-from utils.constants import AUTH_TOKEN_MISSING_ERROR
+from utils.constants import AUTH_TOKEN_MISSING_ERROR, INTERNAL_SERVER_ERROR
 
 
 # Define the Blueprint for mining_owner
@@ -407,7 +407,7 @@ def handle_payhere_ipn():
 
     except Exception as e:
         return jsonify({
-            "error": "Internal server error",
+            "error": INTERNAL_SERVER_ERROR,
             "details": str(e)
         }), 500
     

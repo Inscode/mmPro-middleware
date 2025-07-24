@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from services.auth_service import AuthService
 from utils.jwt_utils import JWTUtils
 from utils.user_utils import UserUtils
-from utils.constants import MISSING_REQUIRED_FIELDS_ERROR
+from utils.constants import MISSING_REQUIRED_FIELDS_ERROR, INTERNAL_SERVER_ERROR
 import jwt
 from config import Config
 import requests
@@ -120,7 +120,7 @@ def refresh_token():
         return jsonify({"message": "Invalid token"}), 401
     except Exception as e:
        
-        return jsonify({"message": "Internal server error"}), 500
+        return jsonify({"message": INTERNAL_SERVER_ERROR}), 500
 
 @auth_bp.route('/forgot-password', methods=['POST'])
 def forgot_password():
@@ -615,7 +615,7 @@ def create_issue():
 
     except Exception as e:
         return jsonify({
-            'error': 'Internal server error',
+            'error': INTERNAL_SERVER_ERROR,
             'details': str(e)
         }), 500
 
