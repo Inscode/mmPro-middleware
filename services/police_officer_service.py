@@ -73,7 +73,6 @@ class PoliceOfficerService:
             # Convert times to Sri Lanka time (UTC+5:30)
             sri_lanka_offset = timedelta(hours=5, minutes=30)
             created_on_sl = created_on_utc + sri_lanka_offset
-            
 
             # Extract TPL data
             tpl_data = {

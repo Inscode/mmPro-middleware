@@ -11,9 +11,8 @@ import requests  # For making HTTP requests to Redmine
 from flask import Response  # For streaming file responses in Flask
 from utils.jwt_utils import JWTUtils
 from werkzeug.http import parse_options_header
+from utils.constants import AUTH_TOKEN_MISSING_ERROR
 
-
-AUTH_TOKEN_MISSING_ERROR = "Authorization token is missing"
 
 # Define the Blueprint for gsmb_officer
 gsmb_officer_bp = Blueprint('gsmb_officer', __name__)
@@ -29,7 +28,7 @@ def user_detail(user_id):
         auth_header = request.headers.get('Authorization')
         if not auth_header:
             return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 401
-        
+          
         # Check if the token starts with 'Bearer ' (you can also validate it further here if needed)
         if not auth_header.startswith('Bearer '):
             return jsonify({"error": "Invalid token format. Expected 'Bearer <token>'"}), 401
@@ -66,7 +65,7 @@ def add_new_license():
         token =request.headers.get('Authorization')
 
         if not token:
-            return jsonify({"error":AUTH_TOKEN_MISSING_ERROR}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         # Get the payload from the request body (expected to be a JSON)
         payload = request.json 
@@ -100,7 +99,7 @@ def get_license_details(licenseId):
         token =request.headers.get('Authorization')
 
         if not token:
-            return jsonify({"error":AUTH_TOKEN_MISSING_ERROR}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         # pass the token and payload to the service method
         license_details, error =GsmbOfficerService.get_license_details(token,licenseId )
@@ -126,7 +125,7 @@ def update_license(licenseId):
         token =request.headers.get('Authorization')
 
         if not token:
-            return jsonify({"error":AUTH_TOKEN_MISSING_ERROR}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         # Get the payload from the request body (expected to be a JSON)
         payload = request.json 
