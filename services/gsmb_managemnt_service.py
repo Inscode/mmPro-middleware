@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from utils.jwt_utils import JWTUtils
 from flask import jsonify
 from utils.limit_utils import LimitUtils    
-from utils.constants import REDMINE_API_ERROR_MSG,API_KEY_MISSING_ERROR
+from utils.constants import REDMINE_API_ERROR_MSG,API_KEY_MISSING_ERROR,CONTENT_TYPE_JSON
 
 
 load_dotenv()
@@ -29,7 +29,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             monthly_data = {
@@ -110,7 +110,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             mining_data = []
@@ -191,7 +191,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             offset = 0
@@ -265,7 +265,7 @@ class GsmbManagmentService:
                 return None, API_KEY_MISSING_ERROR
 
             headers = {
-                "Content-Type": "application/json",
+                "Content-Type": CONTENT_TYPE_JSON,
                 "X-Redmine-API-Key": api_key
             }
 
@@ -337,7 +337,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             destination_counts = {}
@@ -403,7 +403,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             location_counts = {}
@@ -469,7 +469,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             counts = {
@@ -535,7 +535,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             counts = {
@@ -610,7 +610,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             counts = {
@@ -691,7 +691,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json",
+                "Content-Type": CONTENT_TYPE_JSON,
                 "User-Agent": "GSMB-Management-Service/1.0"
             }
 
@@ -766,7 +766,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json",
+                "Content-Type": CONTENT_TYPE_JSON,
                 "User-Agent": "GSMB-Management-Service/1.0"
             }
 
@@ -844,7 +844,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json",
+                "Content-Type": CONTENT_TYPE_JSON,
                 "User-Agent": "GSMB-Management-Service/1.0"
             }
 
@@ -927,7 +927,7 @@ class GsmbManagmentService:
             }
 
             headers = {
-            "Content-Type": "application/json",
+            "Content-Type": CONTENT_TYPE_JSON,
             "X-Redmine-API-Key": API_KEY
             }
 
