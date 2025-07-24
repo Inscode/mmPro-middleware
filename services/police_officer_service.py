@@ -4,6 +4,7 @@ import requests
 from dotenv import load_dotenv
 from utils.jwt_utils import JWTUtils
 from utils.user_utils import UserUtils
+from utils.constants import REDMINE_API_ERROR_MSG
 
 load_dotenv()
 
@@ -16,7 +17,7 @@ class PoliceOfficerService:
             API_KEY = JWTUtils.get_api_key_from_token(token)
 
             if not REDMINE_URL or not API_KEY:
-                return None, "Redmine URL or API Key is missing"
+                return None,  REDMINE_API_ERROR_MSG
 
             headers = {"X-Redmine-API-Key": API_KEY}
             current_time_utc = datetime.now(timezone.utc)
@@ -72,7 +73,6 @@ class PoliceOfficerService:
             # Convert times to Sri Lanka time (UTC+5:30)
             sri_lanka_offset = timedelta(hours=5, minutes=30)
             created_on_sl = created_on_utc + sri_lanka_offset
-            valid_until_sl = created_on_sl + timedelta(hours=estimated_hours)
 
             # Extract TPL data
             tpl_data = {
@@ -132,7 +132,7 @@ class PoliceOfficerService:
     @staticmethod
     def create_complaint(vehicleNumber, userID, token):
        
-        phoneNumber = UserUtils.get_user_phone(userID)
+        phone_number  = UserUtils.get_user_phone(userID)
        
 
         issue_data = {
@@ -144,7 +144,7 @@ class PoliceOfficerService:
                     'priority_id': 2,  
                     'assigned_to_id': 8,
                     'custom_fields': [
-                        {'id':66, 'name': "Mobile Number", 'value': phoneNumber},
+                        {'id':66, 'name': "Mobile Number", 'value': phone_number },
                         {'id':53, 'name': "Lorry Number", 'value': vehicleNumber},
                         {'id':67, 'name': "Role", 'value': "PoliceOfficer"}
                     ]
@@ -164,3 +164,4 @@ class PoliceOfficerService:
             return True, issue_id
         else:
             return False, 'Failed to create complaint'
+        

@@ -26,7 +26,7 @@ def get_cache():
             test_file.unlink()
             
             return Cache(str(path))
-        except (OSError, PermissionError):
+        except OSError:
             continue
     
     # Final fallback that should always work

@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from services.auth_service import AuthService
 from utils.jwt_utils import JWTUtils
 from utils.user_utils import UserUtils
+from utils.constants import MISSING_REQUIRED_FIELDS_ERROR, INTERNAL_SERVER_ERROR
 import jwt
 from config import Config
 import requests
@@ -14,6 +15,8 @@ from dotenv import load_dotenv
 import os
 
 load_dotenv()
+REQUIRED_FIELDS_ERROR = "Missing required fields"
+JSON_CONTENT_TYPE = 'application/json'
 
 auth_bp = Blueprint('auth_controller', __name__)
 
@@ -117,9 +120,9 @@ def refresh_token():
         return jsonify({"message": "Refresh token has expired"}), 401
     except jwt.InvalidTokenError:
         return jsonify({"message": "Invalid token"}), 401
-    except Exception as e:
+    except Exception:
        
-        return jsonify({"message": "Internal server error"}), 500
+        return jsonify({"message": INTERNAL_SERVER_ERROR}), 500
 
 @auth_bp.route('/forgot-password', methods=['POST'])
 def forgot_password():
@@ -184,7 +187,7 @@ def register_police_officer():
         user_Type = request.form.get('user_Type')
 
         if not all([login, first_name, last_name, email, password, nic_number, mobile_number, designation]):
-            return jsonify({"error": "Missing required fields"}), 400
+            return jsonify({"error": MISSING_REQUIRED_FIELDS_ERROR}), 400
 
         nic_front_file = request.files.get('nic_front')
         nic_back_file = request.files.get('nic_back')
@@ -249,7 +252,8 @@ def register_gsmb_officer():
         user_Type = request.form.get('user_Type')
 
         if not all([login, first_name, last_name, email, password, nic_number, mobile_number, designation]):
-            return jsonify({"error": "Missing required fields"}), 400
+
+            return jsonify({"error": MISSING_REQUIRED_FIELDS_ERROR}), 400
 
         nic_front_file = request.files.get('nic_front') 
         nic_back_file = request.files.get('nic_back')
@@ -310,7 +314,8 @@ def register_mining_engineer():
         user_Type = request.form.get('user_Type')
 
         if not all([login, first_name, last_name, email, password, nic_number, mobile_number, designation]):
-            return jsonify({"error": "Missing required fields"}), 400
+            return jsonify({"error": MISSING_REQUIRED_FIELDS_ERROR}), 400
+
 
         nic_front_file = request.files.get('nic_front') 
         nic_back_file = request.files.get('nic_back')
@@ -431,7 +436,8 @@ def register_company():
 
         # Validate required fields
         if not all([login, first_name, last_name, email, password, country_of_incorporation, head_office, address_of_registered_company]):
-            return jsonify({"error": "Missing required fields"}), 400
+            return jsonify({"error": MISSING_REQUIRED_FIELDS_ERROR}), 400
+
 
         # Handle file uploads (Articles of Association & Annual Reports)
         articles_file = request.files.get('articles_of_association')
@@ -498,7 +504,7 @@ def get_tracker_issues():
             },
             headers={
                 'X-Redmine-API-Key': REDMINE_API_KEY,
-                'Content-Type': 'application/json'
+                'Content-Type': JSON_CONTENT_TYPE
             }
         )
         
@@ -542,15 +548,15 @@ def create_issue():
         if 'file' not in request.files:
             return jsonify({'error': 'No file provided'}), 400
             
-        file = request.files['file']
-        if file.filename == '':
+        uploaded_file = request.files['file']
+        if uploaded_file.filename == '':
             return jsonify({'error': 'No selected file'}), 400
 
         start_date = request.form.get('start_date')
         due_date = request.form.get('due_date')
         
         if not all([start_date, due_date]):
-            return jsonify({'error': 'Missing required fields'}), 400
+            return jsonify({'error': MISSING_REQUIRED_FIELDS_ERROR}), 400
 
         # Step 1: Upload the file first to get token
         upload_response = requests.post(
@@ -558,9 +564,9 @@ def create_issue():
             headers={
                 'X-Redmine-API-Key': REDMINE_API_KEY,
                 'Content-Type': 'application/octet-stream',
-                'Accept': 'application/json'  # Explicitly accept JSON responses
+                'Accept': JSON_CONTENT_TYPE  # Explicitly accept JSON responses
             },
-            data=file.stream  # Send the file as binary
+            data=uploaded_file.stream  # Send the file as binary
         )
         
         if upload_response.status_code != 201:
@@ -584,8 +590,8 @@ def create_issue():
                 "description": "Issue created via API",
                 "uploads": [{
                     "token": upload_token,
-                    "filename": file.filename,
-                    "content_type": file.content_type,
+                    "filename": uploaded_file.filename,
+                    "content_type": uploaded_file.content_type,
                     "description":"survey report"
                 }]
             }
@@ -595,7 +601,7 @@ def create_issue():
             REDMINE_API_URL,
             headers={
                 'X-Redmine-API-Key': REDMINE_API_KEY,
-                'Content-Type': 'application/json'
+                'Content-Type': JSON_CONTENT_TYPE
             },
             json=issue_data
         )
@@ -614,7 +620,7 @@ def create_issue():
 
     except Exception as e:
         return jsonify({
-            'error': 'Internal server error',
+            'error': INTERNAL_SERVER_ERROR,
             'details': str(e)
         }), 500
 

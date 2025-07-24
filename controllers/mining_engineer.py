@@ -4,12 +4,15 @@ from flask import Blueprint, jsonify, request
 from middleware.auth_middleware import role_required,check_token
 from services.auth_service import AuthService
 from services.mining_engineer_service import MiningEnginerService
-import requests  # For making HTTP requests to Redmine
-from flask import Response  # For streaming file responses in Flask
+import requests 
+from flask import Response 
 from utils.jwt_utils import JWTUtils
 from flask import send_file
 from io import BytesIO
-    
+from utils.constants import AUTH_TOKEN_INVALID_ERROR,AUTH_TOKEN_MISSING_ERROR,SERVER_ERROR
+  
+# Constants
+BEARER_PREFIX = "Bearer "
 
 # Define the Blueprint for mining_enginer
 mining_enginer_bp = Blueprint('mining_enginer', __name__)
@@ -17,24 +20,25 @@ mining_enginer_bp = Blueprint('mining_enginer', __name__)
 @mining_enginer_bp.route('/miningOwner-appointment/<int:issue_id>', methods=['PUT'])
 @check_token
 @role_required(['miningEngineer'])
-def update_miningOwner_appointment(issue_id):
+def update_mining_owner_appointment(issue_id):
     try:
         # Extract token from headers
         auth_header = request.headers.get("Authorization")
         if not auth_header:
-            return {"error": "Authorization token is missing"}, 400
-        
-        token = auth_header.replace("Bearer ", "")
+            return {"error": AUTH_TOKEN_MISSING_ERROR}, 400
+
+        token = auth_header.replace(BEARER_PREFIX, "")
+
         if not token:
-            return {"error": "Authorization token is invalid"}, 400
-        
+            return {"error": AUTH_TOKEN_INVALID_ERROR}, 400
+
         # Get update data from request body
         update_data = request.get_json()
         if not update_data:
             return {"error": "No update data provided"}, 400
         
         # Call service to update the appointment
-        result, error = MiningEnginerService.update_miningOwner_appointment(
+        result, error = MiningEnginerService.update_mining_owner_appointment(
             token=token,
             issue_id=issue_id,
             update_data=update_data
@@ -57,13 +61,13 @@ def get_me_pending_licenses():
         # Get the token from the Authorization header
         token = request.headers.get('Authorization')
         if not token:
-            return jsonify({"error": "Authorization header is missing"}), 401
-        
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 401
+
         # Fetch Mining Licenses from the service
         mining_licenses, error = MiningEnginerService.get_me_pending_licenses(token)
         
         if error:
-            return jsonify({"error": error}), 500 if "Server error" in error else 400
+            return jsonify({"error": error}), 500 if SERVER_ERROR in error else 400
             
         return jsonify({"success": True, "data": mining_licenses}), 200
 
@@ -102,44 +106,6 @@ def download_attachment(attachment_id):
         )
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-# @mining_enginer_bp.route('/download-attachment/<int:attachment_id>', methods=['GET'])
-# @check_token
-# def download_attachment(attachment_id):
-#     try:
-#         token = request.headers.get('Authorization')
-#         api_key = JWTUtils.get_api_key_from_token(token)
-
-#         REDMINE_URL = os.getenv("REDMINE_URL")
-#         attachment_url = f"{REDMINE_URL}/attachments/download/{attachment_id}"
-
-#         response = requests.get(
-#             attachment_url,
-#             headers={"X-Redmine-API-Key": api_key},
-#             stream=True
-#         )
-
-#         if response.status_code != 200:
-#             return jsonify({"error": "Failed to fetch attachment"}), response.status_code
-
-#         # Read content into BytesIO
-#         file_data = BytesIO(response.content)
-
-#         # Try to get filename from Content-Disposition header
-#         content_disposition = response.headers.get("Content-Disposition", "")
-#         filename = f"attachment_{attachment_id}"
-#         if "filename=" in content_disposition:
-#             filename = content_disposition.split("filename=")[1].strip('"')
-
-#         return send_file(
-#             file_data,
-#             mimetype=response.headers.get('Content-Type', 'application/octet-stream'),
-#             as_attachment=True,
-#             download_name=filename
-#         )
-
-#     except Exception as e:
-#         return jsonify({"error": str(e)}), 500
     
 @mining_enginer_bp.route('/create-ml-appointment', methods=['POST'])
 @check_token
@@ -150,7 +116,7 @@ def create_ml_appointment():
         token = request.headers.get('Authorization')
         
         if not token:
-            return jsonify({"error": "Token is missing"}), 401
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 401
 
         # 2. Validate input
         data = request.get_json()
@@ -183,24 +149,24 @@ def create_ml_appointment():
         }), 201
 
     except Exception as e:
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return jsonify({"error": f"{SERVER_ERROR}: {str(e)}"}), 500
     
     
 @mining_enginer_bp.route('/miningEngineer-approve/<int:me_appointment_issue_id>', methods=['PUT'])
 @check_token
 @role_required(['miningEngineer'])
-def miningEngineer_approve(me_appointment_issue_id):                               
+def mining_engineer_approve(me_appointment_issue_id):                               
     try:
         # Extract token from headers
         auth_header = request.headers.get("Authorization")
         if not auth_header:
-            return {"error": "Authorization token is missing"}, 400
+            return {"error": AUTH_TOKEN_MISSING_ERROR}, 400
         
-        token = auth_header.replace("Bearer ", "")
+        token = auth_header.replace(BEARER_PREFIX, "")
         if not token:
-            return {"error": "Authorization token is invalid"}, 400
-        
-        me_report_file = request.files.get('me_report') 
+            return {"error": AUTH_TOKEN_INVALID_ERROR}, 400
+
+        me_report_file = request.files.get('me_report')
 
         ml_number_full = request.form.get("ml_number")  # e.g., "ML Request LLL/100/206"
         if not ml_number_full:
@@ -232,7 +198,7 @@ def miningEngineer_approve(me_appointment_issue_id):
         }
         
         # Call service to update the appointment
-        result, error = MiningEnginerService.miningEngineer_approve(
+        result, error = MiningEnginerService.mining_engineer_approve(
             token=token,
             me_appointment_id = me_appointment_issue_id,
             ml_id=ml_request_id,
@@ -252,17 +218,17 @@ def miningEngineer_approve(me_appointment_issue_id):
 @mining_enginer_bp.route('/miningEngineer-reject/<int:me_appointment_issue_id>', methods=['PUT'])
 @check_token
 @role_required(['miningEngineer'])
-def miningEngineer_reject(me_appointment_issue_id):                               
+def mining_engineer_reject(me_appointment_issue_id):                               
     try:
         # Extract token from headers
         auth_header = request.headers.get("Authorization")
         if not auth_header:
-            return {"error": "Authorization token is missing"}, 400
+            return {"error": AUTH_TOKEN_MISSING_ERROR}, 400
         
-        token = auth_header.replace("Bearer ", "")
+        token = auth_header.replace(BEARER_PREFIX, "")
         if not token:
-            return {"error": "Authorization token is invalid"}, 400
-        
+            return {"error": AUTH_TOKEN_INVALID_ERROR}, 400
+
         ml_number_full = request.form.get("ml_number")  # e.g., "ML Request LLL/100/206"
         if not ml_number_full:
             return {"error": "ML number is required"}, 400
@@ -287,10 +253,10 @@ def miningEngineer_reject(me_appointment_issue_id):
         }
         
         # Call service to update the issue in Redmine
-        result, error = MiningEnginerService.miningEngineer_reject(
+        result, error = MiningEnginerService.mining_engineer_reject(
             token=token,
             ml_id=ml_request_id,
-            me_appointment_id = me_appointment_issue_id,
+            me_appointment_id=me_appointment_issue_id,
             update_data=update_data
         )
         
@@ -312,7 +278,7 @@ def update_issue_status():
     try:
         token = request.headers.get('Authorization')
         if not token:
-            return jsonify({"error": "Authorization token is missing"}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         data = request.get_json()
         issue_id = data.get('issue_id')
@@ -339,18 +305,18 @@ def update_issue_status():
 @mining_enginer_bp.route('/meetingScheduledLicenses', methods=['GET'])
 @check_token
 @role_required(['miningEngineer'])
-def get_me_meetingeShedule_licenses():
+def get_me_meeting_schedule_licenses():
     try:
         # Get the token from the Authorization header
         token = request.headers.get('Authorization')
         if not token:
-            return jsonify({"error": "token is missing"}), 401
-            
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 401
+
         # Fetch Mining Licenses from the service
-        mining_licenses, error = MiningEnginerService.get_me_meetingeShedule_licenses(token)
+        mining_licenses, error = MiningEnginerService.get_me_meeting_schedule_licenses(token)
         
         if error:
-            return jsonify({"error": error}), 500 if "Server error" in error else 400
+            return jsonify({"error": error}), 500 if SERVER_ERROR in error else 400
             
         return jsonify({"success": True, "data": mining_licenses}), 200
 
@@ -365,13 +331,12 @@ def get_me_appointments():
         token = request.headers.get('Authorization')
         
         if not token:
-            return jsonify({"error": "Authorization header missing"}), 401
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 401
 
         result = MiningEnginerService.get_me_appointments(token)
-        error = None
         
         if isinstance(result, dict) and "error" in result:
-            status_code = 500 if "Server error" in result["error"] else 400
+            status_code = 500 if SERVER_ERROR in result["error"] else 400
             return jsonify({"error": result["error"]}), status_code
             
         return jsonify(result), 200
@@ -382,14 +347,14 @@ def get_me_appointments():
 @mining_enginer_bp.route('/view-mining-license/<int:issue_id>', methods=['GET'])
 @check_token
 @role_required(['miningEngineer'])
-def get_miningRequest_view_button(issue_id):
+def get_mining_request_view_button(issue_id):
     try:
         token = request.headers.get('Authorization')
         if not token:
-            return jsonify({"error": "Authorization token is missing"}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         # Fetch issue details
-        mining_license, error = MiningEnginerService.get_miningLicense_view_button(token, issue_id)
+        mining_license, error = MiningEnginerService.get_mining_license_view_button(token, issue_id)
 
         if error:
             return jsonify({"error": error}), 500
@@ -409,13 +374,12 @@ def get_me_approve_license():
         token = auth_header.split()[1] if auth_header and ' ' in auth_header else auth_header
         
         if not token:
-            return jsonify({"error": "Authorization header missing"}), 401
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 401
 
         result = MiningEnginerService.get_me_approve_license(token)
-        error = None
         
         if isinstance(result, dict) and "error" in result:
-            status_code = 500 if "Server error" in result["error"] else 400
+            status_code = 500 if SERVER_ERROR in result["error"] else 400
             return jsonify({"error": result["error"]}), status_code
             
         return jsonify(result), 200
@@ -433,13 +397,12 @@ def get_me_approve_single_license(issue_id):
         token = auth_header.split()[1] if auth_header and ' ' in auth_header else auth_header
         
         if not token:
-            return jsonify({"error": "Authorization header missing"}), 401
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 401
 
         result = MiningEnginerService.get_me_approve_single_license(token,issue_id=issue_id,)
-        error = None
         
         if isinstance(result, dict) and "error" in result:
-            status_code = 500 if "Server error" in result["error"] else 400
+            status_code = 500 if SERVER_ERROR in result["error"] else 400
             return jsonify({"error": result["error"]}), status_code
             
         return jsonify(result), 200
@@ -458,12 +421,12 @@ def get_me_licenses_count():
         token = auth_header.split()[1] if auth_header and ' ' in auth_header else auth_header
         
         if not token:
-            return jsonify({"error": "Authorization header missing"}), 401
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 401
         # Fetch Mining Licenses from the service
         mining_licenses, error = MiningEnginerService.get_me_licenses_count(token)
         
         if error:
-            return jsonify({"error": error}), 500 if "Server error" in error else 400
+            return jsonify({"error": error}), 500 if SERVER_ERROR in error else 400
             
         return jsonify({"success": True, "data": mining_licenses}), 200
 
@@ -485,7 +448,7 @@ def set_license_hold():
 
         token = request.headers.get('Authorization')
         if not token:
-            return jsonify({"error": "Authorization token is missing"}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         success, error = MiningEnginerService.set_license_hold(issue_id, reason_for_hold, token)
         if not success:
@@ -505,13 +468,13 @@ def get_me_hold_licenses():
         token = request.headers.get("Authorization")
 
         if not token:
-            return jsonify({"error": "Authorization token is invalid"}), 401
+            return jsonify({"error": AUTH_TOKEN_INVALID_ERROR}), 401
 
         # Call service
         licenses, error = MiningEnginerService.get_me_hold_licenses(token)
 
         if error:
-            return jsonify({"error": error}), 500 if "Server error" in error else 400
+            return jsonify({"error": error}), 500 if SERVER_ERROR in error else 400
 
         return jsonify({"success": True, "data": licenses}), 200
 
@@ -527,13 +490,13 @@ def get_me_reject_licenses():
         # Get the token from the Authorization header
         token = request.headers.get('Authorization')
         if not token:
-            return jsonify({"error": "Authorization header is missing"}), 401
-        
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 401
+
         # Fetch Mining Licenses from the service
         mining_licenses, error = MiningEnginerService.get_me_reject_licenses(token)
         
         if error:
-            return jsonify({"error": error}), 500 if "Server error" in error else 400
+            return jsonify({"error": error}), 500 if SERVER_ERROR in error else 400
             
         return jsonify({"success": True, "data": mining_licenses}), 200
 

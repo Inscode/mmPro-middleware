@@ -8,6 +8,7 @@ from utils.user_utils import UserUtils
 from hashlib import sha256
 import time
 import requests
+from utils.constants import AUTH_TOKEN_MISSING_ERROR, INTERNAL_SERVER_ERROR
 
 
 # Define the Blueprint for mining_owner
@@ -23,7 +24,7 @@ def get_mining_licenses():
         token = request.headers.get("Authorization")
         
         if not token:
-            return {"error": "Authorization token is missing"}, 400
+            return {"error": AUTH_TOKEN_MISSING_ERROR}, 400
         
         # Call the mining_licenses method with the token
         issues, error = MLOwnerService.mining_licenses(token)
@@ -67,7 +68,7 @@ def view_tpl_by_license_number():
         # Check if the Authorization token is present in the request
         token = request.headers.get('Authorization')
         if not token:
-            return jsonify({"error": "Authorization token is missing"}), 401
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 401
 
         # Get the mining_license_number from the query parameters
         mining_license_number = request.args.get('mining_license_number')
@@ -93,10 +94,10 @@ def mining_home():
         # Check if the Authorization token is present in the request
         token = request.headers.get('Authorization')
         if not token:
-            return jsonify({"error": "Authorization token is missing"}), 401
-        
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 401
+
         # If the token is valid, proceed with the mining_licenses logic
-        issues, error = MLOwnerService.mining_homeLicenses(token) # Pass token here
+        issues, error = MLOwnerService.get_mining_home_licenses(token) # Pass token here
         
         if error:
             return jsonify({"error": error}), 500
@@ -121,7 +122,7 @@ def ml_detail():
         # Extract the Authorization token
         token = request.headers.get('Authorization')
         if not token:
-            return jsonify({"error": "Authorization token is missing"}), 403
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 403
 
         # Call the service function with l_number and token
         issue, error = MLOwnerService.ml_detail(l_number, token)
@@ -135,12 +136,7 @@ def ml_detail():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-
-
             # Put route for /update-ML
-
-
 @mining_owner_bp.route('/user-detail/<int:user_id>', methods=['GET'])
 @check_token
 @role_required(['MLOwner'])
@@ -149,8 +145,8 @@ def user_detail(user_id):
         # Check if the Authorization token is present in the request
         auth_header = request.headers.get('Authorization')
         if not auth_header:
-            return jsonify({"error": "Authorization token is missing"}), 401
-        
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 401
+
         # Check if the token starts with 'Bearer ' (you can also validate it further here if needed)
         if not auth_header.startswith('Bearer '):
             return jsonify({"error": "Invalid token format. Expected 'Bearer <token>'"}), 401
@@ -240,7 +236,7 @@ def get_mining_license_requests():
         token = request.headers.get('Authorization')
 
         if not token:
-            return jsonify({"error": "Authorization token is missing"}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         mining_licenses, error = MLOwnerService.get_mining_license_requests(token)
 
@@ -261,7 +257,7 @@ def get_mining_license_summary():
         token = request.headers.get('Authorization')
 
         if not token:
-            return jsonify({"error": "Authorization token is missing"}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         mining_licenses, error = MLOwnerService.get_pending_mining_license_details(token)
 
@@ -281,7 +277,7 @@ def get_mining_license_by_id(issue_id):
     try:
         token = request.headers.get('Authorization')
         if not token:
-            return jsonify({"error": "Authorization token is missing"}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         # Fetch issue details
         mining_license, error = MLOwnerService.get_mining_license_by_id(token, issue_id)
@@ -302,7 +298,7 @@ def get_mining_license_refined():
     try:
         token = request.headers.get('Authorization')
         if not token:
-            return jsonify({"error": "Authorization token is missing"}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         summaries, error = MLOwnerService.get_mining_license_summary(token)
         if error:
@@ -312,31 +308,6 @@ def get_mining_license_refined():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-
-# @mining_owner_bp.route('/update-royalty', methods=['POST'])
-# # @check_token
-# # @role_required(['MLOwner'])
-# def update_royalty_amount():
-#     try:
-#         data = request.json
-#         token = request.headers.get('Authorization')
-
-#         issue_id = data.get("issue_id")
-#         royalty_amount = data.get("royalty_amount")
-
-#         if not issue_id or royalty_amount is None:
-#             return jsonify({"error": "Missing 'issue_id' or 'royalty_amount'"}), 400
-
-
-
-#         if error:
-#             return jsonify({"error": error}), 500
-
-
-#     except Exception as e:
-#         return jsonify({"error": str(e)}), 500
-
 
 @mining_owner_bp.route('/update-royalty', methods=['POST'])
 def handle_payhere_ipn():
@@ -436,7 +407,7 @@ def handle_payhere_ipn():
 
     except Exception as e:
         return jsonify({
-            "error": "Internal server error",
+            "error": INTERNAL_SERVER_ERROR,
             "details": str(e)
         }), 500
     
@@ -496,11 +467,3 @@ def create_payhere_session():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-
-
-
-
-
-
-# achintha baranch publish
