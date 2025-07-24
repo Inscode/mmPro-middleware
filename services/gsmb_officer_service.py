@@ -52,7 +52,7 @@ class GsmbOfficerService:
             users_url = f"{REDMINE_URL}/users.json?status=1&limit=100"
             users_response = requests.get(
                 users_url,
-                headers={"X-Redmine-API-Key": admin_api_key, "Content-Type": "JSON_CONTENT_TYPE"}
+                headers={"X-Redmine-API-Key": admin_api_key, "Content-Type": JSON_CONTENT_TYPE}
             )
 
             if users_response.status_code != 200:
@@ -114,7 +114,7 @@ class GsmbOfficerService:
             tpl_issues_url = f"{REDMINE_URL}/issues.json?tracker_id=5&project_id=1"
             response = requests.get(
                 tpl_issues_url,
-                headers={"X-Redmine-API-Key": user_api_key, "Content-Type": "JSON_CONTENT_TYPE"}
+                headers={"X-Redmine-API-Key": user_api_key, "Content-Type": JSON_CONTENT_TYPE}
             )
 
             if response.status_code != 200:
@@ -166,7 +166,7 @@ class GsmbOfficerService:
             ml_issues_url = f"{REDMINE_URL}/issues.json?tracker_id=4&project_id=1&status_id=7"
             response = requests.get(
                 ml_issues_url,
-                headers={"X-Redmine-API-Key": user_api_key, "Content-Type": "JSON_CONTENT_TYPE"}
+                headers={"X-Redmine-API-Key": user_api_key, "Content-Type": JSON_CONTENT_TYPE}
             )
 
             if response.status_code != 200:
@@ -226,7 +226,7 @@ class GsmbOfficerService:
             issue_url = f"{REDMINE_URL}/issues/{issue_id}.json?include=attachments"
             response = requests.get(
                 issue_url,
-                headers={"X-Redmine-API-Key": api_key, "Content-Type": "JSON_CONTENT_TYPE"}
+                headers={"X-Redmine-API-Key": api_key, "Content-Type": JSON_CONTENT_TYPE}
             )
 
             if response.status_code != 200:
@@ -299,7 +299,7 @@ class GsmbOfficerService:
             complaints_url = f"{REDMINE_URL}/issues.json?tracker_id=6&project_id=1"
             response = requests.get(
                 complaints_url,
-                headers={"X-Redmine-API-Key": user_api_key, "Content-Type": "JSON_CONTENT_TYPE"}
+                headers={"X-Redmine-API-Key": user_api_key, "Content-Type": JSON_CONTENT_TYPE}
             )
 
             if response.status_code != 200:
@@ -413,7 +413,7 @@ class GsmbOfficerService:
             ml_issues_url = f"{REDMINE_URL}/issues.json?tracker_id=4&project_id=1"
             response = requests.get(
                 ml_issues_url,
-                headers={"X-Redmine-API-Key": user_api_key, "Content-Type": "JSON_CONTENT_TYPE"}
+                headers={"X-Redmine-API-Key": user_api_key, "Content-Type": JSON_CONTENT_TYPE}
             )
 
             if response.status_code != 200:
@@ -446,7 +446,7 @@ class GsmbOfficerService:
         headers = {
             "X-Redmine-API-Key": admin_api_key,
             "Content-Type":"application/octet-stream",
-            "Accept": "JSON_CONTENT_TYPE"
+            "Accept": JSON_CONTENT_TYPE
         }
 
 
@@ -519,7 +519,7 @@ class GsmbOfficerService:
 
             headers = {
                 "X-Redmine-API-Key": user_api_key,
-                "Content-Type": "JSON_CONTENT_TYPE"
+                "Content-Type": JSON_CONTENT_TYPE
             }
 
             REDMINE_URL = os.getenv("REDMINE_URL")
@@ -597,7 +597,7 @@ class GsmbOfficerService:
 
             headers = {
                 "X-Redmine-API-Key": user_api_key,
-                "Content-Type": "JSON_CONTENT_TYPE"
+                "Content-Type": JSON_CONTENT_TYPE
             }
 
             response = requests.put(
@@ -637,7 +637,7 @@ class GsmbOfficerService:
 
             headers = {
                 "X-Redmine-API-Key": user_api_key,
-                "Content-Type": "JSON_CONTENT_TYPE"
+                "Content-Type": JSON_CONTENT_TYPE
             }
 
             response = requests.put(
@@ -674,7 +674,7 @@ class GsmbOfficerService:
             memberships_url = f"{REDMINE_URL}/projects/mmpro-gsmb/memberships.json"
             memberships_response = requests.get(
                 memberships_url,
-                headers={"X-Redmine-API-Key": user_api_key, "Content-Type": "JSON_CONTENT_TYPE"}
+                headers={"X-Redmine-API-Key": user_api_key, "Content-Type": JSON_CONTENT_TYPE}
             )
 
             if memberships_response.status_code != 200:
@@ -692,7 +692,7 @@ class GsmbOfficerService:
             users_url = f"{REDMINE_URL}/users.json?status=1&limit=100"
             users_response = requests.get(
                 users_url,
-                headers={"X-Redmine-API-Key": admin_api_key, "Content-Type": "JSON_CONTENT_TYPE"}
+                headers={"X-Redmine-API-Key": admin_api_key, "Content-Type": JSON_CONTENT_TYPE}
             )
 
             if users_response.status_code != 200:
@@ -741,7 +741,7 @@ class GsmbOfficerService:
             appointment_issues_url = f"{REDMINE_URL}/issues.json?tracker_id=11&project_id=1"
             response = requests.get(
                 appointment_issues_url,
-                headers={"X-Redmine-API-Key": user_api_key, "Content-Type": "JSON_CONTENT_TYPE"}
+                headers={"X-Redmine-API-Key": user_api_key, "Content-Type": JSON_CONTENT_TYPE}
             )
 
             if response.status_code != 200:
@@ -812,7 +812,7 @@ class GsmbOfficerService:
                 f"{REDMINE_URL}/issues.json",
                 headers={
                     "X-Redmine-API-Key": user_api_key,
-                    "Content-Type": "JSON_CONTENT_TYPE"
+                    "Content-Type": JSON_CONTENT_TYPE
                 },
                 data=json.dumps(issue_payload)
             )
@@ -833,7 +833,7 @@ class GsmbOfficerService:
                 f"{REDMINE_URL}/issues/{mining_request_id}.json",
                 headers={
                     "X-Redmine-API-Key": user_api_key,
-                    "Content-Type": "JSON_CONTENT_TYPE"
+                    "Content-Type": JSON_CONTENT_TYPE
                 },
                 data=json.dumps(update_payload)
             )
@@ -885,7 +885,7 @@ class GsmbOfficerService:
                 f"{REDMINE_URL}/issues/{issue_id}.json",
                 headers={
                     "X-Redmine-API-Key": user_api_key,
-                    "Content-Type": "JSON_CONTENT_TYPE"
+                    "Content-Type": JSON_CONTENT_TYPE
                 },
                 json=update_payload,
             )
@@ -924,7 +924,7 @@ class GsmbOfficerService:
                 f"{REDMINE_URL}/issues/{issue_id}.json",
                 headers={
                     "X-Redmine-API-Key": user_api_key,
-                    "Content-Type": "JSON_CONTENT_TYPE"
+                    "Content-Type": JSON_CONTENT_TYPE
                 },
                 data=json.dumps(update_payload)
             )
@@ -964,7 +964,7 @@ class GsmbOfficerService:
                 f"{REDMINE_URL}/issues/{issue_id}.json",
                 headers={
                     "X-Redmine-API-Key": user_api_key,
-                    "Content-Type": "JSON_CONTENT_TYPE"
+                    "Content-Type": JSON_CONTENT_TYPE
                 },
                 data=json.dumps(update_payload)
             )
@@ -992,7 +992,7 @@ class GsmbOfficerService:
             url = f"{REDMINE_URL}/issues.json?tracker_id=4&project_id=1&status_id=!7"
             response = requests.get(
                 url,
-                headers={"X-Redmine-API-Key": user_api_key, "Content-Type": "JSON_CONTENT_TYPE"}
+                headers={"X-Redmine-API-Key": user_api_key, "Content-Type": JSON_CONTENT_TYPE}
             )
 
             if response.status_code != 200:
@@ -1036,7 +1036,7 @@ class GsmbOfficerService:
             issue_url = f"{REDMINE_URL}/issues/{issue_id}.json?include=attachments"
             response = requests.get(
                 issue_url,
-                headers={"X-Redmine-API-Key": api_key, "Content-Type": "JSON_CONTENT_TYPE"}
+                headers={"X-Redmine-API-Key": api_key, "Content-Type": JSON_CONTENT_TYPE}
             )
 
             if response.status_code != 200:
@@ -1093,7 +1093,7 @@ class GsmbOfficerService:
             issue_url = f"{REDMINE_URL}/issues/{issue_id}.json?include=attachments"
             response = requests.get(
                 issue_url,
-                headers={"X-Redmine-API-Key": api_key, "Content-Type": "JSON_CONTENT_TYPE"}
+                headers={"X-Redmine-API-Key": api_key, "Content-Type": JSON_CONTENT_TYPE}
             )
 
             if response.status_code != 200:

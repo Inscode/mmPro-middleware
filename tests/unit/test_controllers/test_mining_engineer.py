@@ -16,7 +16,7 @@ def valid_token():
 class TestMiningEngineerController:
 
     ### --- /miningOwner-appointment/<int:issue_id> [PUT] --- ###
-    @patch('services.mining_engineer_service.MiningEnginerService.update_miningOwner_appointment')
+    @patch('services.mining_engineer_service.MiningEnginerService.update_mining_owner_appointment')
     def test_miningOwner_appointment_success(self, mock_service, client, valid_token):
         mock_service.return_value = ({"msg": "updated"}, None)
         json_data = {
@@ -31,7 +31,7 @@ class TestMiningEngineerController:
         assert res.status_code == 200
 
 
-    @patch('services.mining_engineer_service.MiningEnginerService.update_miningOwner_appointment')
+    @patch('services.mining_engineer_service.MiningEnginerService.update_mining_owner_appointment')
     def test_miningOwner_appointment_service_error(self, mock_service, client, valid_token):
         mock_service.return_value = (None, "Server error occurred")
         res = client.put('/mining-engineer/miningOwner-appointment/123', headers={"Authorization": valid_token})
@@ -109,7 +109,7 @@ class TestMiningEngineerController:
         assert "error" in res.json
 
     ### --- /miningEngineer-approve/<int:me_appointment_issue_id> [PUT] --- ###
-    @patch('services.mining_engineer_service.MiningEnginerService.miningEngineer_approve')
+    @patch('services.mining_engineer_service.MiningEnginerService.mining_engineer_approve')
     def test_miningEngineer_approve_success(self, mock_service, client, valid_token):
         mock_service.return_value = ({"msg": "approved"}, None)
 
@@ -129,7 +129,7 @@ class TestMiningEngineerController:
         assert res.status_code == 200
         assert res.json.get("message") == "Mining license updated successfully"
 
-    @patch('services.mining_engineer_service.MiningEnginerService.miningEngineer_approve')
+    @patch('services.mining_engineer_service.MiningEnginerService.mining_engineer_approve')
     def test_miningEngineer_approve_service_error(self, mock_service, client, valid_token):
         mock_service.return_value = (None, "Error approving")
         res = client.put('/mining-engineer/miningEngineer-approve/10', headers={"Authorization": valid_token})
@@ -142,7 +142,7 @@ class TestMiningEngineerController:
         assert "error" in res.json
 
     ### --- /miningEngineer-reject/<int:me_appointment_issue_id> [PUT] --- ###
-    @patch('services.mining_engineer_service.MiningEnginerService.miningEngineer_reject')
+    @patch('services.mining_engineer_service.MiningEnginerService.mining_engineer_reject')
     def test_miningEngineer_reject_success(self, mock_service, client, valid_token):
         mock_service.return_value = ({"msg": "rejected"}, None)
         
@@ -164,7 +164,7 @@ class TestMiningEngineerController:
         assert res.json["message"] == "Mining license rejected successfully"
 
 
-    @patch('services.mining_engineer_service.MiningEnginerService.miningEngineer_reject')
+    @patch('services.mining_engineer_service.MiningEnginerService.mining_engineer_reject')
     def test_miningEngineer_reject_service_error(self, mock_service, client, valid_token):
         mock_service.return_value = (None, "Error rejecting")
         res = client.put('/mining-engineer/miningEngineer-reject/10', headers={"Authorization": valid_token})
@@ -210,14 +210,14 @@ class TestMiningEngineerController:
         assert res.status_code == 403
         assert "error" in res.json
 
-    @patch('services.mining_engineer_service.MiningEnginerService.get_me_meetingeShedule_licenses')
+    @patch('services.mining_engineer_service.MiningEnginerService.get_me_meeting_schedule_licenses')
     def test_me_meeting_schedule_licenses_success(self, mock_service, client, valid_token):
         mock_service.return_value = (["meeting1", "meeting2"], None)
         res = client.get('/mining-engineer/meetingScheduledLicenses', headers={"Authorization": valid_token})
         assert res.status_code == 200
         assert res.json["success"] is True
 
-    @patch('services.mining_engineer_service.MiningEnginerService.get_me_meetingeShedule_licenses')
+    @patch('services.mining_engineer_service.MiningEnginerService.get_me_meeting_schedule_licenses')
     def test_me_meeting_schedule_licenses_service_error(self, mock_service, client, valid_token):
         mock_service.return_value = (None, "Bad request")
         res = client.get('/mining-engineer/meetingScheduledLicenses', headers={"Authorization": valid_token})

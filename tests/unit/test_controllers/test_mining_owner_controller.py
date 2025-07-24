@@ -261,7 +261,7 @@ def mock_license_data():
     ]
 
 def test_mining_home_licenses_success(client, valid_token, mock_license_data):
-    with patch('services.mining_owner_service.MLOwnerService.mining_homeLicenses', 
+    with patch('services.mining_owner_service.MLOwnerService.get_mining_home_licenses', 
                return_value=(mock_license_data, None)):
         response = client.get(
             'mining-owner/mining-homeLicenses',
@@ -288,7 +288,7 @@ def test_mining_home_licenses_empty_token(client):
     assert response.get_json()['error'] == "Invalid token"
 
 def test_mining_home_licenses_service_error(client, valid_token):
-    with patch('services.mining_owner_service.MLOwnerService.mining_homeLicenses',
+    with patch('services.mining_owner_service.MLOwnerService.get_mining_home_licenses',
                return_value=(None, "Database error")):
         response = client.get(
             'mining-owner/mining-homeLicenses',
@@ -298,7 +298,7 @@ def test_mining_home_licenses_service_error(client, valid_token):
         assert response.get_json()['error'] == "Database error"
 
 def test_mining_home_licenses_empty_result(client, valid_token):
-    with patch('services.mining_owner_service.MLOwnerService.mining_homeLicenses',
+    with patch('services.mining_owner_service.MLOwnerService.get_mining_home_licenses',
                return_value=([], None)):
         response = client.get(
             'mining-owner/mining-homeLicenses',
@@ -308,7 +308,7 @@ def test_mining_home_licenses_empty_result(client, valid_token):
         assert response.get_json()['mining_home'] == []
 
 def test_mining_home_licenses_unexpected_error(client, valid_token):
-    with patch('services.mining_owner_service.MLOwnerService.mining_homeLicenses',
+    with patch('services.mining_owner_service.MLOwnerService.get_mining_home_licenses',
                side_effect=Exception("Unexpected error")):
         response = client.get(
             'mining-owner/mining-homeLicenses',

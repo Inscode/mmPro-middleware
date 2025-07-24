@@ -2,6 +2,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from services.gsmb_officer_service import GsmbOfficerService
+from services.gsmb_officer_service import JSON_CONTENT_TYPE
 from io import BytesIO
 import json
 import os
@@ -249,8 +250,7 @@ def test_get_mining_license_by_id_success():
                 {"name": "Exploration Licence No", "value": "EXPL-123"},
                 {"name": "Land Name(Licence Details)", "value": "Green Hill"},
                 {"name": "Land owner name", "value": "Mr. Silva"},
-                {"name": "Name of village ", "value": "Kandy"},
-                {"name": "Grama Niladhari Division", "value": "GN-45"},
+                {"name": "Name of village", "value": "Kandy"},                {"name": "Grama Niladhari Division", "value": "GN-45"},
                 {"name": "Divisional Secretary Division", "value": "Kandy"},
                 {"name": "Administrative District", "value": "Kandy District"},
                 {"name": "Capacity", "value": "1000"},
@@ -301,7 +301,9 @@ def test_get_mining_license_by_id_success():
         assert result["exploration_licence_no"] == "EXPL-123"
         assert result["land_name"] == "Green Hill"
         assert result["land_owner_name"] == "Mr. Silva"
-        assert result["village_name"] == "Kandy"
+        print("Keys in result:", result.keys())
+        print("Result data:", result)
+        assert result.get("village_name") == "Kandy"
         assert result["grama_niladhari_division"] == "GN-45"
         assert result["divisional_secretary_division"] == "Kandy"
         assert result["administrative_district"] == "Kandy District"
@@ -327,6 +329,8 @@ def test_get_mining_license_by_id_success():
             "https://redmine.example.com/issues/1.json?include=attachments",
             headers={"X-Redmine-API-Key": "fake-api-key", "Content-Type": "application/json"}
         )
+
+
         GsmbOfficerService.get_attachment_urls.assert_called_once_with(
             "fake-api-key",
             "https://redmine.example.com",
@@ -593,7 +597,7 @@ def test_missing_redmine_url(mock_api_key, mock_post, mock_data):
     with patch.dict(os.environ, {}, clear=True):
         success, error = GsmbOfficerService.upload_mining_license("token", mock_data)
         assert success is False
-        assert "REDMINE_URL" in error or error is not None
+        assert "Redmine URL" in error or error is not None
 
 
 @patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token")
@@ -657,7 +661,7 @@ def test_missing_env_variable(mock_api_key, valid_data):
     with patch.dict(os.environ, {}, clear=True):
         success, error = GsmbOfficerService.upload_payment_receipt("token", valid_data)
         assert success is False
-        assert "REDMINE_URL" in error
+        assert "Redmine URL" in error
 
 
 @patch.dict(os.environ, {"REDMINE_URL": "https://test.redmine.com"})
@@ -729,7 +733,7 @@ def test_missing_redmine_url(mock_api_key, valid_data):
     with patch.dict(os.environ, {}, clear=True):
         success, error = GsmbOfficerService.reject_mining_request("token", valid_data)
         assert success is False
-        assert "REDMINE_URL" in error
+        assert "Redmine URL" in error
 
 
 @patch.dict(os.environ, {"REDMINE_URL": "https://test.redmine.com"})
@@ -946,7 +950,7 @@ def test_missing_redmine_url(mock_get_api_key):
     with patch.dict(os.environ, {}, clear=True):
         result, error = GsmbOfficerService.get_appointments("valid_token")
         assert result is None
-        assert "REDMINE_URL" in error
+        assert "Redmine URL" in error
 
 
 @patch.dict(os.environ, {"REDMINE_URL": "https://test.redmine.com"})
@@ -1036,7 +1040,7 @@ def test_missing_redmine_url(mock_user_id, mock_api_key):
             "token", 888, "Office", "2025-07-01", "Desc", 123
         )
         assert issue_id is None
-        assert "REDMINE_URL" in error
+        assert "Redmine URL" in error
 
 
 @patch.dict(os.environ, {"REDMINE_URL": "https://test.redmine.com"})
@@ -1196,7 +1200,7 @@ class TestChangeIssueStatus:
         with patch.dict(os.environ, {}, clear=True):
             result, error = GsmbOfficerService.change_issue_status("token", 123, 42)
             assert result is None
-            assert "REDMINE_URL" in error
+            assert "Redmine URL" in error
 
     @patch.dict(os.environ, {"REDMINE_URL": "https://test.redmine.com"})
     @patch("services.gsmb_officer_service.requests.put")
@@ -1261,7 +1265,7 @@ class TestMarkComplaintResolved:
         with patch.dict(os.environ, {}, clear=True):
             result, error = GsmbOfficerService.mark_complaint_resolved("token", 456)
             assert result is None
-            assert "REDMINE_URL" in error
+            assert "Redmine URL" in error
 
     @patch.dict(os.environ, {"REDMINE_URL": "https://test.redmine.com"})
     @patch("services.gsmb_officer_service.requests.put")
@@ -1342,7 +1346,7 @@ class TestGetMiningLicenseRequest:
         with patch.dict(os.environ, {}, clear=True):
             result, error = GsmbOfficerService.get_mining_license_request("token")
             assert result is None
-            assert "REDMINE_URL" in error
+            assert "Redmine URL" in error
 
     @patch.dict(os.environ, {"REDMINE_URL": "https://test.redmine.com"})
     @patch("services.gsmb_officer_service.requests.get")
@@ -1431,7 +1435,7 @@ class TestGetMiningRequestViewButton:
         with patch.dict(os.environ, {}, clear=True):
             result, error = GsmbOfficerService.get_mining_request_view_button("token", 1)
             assert result is None
-            assert "REDMINE_URL" in error
+            assert "Redmine URL" in error
 
     @patch.dict(os.environ, {"REDMINE_URL": "https://test.redmine.com"})
     @patch("services.gsmb_officer_service.requests.get")
@@ -1520,7 +1524,7 @@ class TestGetMiningLicenseViewButton:
             with patch("services.gsmb_officer_service.JWTUtils.get_api_key_from_token", return_value="key"):
                 result, error = GsmbOfficerService.get_mining_license_view_button("token", 1)
                 assert result is None
-                assert "REDMINE_URL" in error
+                assert "Redmine URL" in error
 
     @patch.dict(os.environ, {"REDMINE_URL": "https://test.redmine.com"})
     @patch("services.gsmb_officer_service.requests.get")

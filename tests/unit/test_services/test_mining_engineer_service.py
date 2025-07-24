@@ -48,7 +48,7 @@ def test_update_mining_owner_appointment_success(mock_put):
     mock_resp.json.return_value = {"issue": {"id": 1}}
     mock_put.return_value = mock_resp
 
-    result, err = MiningEnginerService.update_miningOwner_appointment("token", 1, {"status_id": 31, "due_date": "2025-06-01"})
+    result, err = MiningEnginerService.update_mining_owner_appointment("token", 1, {"status_id": 31, "due_date": "2025-06-01"})
     assert err is None
     assert result == {"issue": {"id": 1}}
     mock_put.assert_called_once()
@@ -60,7 +60,7 @@ def test_update_mining_owner_appointment_fail_status_code(mock_put):
     mock_resp.json.return_value = {"errors": ["Invalid data"]}
     mock_put.return_value = mock_resp
 
-    result, err = MiningEnginerService.update_miningOwner_appointment("token", 1, {})
+    result, err = MiningEnginerService.update_mining_owner_appointment("token", 1, {})
     assert result is None
     assert "Failed to create appointment" in err
 
@@ -152,7 +152,7 @@ def test_mining_engineer_approve_success(mock_put):
 
     mock_put.side_effect = [mock_resp1, mock_resp2]
 
-    result, err = MiningEnginerService.miningEngineer_approve("token", 1, 2, {"status_id": 32})
+    result, err = MiningEnginerService.mining_engineer_approve("token", 1, 2, {"status_id": 32})
     assert err is None
     assert result == {"issue": {"id": 1}}
     assert mock_put.call_count == 2
@@ -174,7 +174,7 @@ def test_mining_engineer_approve_fail_close_me(mock_put):
 
     mock_put.side_effect = [mock_resp1, mock_resp2]
 
-    result, err = MiningEnginerService.miningEngineer_approve("token", 1, 2, {"status_id": 32})
+    result, err = MiningEnginerService.mining_engineer_approve("token", 1, 2, {"status_id": 32})
     assert result is None
     assert "Failed to close ME Appointment" in err
 
@@ -194,7 +194,7 @@ def test_mining_engineer_reject_success(mock_put):
 
     mock_put.side_effect = [mock_ml_resp, mock_me_resp]
 
-    result, err = MiningEnginerService.miningEngineer_reject("token", 1, 2, {"status_id": 6, "me_comment": "No", "me_report": "Fail"})
+    result, err = MiningEnginerService.mining_engineer_reject("token", 1, 2, {"status_id": 6, "me_comment": "No", "me_report": "Fail"})
     assert err is None
     assert result == {"issue": {"id": 1}}
     assert mock_put.call_count == 2
@@ -208,7 +208,7 @@ def test_mining_engineer_reject_fail_ml_update(mock_put):
 
     mock_put.return_value = mock_ml_resp
 
-    result, err = MiningEnginerService.miningEngineer_reject("token", 1, 2, {"status_id": 6, "me_comment": "No", "me_report": "Fail"})
+    result, err = MiningEnginerService.mining_engineer_reject("token", 1, 2, {"status_id": 6, "me_comment": "No", "me_report": "Fail"})
     assert result is None
     assert "Redmine API error" in err
 
@@ -355,7 +355,7 @@ def test_get_me_meeting_schedule_licenses_success(mock_get_limit, mock_get_attac
     mock_response.json.return_value = issues_data
     mock_requests_get.return_value = mock_response
 
-    results, error = MiningEnginerService.get_me_meetingeShedule_licenses(make_token())
+    results, error = MiningEnginerService.get_me_meeting_schedule_licenses(make_token())
     assert error is None
     assert len(results) == 1
     assert results[0]["id"] == 1
@@ -628,7 +628,7 @@ def test_get_mining_license_view_button_success(mock_getenv, mock_requests_get, 
     mock_requests_get.return_value = mock_response
 
     with patch("services.mining_engineer_service.MiningEnginerService.get_attachment_urls", return_value={"Payment Receipt": "https://files.com/123"}):
-        result, error = MiningEnginerService.get_miningLicense_view_button(MOCK_TOKEN, MOCK_ISSUE_ID)
+        result, error = MiningEnginerService.get_mining_license_view_button(MOCK_TOKEN, MOCK_ISSUE_ID)
 
     # Assert
     assert error is None
@@ -640,7 +640,7 @@ def test_get_mining_license_view_button_success(mock_getenv, mock_requests_get, 
 
 @patch("services.mining_engineer_service.JWTUtils.get_api_key_from_token", return_value=None)
 def test_get_mining_licensee_view_button_invalid_token(mock_get_api_key):
-    result, error = MiningEnginerService.get_miningLicense_view_button("badtoken", MOCK_ISSUE_ID)
+    result, error = MiningEnginerService.get_mining_license_view_button("badtoken", MOCK_ISSUE_ID)
     assert result is None
     assert "Invalid or missing API key" in error
 
@@ -654,7 +654,7 @@ def test_get_mining_license_view_button_api_error(mock_getenv, mock_requests_get
     mock_response.text = "Internal Server Error"
     mock_requests_get.return_value = mock_response
 
-    result, error = MiningEnginerService.get_miningLicense_view_button(MOCK_TOKEN, MOCK_ISSUE_ID)
+    result, error = MiningEnginerService.get_mining_license_view_button(MOCK_TOKEN, MOCK_ISSUE_ID)
     assert result is None
     assert "Failed to fetch issue" in error
 
@@ -668,6 +668,6 @@ def test_get_mining_license_view_button_missing_issue(mock_getenv, mock_requests
     mock_response.json.return_value = {}  # No "issue" key
     mock_requests_get.return_value = mock_response
 
-    result, error = MiningEnginerService.get_miningLicense_view_button(MOCK_TOKEN, MOCK_ISSUE_ID)
+    result, error = MiningEnginerService.get_mining_license_view_button(MOCK_TOKEN, MOCK_ISSUE_ID)
     assert result is None
     assert "Issue data not found" in error
