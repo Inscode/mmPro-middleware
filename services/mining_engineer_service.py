@@ -346,8 +346,7 @@ class MiningEnginerService:
         try:
             # 1. Get Redmine configuration
             REDMINE_URL = os.getenv("REDMINE_URL")
-            if not REDMINE_URL:
-                return None, REDMINE_API_ERROR_MSG
+
 
             # 2. Extract API key and user info from token
             api_key = JWTUtils.get_api_key_from_token(token)
@@ -436,8 +435,7 @@ class MiningEnginerService:
                 return None, "Invalid or missing API key"
 
             REDMINE_URL = os.getenv("REDMINE_URL")
-            if not REDMINE_URL:
-                return None, REDMINE_API_ERROR_MSG
+
 
             update_payload = {
                 "issue": {
@@ -1042,8 +1040,7 @@ class MiningEnginerService:
                 return None, "Invalid or missing API key"
 
             REDMINE_URL = os.getenv("REDMINE_URL")
-            if not REDMINE_URL:
-                return None, REDMINE_API_ERROR_MSG
+
 
             issue_url = f"{REDMINE_URL}/issues/{issue_id}.json?include=attachments"
             response = requests.get(

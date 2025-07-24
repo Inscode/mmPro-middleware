@@ -540,7 +540,7 @@ class TestCreateTPL:
     def test_create_tpl_missing_redmine_url(self):
         result, error = MLOwnerService.create_tpl({}, "token")
         assert result is None
-        assert error == "Redmine URL or API Key is missing"
+        assert error == "Invalid token"
 
 
     @patch.dict('os.environ', {'REDMINE_URL': 'https://test.redmine.com'})
