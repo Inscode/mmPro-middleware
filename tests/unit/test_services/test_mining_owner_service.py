@@ -1813,7 +1813,7 @@ class TestGetMiningLicenseById:
         mock_get_api_key.return_value = None
         result, error = MLOwnerService.get_mining_license_by_id("bad_token", 999)
         assert result is None
-        assert error == "Invalid or missing API key"
+        assert error == "Invalid or missing API key in the token"
 
     @patch("services.mining_owner_service.JWTUtils.get_api_key_from_token")
     def test_missing_redmine_url(self, mock_get_api_key):
