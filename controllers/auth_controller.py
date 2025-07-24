@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from services.auth_service import AuthService
 from utils.jwt_utils import JWTUtils
 from utils.user_utils import UserUtils
+from utils.constants import MISSING_REQUIRED_FIELDS_ERROR
 import jwt
 from config import Config
 import requests
@@ -184,7 +185,7 @@ def register_police_officer():
         user_Type = request.form.get('user_Type')
 
         if not all([login, first_name, last_name, email, password, nic_number, mobile_number, designation]):
-            return jsonify({"error": "Missing required fields"}), 400
+            return jsonify({"error": MISSING_REQUIRED_FIELDS_ERROR}), 400
 
         nic_front_file = request.files.get('nic_front')
         nic_back_file = request.files.get('nic_back')
@@ -249,7 +250,7 @@ def register_gsmb_officer():
         user_Type = request.form.get('user_Type')
 
         if not all([login, first_name, last_name, email, password, nic_number, mobile_number, designation]):
-            return jsonify({"error": "Missing required fields"}), 400
+            return jsonify({"error": MISSING_REQUIRED_FIELDS_ERROR}), 400
 
         nic_front_file = request.files.get('nic_front') 
         nic_back_file = request.files.get('nic_back')
@@ -310,7 +311,7 @@ def register_mining_engineer():
         user_Type = request.form.get('user_Type')
 
         if not all([login, first_name, last_name, email, password, nic_number, mobile_number, designation]):
-            return jsonify({"error": "Missing required fields"}), 400
+            return jsonify({"error": MISSING_REQUIRED_FIELDS_ERROR}), 400
 
         nic_front_file = request.files.get('nic_front') 
         nic_back_file = request.files.get('nic_back')
@@ -431,7 +432,7 @@ def register_company():
 
         # Validate required fields
         if not all([login, first_name, last_name, email, password, country_of_incorporation, head_office, address_of_registered_company]):
-            return jsonify({"error": "Missing required fields"}), 400
+            return jsonify({"error": MISSING_REQUIRED_FIELDS_ERROR}), 400
 
         # Handle file uploads (Articles of Association & Annual Reports)
         articles_file = request.files.get('articles_of_association')
@@ -550,7 +551,7 @@ def create_issue():
         due_date = request.form.get('due_date')
         
         if not all([start_date, due_date]):
-            return jsonify({'error': 'Missing required fields'}), 400
+            return jsonify({'error': MISSING_REQUIRED_FIELDS_ERROR}), 400
 
         # Step 1: Upload the file first to get token
         upload_response = requests.post(

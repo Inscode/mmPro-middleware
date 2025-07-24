@@ -4,12 +4,12 @@ from flask import Blueprint, jsonify, request
 from middleware.auth_middleware import role_required,check_token
 from services.auth_service import AuthService
 from services.mining_engineer_service import MiningEnginerService
-import requests  # For making HTTP requests to Redmine
-from flask import Response  # For streaming file responses in Flask
+import requests 
+from flask import Response 
 from utils.jwt_utils import JWTUtils
 from flask import send_file
 from io import BytesIO
-from utils.constants import AUTH_TOKEN_INVALID_ERROR,AUTH_TOKEN_MISSING_ERROR
+from utils.constants import AUTH_TOKEN_INVALID_ERROR,AUTH_TOKEN_MISSING_ERROR,SERVER_ERROR
     
 # Constants
 BEARER_PREFIX = "Bearer "
@@ -66,7 +66,7 @@ def get_me_pending_licenses():
         mining_licenses, error = MiningEnginerService.get_me_pending_licenses(token)
         
         if error:
-            return jsonify({"error": error}), 500 if "Server error" in error else 400
+            return jsonify({"error": error}), 500 if SERVER_ERROR in error else 400
             
         return jsonify({"success": True, "data": mining_licenses}), 200
 
@@ -148,7 +148,7 @@ def create_ml_appointment():
         }), 201
 
     except Exception as e:
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return jsonify({"error": f"{SERVER_ERROR}: {str(e)}"}), 500
     
     
 @mining_enginer_bp.route('/miningEngineer-approve/<int:me_appointment_issue_id>', methods=['PUT'])
@@ -315,7 +315,7 @@ def get_me_meeting_schedule_licenses():
         mining_licenses, error = MiningEnginerService.get_me_meeting_schedule_licenses(token)
         
         if error:
-            return jsonify({"error": error}), 500 if "Server error" in error else 400
+            return jsonify({"error": error}), 500 if SERVER_ERROR in error else 400
             
         return jsonify({"success": True, "data": mining_licenses}), 200
 
@@ -333,10 +333,9 @@ def get_me_appointments():
             return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 401
 
         result = MiningEnginerService.get_me_appointments(token)
-        error = None
         
         if isinstance(result, dict) and "error" in result:
-            status_code = 500 if "Server error" in result["error"] else 400
+            status_code = 500 if SERVER_ERROR in result["error"] else 400
             return jsonify({"error": result["error"]}), status_code
             
         return jsonify(result), 200
@@ -377,10 +376,9 @@ def get_me_approve_license():
             return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 401
 
         result = MiningEnginerService.get_me_approve_license(token)
-        error = None
         
         if isinstance(result, dict) and "error" in result:
-            status_code = 500 if "Server error" in result["error"] else 400
+            status_code = 500 if SERVER_ERROR in result["error"] else 400
             return jsonify({"error": result["error"]}), status_code
             
         return jsonify(result), 200
@@ -401,10 +399,9 @@ def get_me_approve_single_license(issue_id):
             return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 401
 
         result = MiningEnginerService.get_me_approve_single_license(token,issue_id=issue_id,)
-        error = None
         
         if isinstance(result, dict) and "error" in result:
-            status_code = 500 if "Server error" in result["error"] else 400
+            status_code = 500 if SERVER_ERROR in result["error"] else 400
             return jsonify({"error": result["error"]}), status_code
             
         return jsonify(result), 200
@@ -428,7 +425,7 @@ def get_me_licenses_count():
         mining_licenses, error = MiningEnginerService.get_me_licenses_count(token)
         
         if error:
-            return jsonify({"error": error}), 500 if "Server error" in error else 400
+            return jsonify({"error": error}), 500 if SERVER_ERROR in error else 400
             
         return jsonify({"success": True, "data": mining_licenses}), 200
 
@@ -476,7 +473,7 @@ def get_me_hold_licenses():
         licenses, error = MiningEnginerService.get_me_hold_licenses(token)
 
         if error:
-            return jsonify({"error": error}), 500 if "Server error" in error else 400
+            return jsonify({"error": error}), 500 if SERVER_ERROR in error else 400
 
         return jsonify({"success": True, "data": licenses}), 200
 
@@ -498,7 +495,7 @@ def get_me_reject_licenses():
         mining_licenses, error = MiningEnginerService.get_me_reject_licenses(token)
         
         if error:
-            return jsonify({"error": error}), 500 if "Server error" in error else 400
+            return jsonify({"error": error}), 500 if SERVER_ERROR in error else 400
             
         return jsonify({"success": True, "data": mining_licenses}), 200
 
