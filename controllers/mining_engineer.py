@@ -10,6 +10,8 @@ from utils.jwt_utils import JWTUtils
 from flask import send_file
 from io import BytesIO
     
+# Constants
+BEARER_PREFIX = "Bearer "
 
 # Define the Blueprint for mining_enginer
 mining_enginer_bp = Blueprint('mining_enginer', __name__)
@@ -24,7 +26,7 @@ def update_mining_owner_appointment(issue_id):
         if not auth_header:
             return {"error": "Authorization token is missing"}, 400
         
-        token = auth_header.replace("Bearer ", "")
+        token = auth_header.replace(BEARER_PREFIX, "")
         if not token:
             return {"error": "Authorization token is invalid"}, 400
         
@@ -196,7 +198,7 @@ def mining_engineer_approve(me_appointment_issue_id):
         if not auth_header:
             return {"error": "Authorization token is missing"}, 400
         
-        token = auth_header.replace("Bearer ", "")
+        token = auth_header.replace(BEARER_PREFIX, "")
         if not token:
             return {"error": "Authorization token is invalid"}, 400
         
@@ -259,7 +261,7 @@ def mining_engineer_reject(me_appointment_issue_id):
         if not auth_header:
             return {"error": "Authorization token is missing"}, 400
         
-        token = auth_header.replace("Bearer ", "")
+        token = auth_header.replace(BEARER_PREFIX, "")
         if not token:
             return {"error": "Authorization token is invalid"}, 400
         
