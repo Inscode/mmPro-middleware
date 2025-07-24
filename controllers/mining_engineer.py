@@ -17,7 +17,7 @@ mining_enginer_bp = Blueprint('mining_enginer', __name__)
 @mining_enginer_bp.route('/miningOwner-appointment/<int:issue_id>', methods=['PUT'])
 @check_token
 @role_required(['miningEngineer'])
-def update_miningOwner_appointment(issue_id):
+def update_mining_owner_appointment(issue_id):
     try:
         # Extract token from headers
         auth_header = request.headers.get("Authorization")
@@ -189,7 +189,7 @@ def create_ml_appointment():
 @mining_enginer_bp.route('/miningEngineer-approve/<int:me_appointment_issue_id>', methods=['PUT'])
 @check_token
 @role_required(['miningEngineer'])
-def miningEngineer_approve(me_appointment_issue_id):                               
+def mining_engineer_approve(me_appointment_issue_id):                               
     try:
         # Extract token from headers
         auth_header = request.headers.get("Authorization")
@@ -252,7 +252,7 @@ def miningEngineer_approve(me_appointment_issue_id):
 @mining_enginer_bp.route('/miningEngineer-reject/<int:me_appointment_issue_id>', methods=['PUT'])
 @check_token
 @role_required(['miningEngineer'])
-def miningEngineer_reject(me_appointment_issue_id):                               
+def mining_engineer_reject(me_appointment_issue_id):                               
     try:
         # Extract token from headers
         auth_header = request.headers.get("Authorization")
@@ -339,7 +339,7 @@ def update_issue_status():
 @mining_enginer_bp.route('/meetingScheduledLicenses', methods=['GET'])
 @check_token
 @role_required(['miningEngineer'])
-def get_me_meetingeShedule_licenses():
+def get_me_meeting_schedule_licenses():
     try:
         # Get the token from the Authorization header
         token = request.headers.get('Authorization')
