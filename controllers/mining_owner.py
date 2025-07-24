@@ -96,7 +96,7 @@ def mining_home():
             return jsonify({"error": "Authorization token is missing"}), 401
         
         # If the token is valid, proceed with the mining_licenses logic
-        issues, error = MLOwnerService.mining_homeLicenses(token) # Pass token here
+        issues, error = MLOwnerService.get_mining_home_licenses(token) # Pass token here
         
         if error:
             return jsonify({"error": error}), 500
