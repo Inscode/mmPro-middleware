@@ -8,12 +8,10 @@ from utils.jwt_utils import JWTUtils
 from werkzeug.utils import secure_filename 
 import json
 from utils.jwt_utils import JWTUtils
-from utils.constants import REDMINE_API_ERROR_MSG
+from utils.constants import REDMINE_API_ERROR_MSG,CONTENT_TYPE_JSON
 
 
 load_dotenv()
-
-JSON_CONTENT_TYPE = "application/json"
 
 class MiningEnginerService:
 
@@ -44,7 +42,7 @@ class MiningEnginerService:
             }
 
             headers = {
-            "Content-Type": JSON_CONTENT_TYPE,
+            "Content-Type": CONTENT_TYPE_JSON,
             "X-Redmine-API-Key": API_KEY
             }
 
@@ -183,7 +181,7 @@ class MiningEnginerService:
                 return None, REDMINE_API_ERROR_MSG
 
             headers = {
-                "Content-Type": JSON_CONTENT_TYPE,
+                "Content-Type": CONTENT_TYPE_JSON,
                 "X-Redmine-API-Key": API_KEY
             }
 
@@ -290,7 +288,7 @@ class MiningEnginerService:
             }
 
             headers = {
-                "Content-Type": JSON_CONTENT_TYPE,
+                "Content-Type": CONTENT_TYPE_JSON,
                 "X-Redmine-API-Key": API_KEY
             }
 
@@ -396,7 +394,7 @@ class MiningEnginerService:
                 f"{REDMINE_URL}/issues.json",
                 headers={
                     "X-Redmine-API-Key": api_key,
-                    "Content-Type": JSON_CONTENT_TYPE
+                    "Content-Type": CONTENT_TYPE_JSON
                 },
                 json=payload,
                 timeout=30
@@ -447,7 +445,7 @@ class MiningEnginerService:
                 f"{REDMINE_URL}/issues/{issue_id}.json",
                 headers={
                     "X-Redmine-API-Key": user_api_key,
-                    "Content-Type": JSON_CONTENT_TYPE
+                    "Content-Type": CONTENT_TYPE_JSON
                 },
                 data=json.dumps(update_payload)
             )
@@ -889,7 +887,7 @@ class MiningEnginerService:
             response = requests.put(
                 f"{REDMINE_URL}/issues/{issue_id}.json",
                 json=update_payload,
-                headers={"X-Redmine-API-Key": user_api_key, "Content-Type": JSON_CONTENT_TYPE}
+                headers={"X-Redmine-API-Key": user_api_key, "Content-Type": CONTENT_TYPE_JSON}
             )
 
             if response.status_code not in [200, 204]:
@@ -935,7 +933,7 @@ class MiningEnginerService:
             close_response = requests.put(
                 f"{REDMINE_URL}/issues/{me_appointment_id}.json",
                 json=close_payload,
-                headers={"X-Redmine-API-Key": user_api_key, "Content-Type": JSON_CONTENT_TYPE}
+                headers={"X-Redmine-API-Key": user_api_key, "Content-Type": CONTENT_TYPE_JSON}
             )
 
             if close_response.status_code not in [200, 204]:
@@ -1045,7 +1043,7 @@ class MiningEnginerService:
             issue_url = f"{REDMINE_URL}/issues/{issue_id}.json?include=attachments"
             response = requests.get(
                 issue_url,
-                headers={"X-Redmine-API-Key": api_key, "Content-Type": JSON_CONTENT_TYPE}
+                headers={"X-Redmine-API-Key": api_key, "Content-Type": CONTENT_TYPE_JSON}
             )
 
             if response.status_code != 200:

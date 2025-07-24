@@ -9,12 +9,11 @@ import uuid
 from datetime import datetime, timedelta
 import smtplib
 from email.mime.text import MIMEText
-from services.cache import cache  # Import the existing cache instance
+from services.cache import cache  
 import logging
+from utils.constants import CONTENT_TYPE_JSON
 
-# Configure logging
-# logging.basicConfig(level=logging.INFO)
-# logger = logging.getLogger(__name__)
+
 
 load_dotenv()
 
@@ -128,79 +127,6 @@ class AuthService:
         except Exception as e:
             return None, f"Server error: {str(e)}"
 
-    # @staticmethod
-    # def authenticate_google_token(token):
-    #     try:
-    #         # 1. Verify Google token
-    #         id_info = id_token.verify_oauth2_token(
-    #             token,
-    #             google_requests.Request(),
-    #             GOOGLE_CLIENT_ID
-    #         )
-            
-    #         if not (email := id_info.get('email')):
-    #             return None, "Email not found in Google token"
-
-    #         # 2. Find user in Redmine
-    #         users_response = requests.get(
-    #             f"{REDMINE_URL}/users.json",
-    #             params={"mail": email},
-    #             headers={"X-Redmine-API-Key": REDMINE_API_KEY},
-    #             timeout=10
-    #         )
-    #         users_response.raise_for_status()
-            
-    #         if not (users := users_response.json().get('users', [])):
-    #             return None, "User not found in Redmine"
-
-    #         user = users[0]
-    #         user_id = user['id']
-
-    #         print("user_id", user_id)
-    #         # 3. Get user API key
-    #         user_details_response = requests.get(
-    #             f"{REDMINE_URL}/users/{user_id}.json",
-    #             headers={"X-Redmine-API-Key": REDMINE_API_KEY},
-    #             timeout=10
-    #         )
-    #         user_details_response.raise_for_status()
-
-    #         if not (api_key := user_details_response.json().get('user', {}).get('api_key')):
-    #             return None, "API key not found for the user"
-
-    #         # 4. Check project membership and role
-    #         memberships_response = requests.get(
-    #             f"{REDMINE_URL}/users/{user_id}/memberships.json",
-    #             params={"project_id": 1},  # MMPRO-GSMB project
-    #             headers={"X-Redmine-API-Key": REDMINE_API_KEY},
-    #             timeout=10
-    #         )
-    #         memberships_response.raise_for_status()
-
-    
-
-    #         print("memberships",memberships)
-    #         if not memberships:
-    #             return None, "User is not a member of the required project"
-
-    #         # Get all roles from all memberships
-    #         roles = []
-    #         for membership in memberships:
-    #             roles.extend(membership.get('roles', []))
-
-    #         if not roles:
-    #             return None, "User has no roles in the project"
-
-    #         # Return first role found
-    #         return user_id, user, roles[0].get('name'), api_key
-
-    #     except ValueError as e:
-    #         return None, f"Invalid Google token: {str(e)}"
-    #     except requests.exceptions.RequestException as e:
-    #         return None, f"Redmine API error: {str(e)}"
-    #     except Exception as e:
-    #         return None, f"Server error: {str(e)}"
-        
     @staticmethod
     def authenticate_google_access_token(access_token):
         try:
@@ -390,7 +316,7 @@ class AuthService:
         update_url = f"{REDMINE_URL}/users/{user_id}.json"
         headers = {
             'X-Redmine-API-Key': REDMINE_API_KEY,
-            'Content-Type': 'application/json'
+            'Content-Type': CONTENT_TYPE_JSON
         }
         payload = {
             'user': {
@@ -442,7 +368,7 @@ class AuthService:
         url = f"{REDMINE_URL}/users.json"
         headers = {
             "X-Redmine-API-Key": admin_api_key,
-            "Content-Type": "application/json"
+            "Content-Type": CONTENT_TYPE_JSON
         }
 
         payload = {
@@ -464,32 +390,6 @@ class AuthService:
         else:
             return None, response.json()
         
-    # @staticmethod
-    # def upload_file_to_redmine(file):
-     
-    #     """
-    #     Uploads a file to Redmine and returns the attachment ID.
-    #     """
-    #     REDMINE_URL = os.getenv("REDMINE_URL")
-    #     admin_api_key = os.getenv("REDMINE_ADMIN_API_KEY")
-        
-
-    
-
-    #     headers = {
-    #         "X-Redmine-API-Key": admin_api_key,
-    #         "Content-Type":"application/octet-stream",
-    #         "Accept": "application/json"
-    #     }
-
-
-    
-
-    #     if response.status_code == 201:
-    #          return response.json().get("upload", {}).get("id")   # Attachment ID
-    #     else:
-    #         return None  # Handle failed upload
-
     @staticmethod   
     def assign_role(user_id, role_name):
         try:
@@ -582,7 +482,7 @@ class AuthService:
         headers = {
             "X-Redmine-API-Key": admin_api_key,
             "Content-Type":"application/octet-stream",
-            "Accept": "application/json"
+            "Accept": CONTENT_TYPE_JSON
         }
 
 
@@ -592,39 +492,7 @@ class AuthService:
              return response.json().get("upload", {}).get("id")   # Attachment ID
         else:
             return None  # Handle failed upload
-
-    
-    
-    #     """
-    #     Registers a mining license company in Redmine.
-    #     """
-    #     REDMINE_URL = os.getenv("REDMINE_URL")
-    #     admin_api_key = os.getenv("REDMINE_ADMIN_API_KEY")
-
-    #     url = f"{REDMINE_URL}/users.json"
-    #     headers = {
-    #         "X-Redmine-API-Key": admin_api_key,
-    #         "Content-Type": "application/json"
-    #     }
-
-    #     payload = {
-    #         "user": {
-    #             "login": login,
-    #             "firstname": first_name,
-    #             "lastname": last_name,
-    #             "mail": email,
-    #             "password": password,
-    #             "custom_fields": custom_fields
-    #         }
-    #     }
-
-    
-
-    #     if response.status_code in [200, 201]:
-    #         return response.json(), None
-    #     else:
-    #         return None, response.json()
-        
+  
     @staticmethod
     def reset_password_with_email(email, new_password):
         """
@@ -654,7 +522,7 @@ class AuthService:
         update_url = f"{REDMINE_URL}/users/{user_id}.json"
         headers = {
             'X-Redmine-API-Key': REDMINE_API_KEY,
-            'Content-Type': 'application/json'
+            'Content-Type': CONTENT_TYPE_JSON
         }
         payload = {
             'user': {

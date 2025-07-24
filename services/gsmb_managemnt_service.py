@@ -4,10 +4,12 @@ from dotenv import load_dotenv
 from utils.jwt_utils import JWTUtils
 from flask import jsonify
 from utils.limit_utils import LimitUtils    
-from utils.constants import REDMINE_API_ERROR_MSG,API_KEY_MISSING_ERROR
+from utils.constants import REDMINE_API_ERROR_MSG,API_KEY_MISSING_ERROR,CONTENT_TYPE_JSON
 
 
 load_dotenv()
+
+USER_AGENT = "GSMB-Management-Service/1.0"
 
 class GsmbManagmentService:
     @staticmethod
@@ -29,7 +31,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             monthly_data = {
@@ -110,7 +112,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             mining_data = []
@@ -191,7 +193,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             offset = 0
@@ -265,7 +267,7 @@ class GsmbManagmentService:
                 return None, API_KEY_MISSING_ERROR
 
             headers = {
-                "Content-Type": "application/json",
+                "Content-Type": CONTENT_TYPE_JSON,
                 "X-Redmine-API-Key": api_key
             }
 
@@ -337,7 +339,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             destination_counts = {}
@@ -403,7 +405,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             location_counts = {}
@@ -469,7 +471,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             counts = {
@@ -535,7 +537,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             counts = {
@@ -610,7 +612,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             counts = {
@@ -661,7 +663,7 @@ class GsmbManagmentService:
             return None, f"Server error: {str(e)}"
         
 
-    def is_license_expired(due_date_str):
+    def is_license_expired(self,due_date_str):
         try:
             from datetime import datetime
         
@@ -691,14 +693,12 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json",
-                "User-Agent": "GSMB-Management-Service/1.0"
+                "Content-Type": CONTENT_TYPE_JSON,
+                "User-Agent": USER_AGENT
             }
 
             params = {"status": 3, "include": "custom_fields"}
-            request_url = f"{REDMINE_URL}/users.json?status=3"
-
-
+    
             response = requests.get(
                 f"{REDMINE_URL}/users.json",
                 headers=headers,
@@ -766,8 +766,8 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json",
-                "User-Agent": "GSMB-Management-Service/1.0"
+                "Content-Type": CONTENT_TYPE_JSON,
+                "User-Agent": USER_AGENT
             }
 
             all_users = []
@@ -844,8 +844,8 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json",
-                "User-Agent": "GSMB-Management-Service/1.0"
+                "Content-Type": CONTENT_TYPE_JSON,
+                "User-Agent": USER_AGENT
             }
 
             limit = 100
@@ -927,7 +927,7 @@ class GsmbManagmentService:
             }
 
             headers = {
-            "Content-Type": "application/json",
+            "Content-Type": CONTENT_TYPE_JSON,
             "X-Redmine-API-Key": API_KEY
             }
 
@@ -944,7 +944,7 @@ class GsmbManagmentService:
                 try:
                     error_data = response.json()
                     error_msg += f", Error: {error_data.get('errors', 'Unknown error')}"
-                except:
+                except ValueError:
                     error_msg += f", Response: {response.text}"
                 return None, error_msg
 

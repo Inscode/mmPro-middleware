@@ -12,11 +12,10 @@ from utils.limit_utils import LimitUtils
 from werkzeug.utils import secure_filename
 import time
 from hashlib import md5
-from utils.constants import REDMINE_API_ERROR_MSG
+from utils.constants import REDMINE_API_ERROR_MSG,CONTENT_TYPE_JSON
 
 load_dotenv()
 
-JSON_CONTENT_TYPE = "application/json"
 MINING_LICENSE_NUMBER = "Mining License Number"
 DIVISIONAL_SECRETARY = "Divisional Secretary Division"
 NAME_VILLAGE = "Name of village "
@@ -59,7 +58,7 @@ class MLOwnerService:
 
             headers = {
                 "X-Redmine-API-Key": API_KEY,
-                "Content-Type": JSON_CONTENT_TYPE
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             offset = 0
@@ -158,7 +157,7 @@ class MLOwnerService:
 
             headers = {
                 "X-Redmine-API-Key": API_KEY,
-                "Content-Type": JSON_CONTENT_TYPE
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             offset = 0
@@ -276,7 +275,7 @@ class MLOwnerService:
             # Define the Redmine API endpoint to fetch the mining license issue directly
             mining_issue_url = f"{REDMINE_URL}/issues/{mining_issue_id}.json"
             headers = {
-                "Content-Type": JSON_CONTENT_TYPE,
+                "Content-Type": CONTENT_TYPE_JSON,
                 "X-Redmine-API-Key": API_KEY
             }
 
@@ -449,7 +448,7 @@ class MLOwnerService:
             url = "https://api.openrouteservice.org/v2/directions/driving-car"
             headers = {
                 "Authorization": MLOwnerService.ORS_API_KEY,
-                "Content-Type": JSON_CONTENT_TYPE
+                "Content-Type": CONTENT_TYPE_JSON
             }
             body = {
                 "coordinates": [coord1, coord2],
@@ -484,7 +483,7 @@ class MLOwnerService:
                 return None, REDMINE_API_ERROR_MSG
             headers = {
                 "X-Redmine-API-Key": API_KEY,  # Include the token for authorization
-                "Content-Type": JSON_CONTENT_TYPE
+                "Content-Type": CONTENT_TYPE_JSON
             }
             
 
@@ -532,7 +531,7 @@ class MLOwnerService:
 
             headers = {
                 "X-Redmine-API-Key": API_KEY,
-                "Content-Type": JSON_CONTENT_TYPE
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             # Defaults
@@ -625,7 +624,7 @@ class MLOwnerService:
                 return None, REDMINE_API_ERROR_MSG
             headers = {
                 "X-Redmine-API-Key": api_key,  # Include the token for authorization
-                "Content-Type": JSON_CONTENT_TYPE
+                "Content-Type": CONTENT_TYPE_JSON
             }
             url = f"{REDMINE_URL}/users/{user_id}.json"
            
@@ -670,7 +669,7 @@ class MLOwnerService:
 
             # --- Prepare headers ---
             headers = {
-                "Content-Type": JSON_CONTENT_TYPE,
+                "Content-Type": CONTENT_TYPE_JSON,
                 "X-Redmine-API-Key": API_KEY
             }
 
@@ -773,7 +772,7 @@ class MLOwnerService:
                 return None, "Invalid or missing API key"
             
             headers = {
-                "Content-Type": JSON_CONTENT_TYPE,
+                "Content-Type": CONTENT_TYPE_JSON,
                 "X-Redmine-API-Key": API_KEY
             }
     
@@ -863,7 +862,7 @@ class MLOwnerService:
             ml_issues_url = f"{REDMINE_URL}/issues.json?tracker_id=4&project_id=1&status_id=!7"
             response = requests.get(
                 ml_issues_url,
-                headers={"X-Redmine-API-Key": user_api_key, "Content-Type": JSON_CONTENT_TYPE}
+                headers={"X-Redmine-API-Key": user_api_key, "Content-Type": CONTENT_TYPE_JSON}
             )
 
             if response.status_code != 200:
@@ -888,7 +887,7 @@ class MLOwnerService:
                 if assigned_to_id:
                     user_response = requests.get(
                         f"{REDMINE_URL}/users/{assigned_to_id}.json",
-                        headers={"X-Redmine-API-Key": user_api_key, "Content-Type": JSON_CONTENT_TYPE}
+                        headers={"X-Redmine-API-Key": user_api_key, "Content-Type": CONTENT_TYPE_JSON}
                     )
                     if user_response.status_code == 200:
                         assigned_to_details = user_response.json().get("user", {})
@@ -958,7 +957,7 @@ class MLOwnerService:
                     attachment_url = f"{redmine_url}/attachments/{attachment_id}.json"
                     response = requests.get(
                         attachment_url,
-                        headers={"X-Redmine-API-Key": api_key, "Content-Type": JSON_CONTENT_TYPE}
+                        headers={"X-Redmine-API-Key": api_key, "Content-Type": CONTENT_TYPE_JSON}
                     )
 
                     if response.status_code == 200:
@@ -1000,7 +999,7 @@ class MLOwnerService:
             ml_issues_url = f"{REDMINE_URL}/issues.json?tracker_id=4&project_id=1&status_id=!7"
             response = requests.get(
                 ml_issues_url,
-                headers={"X-Redmine-API-Key": user_api_key, "Content-Type": JSON_CONTENT_TYPE}
+                headers={"X-Redmine-API-Key": user_api_key, "Content-Type": CONTENT_TYPE_JSON}
             )
 
             if response.status_code != 200:
@@ -1032,7 +1031,7 @@ class MLOwnerService:
                     tracker12_url = f"{REDMINE_URL}/issues.json?tracker_id=12&project_id=1"
                     tracker_response = requests.get(
                         tracker12_url,
-                        headers={"X-Redmine-API-Key": user_api_key, "Content-Type": JSON_CONTENT_TYPE}
+                        headers={"X-Redmine-API-Key": user_api_key, "Content-Type": CONTENT_TYPE_JSON}
                     )
 
                     if tracker_response.status_code == 200:
@@ -1048,7 +1047,7 @@ class MLOwnerService:
                     tracker11_url = f"{REDMINE_URL}/issues.json?tracker_id=11&project_id=1"
                     tracker_response = requests.get(
                         tracker11_url,
-                        headers={"X-Redmine-API-Key": user_api_key, "Content-Type": JSON_CONTENT_TYPE}
+                        headers={"X-Redmine-API-Key": user_api_key, "Content-Type": CONTENT_TYPE_JSON}
                     )
 
                     if tracker_response.status_code == 200:
@@ -1085,7 +1084,7 @@ class MLOwnerService:
             issue_url = f"{REDMINE_URL}/issues/{issue_id}.json?include=attachments"
             response = requests.get(
                 issue_url,
-                headers={"X-Redmine-API-Key": api_key, "Content-Type": JSON_CONTENT_TYPE}
+                headers={"X-Redmine-API-Key": api_key, "Content-Type": CONTENT_TYPE_JSON}
             )
 
             if response.status_code != 200:
@@ -1162,7 +1161,7 @@ class MLOwnerService:
                 ml_issues_url,
                 headers={
                     "X-Redmine-API-Key": user_api_key,
-                    "Content-Type": JSON_CONTENT_TYPE
+                    "Content-Type": CONTENT_TYPE_JSON
                 }
             )
 
@@ -1217,7 +1216,7 @@ class MLOwnerService:
                 issue_url,
                 headers={
                     "X-Redmine-API-Key": user_api_key,
-                    "Content-Type": JSON_CONTENT_TYPE
+                    "Content-Type": CONTENT_TYPE_JSON
                 }
             )
 
@@ -1256,7 +1255,7 @@ class MLOwnerService:
                 issue_url,
                 headers={
                     "X-Redmine-API-Key": user_api_key,
-                    "Content-Type": JSON_CONTENT_TYPE
+                    "Content-Type": CONTENT_TYPE_JSON
                 },
                 json=payload
             )
