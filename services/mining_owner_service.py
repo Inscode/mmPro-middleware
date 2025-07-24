@@ -252,8 +252,7 @@ class MLOwnerService:
         try:
             # Get the Redmine URL from environment variables
             REDMINE_URL = os.getenv("REDMINE_URL")
-            if not REDMINE_URL:
-                return None, REDMINE_API_ERROR_MSG
+
 
 
             # Get the API key from the token
