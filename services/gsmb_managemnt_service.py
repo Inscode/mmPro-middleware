@@ -9,6 +9,8 @@ from utils.constants import REDMINE_API_ERROR_MSG,API_KEY_MISSING_ERROR,CONTENT_
 
 load_dotenv()
 
+USER_AGENT = "GSMB-Management-Service/1.0"
+
 class GsmbManagmentService:
     @staticmethod
     def monthly_total_sand_cubes(token):
@@ -661,7 +663,7 @@ class GsmbManagmentService:
             return None, f"Server error: {str(e)}"
         
 
-    def is_license_expired(due_date_str):
+    def is_license_expired(self,due_date_str):
         try:
             from datetime import datetime
         
@@ -692,13 +694,11 @@ class GsmbManagmentService:
             headers = {
                 "X-Redmine-API-Key": api_key,
                 "Content-Type": CONTENT_TYPE_JSON,
-                "User-Agent": "GSMB-Management-Service/1.0"
+                "User-Agent": USER_AGENT
             }
 
             params = {"status": 3, "include": "custom_fields"}
-            request_url = f"{REDMINE_URL}/users.json?status=3"
-
-
+    
             response = requests.get(
                 f"{REDMINE_URL}/users.json",
                 headers=headers,
@@ -767,7 +767,7 @@ class GsmbManagmentService:
             headers = {
                 "X-Redmine-API-Key": api_key,
                 "Content-Type": CONTENT_TYPE_JSON,
-                "User-Agent": "GSMB-Management-Service/1.0"
+                "User-Agent": USER_AGENT
             }
 
             all_users = []
@@ -845,7 +845,7 @@ class GsmbManagmentService:
             headers = {
                 "X-Redmine-API-Key": api_key,
                 "Content-Type": CONTENT_TYPE_JSON,
-                "User-Agent": "GSMB-Management-Service/1.0"
+                "User-Agent": USER_AGENT
             }
 
             limit = 100
@@ -944,7 +944,7 @@ class GsmbManagmentService:
                 try:
                     error_data = response.json()
                     error_msg += f", Error: {error_data.get('errors', 'Unknown error')}"
-                except:
+                except ValueError:
                     error_msg += f", Response: {response.text}"
                 return None, error_msg
 
