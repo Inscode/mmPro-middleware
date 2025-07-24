@@ -18,6 +18,7 @@ def monthly_total_sand_cubes():
     if not token:
         return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 401
 
+
     issues, error = GsmbManagmentService.monthly_total_sand_cubes(token)
     
     if error:
@@ -33,6 +34,7 @@ def fetch_top_mining_holders():
     token = request.headers.get("Authorization")
     if not token:
         return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 401
+
 
     issues, error = GsmbManagmentService.fetch_top_mining_holders(token)
     
@@ -133,6 +135,7 @@ def complaint_counts():
 def role_counts():
     token = request.headers.get("Authorization")
     if not token:
+
         return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 401
 
     issues, error = GsmbManagmentService.role_counts(token) 

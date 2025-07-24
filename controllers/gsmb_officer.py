@@ -14,7 +14,6 @@ from werkzeug.http import parse_options_header
 from utils.constants import AUTH_TOKEN_MISSING_ERROR
 
 
-
 # Define the Blueprint for gsmb_officer
 gsmb_officer_bp = Blueprint('gsmb_officer', __name__)
 
@@ -29,7 +28,7 @@ def user_detail(user_id):
         auth_header = request.headers.get('Authorization')
         if not auth_header:
             return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 401
-
+          
         # Check if the token starts with 'Bearer ' (you can also validate it further here if needed)
         if not auth_header.startswith('Bearer '):
             return jsonify({"error": "Invalid token format. Expected 'Bearer <token>'"}), 401
@@ -575,7 +574,7 @@ def get_mlowners_with_nic():
         if not token:
             return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
-        mlowners_details, error = GsmbOfficerService.get_mlownersDetails(token)
+        mlowners_details, error = GsmbOfficerService.get_ml_owners_details(token)
 
         if error:
             return jsonify({"error": error}), 500
@@ -764,7 +763,7 @@ def get_mining_request_view_button(issue_id):
             return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         # Fetch issue details
-        mining_license, error = GsmbOfficerService.get_mining_License_view_button(token, issue_id)
+        mining_license, error = GsmbOfficerService.get_mining_license_view_button(token, issue_id)
 
         if error:
             return jsonify({"error": error}), 500

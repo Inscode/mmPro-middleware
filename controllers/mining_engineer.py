@@ -10,7 +10,7 @@ from utils.jwt_utils import JWTUtils
 from flask import send_file
 from io import BytesIO
 from utils.constants import AUTH_TOKEN_INVALID_ERROR,AUTH_TOKEN_MISSING_ERROR,SERVER_ERROR
-    
+  
 # Constants
 BEARER_PREFIX = "Bearer "
 
@@ -28,6 +28,7 @@ def update_mining_owner_appointment(issue_id):
             return {"error": AUTH_TOKEN_MISSING_ERROR}, 400
 
         token = auth_header.replace(BEARER_PREFIX, "")
+
         if not token:
             return {"error": AUTH_TOKEN_INVALID_ERROR}, 400
 
