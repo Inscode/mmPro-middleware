@@ -433,11 +433,14 @@ def test_unactive_gsmb_officers_success():
 
 def test_license_expired_with_past_date():
     past_date = (datetime.now() - timedelta(days=10)).strftime("%Y-%m-%d")
-    assert GsmbManagmentService.is_license_expired(past_date) is True  # 👈 works
+    service = GsmbManagmentService()
+    assert service.is_license_expired(past_date) is True
 
 def test_license_expired_with_future_date():
     future_date = (datetime.now() + timedelta(days=10)).strftime("%Y-%m-%d")
-    assert GsmbManagmentService.is_license_expired(future_date) is False  # 👈 works
+    service = GsmbManagmentService()
+    assert service.is_license_expired(future_date) is False
+
 
 @pytest.fixture
 def mock_env(monkeypatch):
