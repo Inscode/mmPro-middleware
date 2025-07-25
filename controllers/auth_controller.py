@@ -184,7 +184,7 @@ def register_police_officer():
         designation = request.form.get('designation')
         nic_number = request.form.get('nic_number')
         mobile_number = request.form.get('mobile_number')
-        user_Type = request.form.get('user_Type')
+        user_type = request.form.get('user_Type')
 
         if not all([login, first_name, last_name, email, password, nic_number, mobile_number, designation]):
             return jsonify({"error": MISSING_REQUIRED_FIELDS_ERROR}), 400
@@ -202,7 +202,7 @@ def register_police_officer():
             {"id": 41, "value": nic_number},
             {"id": 65, "value": mobile_number},
             {"id": 86, "value": designation},
-            {"id": 89, "value": user_Type},
+            {"id": 89, "value": user_type},
         ]
 
         if nic_front_id:
