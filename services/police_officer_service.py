@@ -4,7 +4,7 @@ import requests
 from dotenv import load_dotenv
 from utils.jwt_utils import JWTUtils
 from utils.user_utils import UserUtils
-from utils.constants import REDMINE_API_ERROR_MSG
+from utils.constants import CONTENT_TYPE_JSON, REDMINE_API_ERROR_MSG
 
 load_dotenv()
 
@@ -156,7 +156,7 @@ class PoliceOfficerService:
         response = requests.post(
             f'{REDMINE_URL}/issues.json',
             json=issue_data,
-            headers={'X-Redmine-API-Key': api_key, 'Content-Type': 'application/json'}
+            headers={'X-Redmine-API-Key': api_key, 'Content-Type': CONTENT_TYPE_JSON}
         )
 
         if response.status_code == 201:

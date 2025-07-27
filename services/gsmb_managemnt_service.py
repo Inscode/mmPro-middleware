@@ -4,10 +4,16 @@ from dotenv import load_dotenv
 from utils.jwt_utils import JWTUtils
 from flask import jsonify
 from utils.limit_utils import LimitUtils    
-from utils.constants import REDMINE_API_ERROR_MSG,API_KEY_MISSING_ERROR
+from utils.constants import REDMINE_API_ERROR_MSG,API_KEY_MISSING_ERROR,CONTENT_TYPE_JSON
 
 
 load_dotenv()
+
+USER_AGENT = "GSMB-Management-Service/1.0"
+NIC_BACK_IMAGE_FIELD = "NIC back image"
+NIC_FRONT_IMAGE_FIELD = "NIC front image"
+USER_TYPE_FIELD = "User Type"
+WORK_ID_FIELD = "work ID"
 
 class GsmbManagmentService:
     @staticmethod
@@ -29,7 +35,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             monthly_data = {
@@ -110,7 +116,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             mining_data = []
@@ -191,7 +197,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             offset = 0
@@ -265,7 +271,7 @@ class GsmbManagmentService:
                 return None, API_KEY_MISSING_ERROR
 
             headers = {
-                "Content-Type": "application/json",
+                "Content-Type": CONTENT_TYPE_JSON,
                 "X-Redmine-API-Key": api_key
             }
 
@@ -337,7 +343,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             destination_counts = {}
@@ -403,7 +409,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             location_counts = {}
@@ -469,7 +475,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             counts = {
@@ -535,7 +541,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             counts = {
@@ -610,7 +616,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             counts = {
@@ -661,7 +667,7 @@ class GsmbManagmentService:
             return None, f"Server error: {str(e)}"
         
 
-    def is_license_expired(due_date_str):
+    def is_license_expired(self,due_date_str):
         try:
             from datetime import datetime
         
@@ -691,14 +697,12 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json",
-                "User-Agent": "GSMB-Management-Service/1.0"
+                "Content-Type": CONTENT_TYPE_JSON,
+                "User-Agent": USER_AGENT
             }
 
             params = {"status": 3, "include": "custom_fields"}
-            request_url = f"{REDMINE_URL}/users.json?status=3"
-
-
+    
             response = requests.get(
                 f"{REDMINE_URL}/users.json",
                 headers=headers,
@@ -733,11 +737,11 @@ class GsmbManagmentService:
                     "custom_fields": {
                         "Designation": custom_fields_dict.get("Designation"),
                         "Mobile Number": custom_fields_dict.get("Mobile Number"),
-                        "NIC back image":custom_fields_dict.get("NIC back image"),
-                        "NIC front image": custom_fields_dict.get("NIC front image"),
+                        NIC_BACK_IMAGE_FIELD:custom_fields_dict.get(NIC_BACK_IMAGE_FIELD),
+                        NIC_FRONT_IMAGE_FIELD: custom_fields_dict.get(NIC_FRONT_IMAGE_FIELD),
                         "National Identity Card": custom_fields_dict.get("National Identity Card"),
-                        "User Type": custom_fields_dict.get("User Type"),
-                        "work ID": custom_fields_dict.get("work ID")
+                        USER_TYPE_FIELD: custom_fields_dict.get(USER_TYPE_FIELD),
+                        WORK_ID_FIELD: custom_fields_dict.get(WORK_ID_FIELD)
                     }
                 }
                 officers.append(officer)
@@ -766,8 +770,8 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json",
-                "User-Agent": "GSMB-Management-Service/1.0"
+                "Content-Type": CONTENT_TYPE_JSON,
+                "User-Agent": USER_AGENT
             }
 
             all_users = []
@@ -813,7 +817,7 @@ class GsmbManagmentService:
                     if field.get("value")
                 }
 
-                if custom_fields_dict.get("User Type") == user_type:
+                if custom_fields_dict.get(USER_TYPE_FIELD) == user_type:
                     matched_users.append({
                         "id": user["id"],
                         "name": f"{user.get('firstname', '')} {user.get('lastname', '')}".strip(),
@@ -844,8 +848,8 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json",
-                "User-Agent": "GSMB-Management-Service/1.0"
+                "Content-Type": CONTENT_TYPE_JSON,
+                "User-Agent": USER_AGENT
             }
 
             limit = 100
@@ -888,7 +892,7 @@ class GsmbManagmentService:
                     if field.get("value")
                 }
 
-                user_type = custom_fields_dict.get("User Type", "")
+                user_type = custom_fields_dict.get(USER_TYPE_FIELD, "")
 
                 if user_type == "mlOwner":
                     matched_users.append({
@@ -927,7 +931,7 @@ class GsmbManagmentService:
             }
 
             headers = {
-            "Content-Type": "application/json",
+            "Content-Type": CONTENT_TYPE_JSON,
             "X-Redmine-API-Key": API_KEY
             }
 
@@ -944,7 +948,7 @@ class GsmbManagmentService:
                 try:
                     error_data = response.json()
                     error_msg += f", Error: {error_data.get('errors', 'Unknown error')}"
-                except:
+                except ValueError:
                     error_msg += f", Response: {response.text}"
                 return None, error_msg
 
@@ -958,9 +962,9 @@ class GsmbManagmentService:
     def get_attachment_urls(custom_fields):
         try:
             upload_field_names = {
-                "NIC back image": None,
-                "NIC front image": None,
-                "work ID": None
+                NIC_BACK_IMAGE_FIELD: None,
+                NIC_FRONT_IMAGE_FIELD: None,
+                WORK_ID_FIELD: None
             }
 
             file_urls = {}

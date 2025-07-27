@@ -5,7 +5,7 @@ from twilio.rest import Client
 from services.cache import cache
 from datetime import datetime, timedelta, timezone
 import secrets
-from utils.constants import REDMINE_API_ERROR_MSG
+from utils.constants import REDMINE_API_ERROR_MSG,CONTENT_TYPE_JSON
 
 
 load_dotenv()
@@ -143,7 +143,7 @@ class GeneralPublicService:
         response = requests.post(
             f'{REDMINE_URL}/issues.json',
             json=issue_data,
-            headers={'X-Redmine-API-Key': api_key, 'Content-Type': 'application/json'}
+            headers={'X-Redmine-API-Key': api_key, 'Content-Type': CONTENT_TYPE_JSON}
         )
 
         if response.status_code == 201:
