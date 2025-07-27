@@ -5,6 +5,8 @@ from services.mining_engineer_service import MiningEnginerService
 from utils.jwt_utils import JWTUtils
 from utils.MLOUtils import MLOUtils
 
+
+
 MOCK_TOKEN = "mocked.jwt.token"
 MOCK_ISSUE_ID = 123
 MOCK_API_KEY = "mocked_api_key"
@@ -40,25 +42,25 @@ def mock_mloutils_user_info():
 
 
 @patch("services.mining_engineer_service.requests.put")
-def test_update_miningOwner_appointment_success(mock_put):
+def test_update_mining_owner_appointment_success(mock_put):
     mock_resp = MagicMock()
     mock_resp.status_code = 201
     mock_resp.json.return_value = {"issue": {"id": 1}}
     mock_put.return_value = mock_resp
 
-    result, err = MiningEnginerService.update_miningOwner_appointment("token", 1, {"status_id": 31, "due_date": "2025-06-01"})
+    result, err = MiningEnginerService.update_mining_owner_appointment("token", 1, {"status_id": 31, "due_date": "2025-06-01"})
     assert err is None
     assert result == {"issue": {"id": 1}}
     mock_put.assert_called_once()
 
 @patch("services.mining_engineer_service.requests.put")
-def test_update_miningOwner_appointment_fail_status_code(mock_put):
+def test_update_mining_owner_appointment_fail_status_code(mock_put):
     mock_resp = MagicMock()
     mock_resp.status_code = 400
     mock_resp.json.return_value = {"errors": ["Invalid data"]}
     mock_put.return_value = mock_resp
 
-    result, err = MiningEnginerService.update_miningOwner_appointment("token", 1, {})
+    result, err = MiningEnginerService.update_mining_owner_appointment("token", 1, {})
     assert result is None
     assert "Failed to create appointment" in err
 
@@ -136,7 +138,7 @@ def test_get_attachment_urls_success():
 
 
 @patch("services.mining_engineer_service.requests.put")
-def test_miningEngineer_approve_success(mock_put):
+def test_mining_engineer_approve_success(mock_put):
     # First put call - update ML issue
     mock_resp1 = MagicMock()
     mock_resp1.status_code = 200
@@ -150,14 +152,14 @@ def test_miningEngineer_approve_success(mock_put):
 
     mock_put.side_effect = [mock_resp1, mock_resp2]
 
-    result, err = MiningEnginerService.miningEngineer_approve("token", 1, 2, {"status_id": 32})
+    result, err = MiningEnginerService.mining_engineer_approve("token", 1, 2, {"status_id": 32})
     assert err is None
     assert result == {"issue": {"id": 1}}
     assert mock_put.call_count == 2
 
 
 @patch("services.mining_engineer_service.requests.put")
-def test_miningEngineer_approve_fail_close_me(mock_put):
+def test_mining_engineer_approve_fail_close_me(mock_put):
     # First put call success
     mock_resp1 = MagicMock()
     mock_resp1.status_code = 200
@@ -172,13 +174,13 @@ def test_miningEngineer_approve_fail_close_me(mock_put):
 
     mock_put.side_effect = [mock_resp1, mock_resp2]
 
-    result, err = MiningEnginerService.miningEngineer_approve("token", 1, 2, {"status_id": 32})
+    result, err = MiningEnginerService.mining_engineer_approve("token", 1, 2, {"status_id": 32})
     assert result is None
     assert "Failed to close ME Appointment" in err
 
 
 @patch("services.mining_engineer_service.requests.put")
-def test_miningEngineer_reject_success(mock_put):
+def test_mining_engineer_reject_success(mock_put):
     # ML issue update success
     mock_ml_resp = MagicMock()
     mock_ml_resp.status_code = 200
@@ -192,13 +194,13 @@ def test_miningEngineer_reject_success(mock_put):
 
     mock_put.side_effect = [mock_ml_resp, mock_me_resp]
 
-    result, err = MiningEnginerService.miningEngineer_reject("token", 1, 2, {"status_id": 6, "me_comment": "No", "me_report": "Fail"})
+    result, err = MiningEnginerService.mining_engineer_reject("token", 1, 2, {"status_id": 6, "me_comment": "No", "me_report": "Fail"})
     assert err is None
     assert result == {"issue": {"id": 1}}
     assert mock_put.call_count == 2
 
 @patch("services.mining_engineer_service.requests.put")
-def test_miningEngineer_reject_fail_ml_update(mock_put):
+def test_mining_engineer_reject_fail_ml_update(mock_put):
     mock_ml_resp = MagicMock()
     mock_ml_resp.status_code = 400
     mock_ml_resp.text = "Bad Request"
@@ -206,185 +208,208 @@ def test_miningEngineer_reject_fail_ml_update(mock_put):
 
     mock_put.return_value = mock_ml_resp
 
-    result, err = MiningEnginerService.miningEngineer_reject("token", 1, 2, {"status_id": 6, "me_comment": "No", "me_report": "Fail"})
+    result, err = MiningEnginerService.mining_engineer_reject("token", 1, 2, {"status_id": 6, "me_comment": "No", "me_report": "Fail"})
     assert result is None
     assert "Redmine API error" in err
 
-    @patch("services.mining_engineer_service.JWTUtils.get_api_key_from_token")
-    @patch("services.mining_engineer_service.MLOUtils.get_user_info_from_token")
-    @patch("services.mining_engineer_service.requests.post")
-    @patch("services.mining_engineer_service.MiningEnginerService.change_issue_status")
-    def test_create_ml_appointment_success(self, mock_change_status, mock_post, mock_get_user_info, mock_get_api_key):
-        token = make_token()
-        start_date = "2025-06-14"
-        mining_license_number = "LLL/100/206"
-        google_location = "Some Location"
+@patch("services.mining_engineer_service.MiningEnginerService.change_issue_status")
+@patch("services.mining_engineer_service.requests.post")
+@patch("services.mining_engineer_service.MLOUtils.get_user_info_from_token")
+@patch("services.mining_engineer_service.JWTUtils.decode_jwt_and_get_user_id")
+@patch("services.mining_engineer_service.JWTUtils.get_api_key_from_token")
+def test_create_ml_appointment_success(mock_get_api_key, mock_decode, mock_get_user_info, mock_post, mock_change_status):
+    token = make_token()
+    start_date = "2025-06-14"
+    mining_license_number = "LLL/100/206"
+    google_location = "Some Location"
 
-        mock_get_api_key.return_value = make_api_key()
-        mock_get_user_info.return_value = (make_user_id(), None)
+    mock_get_api_key.return_value = "valid_api_key"
+    mock_decode.return_value = {"success": True, "user_id": 12345}
+    mock_get_user_info.return_value = (12345, None)
 
-        # Mock successful Redmine post creation response
-        mock_response = MagicMock()
-        mock_response.status_code = 201
-        mock_response.json.return_value = {"issue": {"id": 999}}
-        mock_post.return_value = mock_response
+    mock_response = MagicMock()
+    mock_response.status_code = 201
+    mock_response.json.return_value = {"issue": {"id": 999}}
+    mock_post.return_value = mock_response
 
-        # Mock successful status change
-        mock_change_status.return_value = (True, None)
+    mock_change_status.return_value = (True, None)
 
-        result, error = MiningEnginerService.create_ml_appointment(token, start_date, mining_license_number, google_location)
+    result, error = MiningEnginerService.create_ml_appointment(token, start_date, mining_license_number, google_location)
 
-        assert error is None
-        assert "issue" in result
-        assert mock_post.called
-        mock_change_status.assert_called_once()
+    print("Result:", result)
+    print("Error:", error)
 
-    @patch("services.mining_engineer_service.JWTUtils.get_api_key_from_token")
-    def test_create_ml_appointment_invalid_token(self, mock_get_api_key):
-        mock_get_api_key.return_value = None
-        result, error = MiningEnginerService.create_ml_appointment("badtoken", "2025-06-14", "LLL/100/206", "loc")
-        assert result is None
-        assert "Invalid API token" in error
+    assert error is None
 
-    def test_create_ml_appointment_invalid_license_format(self):
-        token = make_token()
-        result, error = MiningEnginerService.create_ml_appointment(token, "2025-06-14", "INVALIDLICENSE", "loc")
-        assert result is None
-        assert "Invalid mining license number format" in error
 
-    @patch("services.mining_engineer_service.JWTUtils.get_api_key_from_token")
-    @patch("services.mining_engineer_service.requests.put")
-    def test_change_issue_status_success(self, mock_put, mock_get_api_key):
-        mock_get_api_key.return_value = make_api_key()
+@patch("services.mining_engineer_service.JWTUtils.get_api_key_from_token")
+def test_create_ml_appointment_invalid_token(mock_get_api_key):
+    mock_get_api_key.return_value = None
+    result, error = MiningEnginerService.create_ml_appointment("badtoken", "2025-06-14", "LLL/100/206", "loc")
+    assert result is None
+    assert "Invalid API token" in error
 
-        mock_response = MagicMock()
-        mock_response.status_code = 204
-        mock_put.return_value = mock_response
+@patch("services.mining_engineer_service.JWTUtils.decode_jwt_and_get_user_id")
+@patch("services.mining_engineer_service.JWTUtils.get_api_key_from_token")
+@patch("services.mining_engineer_service.MLOUtils.get_user_info_from_token")
+def test_create_ml_appointment_invalid_license_format(mock_get_user_info, mock_get_api_key, mock_decode_jwt):
+    token = "dummy-valid-token"
 
-        success, error = MiningEnginerService.change_issue_status(make_token(), 1, 31)
-        assert success is True
-        assert error is None
+    mock_get_api_key.return_value = "valid-api-key"
+    mock_get_user_info.return_value = (12345, None)
+    mock_decode_jwt.return_value = {"success": True, "user_id": 12345}
 
-    @patch("services.mining_engineer_service.JWTUtils.get_api_key_from_token")
-    @patch("services.mining_engineer_service.requests.put")
-    def test_change_issue_status_failure(self, mock_put, mock_get_api_key):
-        mock_get_api_key.return_value = make_api_key()
+    result, error = MiningEnginerService.create_ml_appointment(token, "2025-06-14", "INVALIDLICENSE", "loc")
 
-        mock_response = MagicMock()
-        mock_response.status_code = 400
-        mock_response.text = "Bad request"
-        mock_put.return_value = mock_response
+    print("Result:", result)
+    print("Error:", error)
 
-        success, error = MiningEnginerService.change_issue_status(make_token(), 1, 31)
-        assert success is None
-        assert "Failed to update issue status" in error
+    assert result is None
+    assert "Invalid mining license number format" in error
 
-    def test_change_issue_status_invalid_api_key(self):
-        success, error = MiningEnginerService.change_issue_status("badtoken", 1, 31)
-        assert success is None
-        assert "Invalid or missing API key" in error
 
-    @patch("services.mining_engineer_service.JWTUtils.get_api_key_from_token")
-    @patch("services.mining_engineer_service.MLOUtils.get_user_info_from_token")
-    @patch("services.mining_engineer_service.requests.get")
-    @patch("services.mining_engineer_service.MiningEnginerService.get_attachment_urls")
-    @patch("services.mining_engineer_service.LimitUtils.get_limit")
-    def test_get_me_meetingeShedule_licenses_success(self, mock_get_limit, mock_get_attachment_urls, mock_requests_get, mock_get_user_info, mock_get_api_key):
-        mock_get_api_key.return_value = make_api_key()
-        mock_get_user_info.return_value = (make_user_id(), None)
-        mock_get_limit.return_value = 10
-        mock_get_attachment_urls.return_value = {
-            "Detailed Mine Restoration Plan": "https://example.com/plan.pdf",
-            "Payment Receipt": "https://example.com/receipt.pdf",
-            "Deed and Survey Plan": "https://example.com/deed.pdf"
-        }
+@patch("services.mining_engineer_service.JWTUtils.get_api_key_from_token")
+@patch("services.mining_engineer_service.requests.put")
+def test_change_issue_status_success(mock_put, mock_get_api_key):
+    mock_get_api_key.return_value = make_api_key()
 
-        issues_data = {
-            "issues": [
-                {
-                    "id": 1,
-                    "subject": "Test Issue",
-                    "status": {"name": "Scheduled"},
-                    "assigned_to": {"name": "Engineer"},
-                    "custom_fields": [
-                        {"id": 19, "value": "ELN123"},
-                        {"id": 28, "value": "LandName"},
-                        {"id": 29, "value": "OwnerName"},
-                        {"id": 30, "value": "VillageName"},
-                        {"id": 31, "value": "GN Division"},
-                        {"id": 32, "value": "DS Division"},
-                        {"id": 33, "value": "District"},
-                        {"id": 34, "value": "CapacityVal"},
-                        {"id": 66, "value": "1234567890"},
-                        {"id": 92, "value": "Loc"},
-                        {"id": 72, "value": None},
-                        {"id": 80, "value": None},
-                        {"id": 90, "value": None}
-                    ]
-                }
-            ]
-        }
+    mock_response = MagicMock()
+    mock_response.status_code = 204
+    mock_put.return_value = mock_response
 
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = issues_data
-        mock_requests_get.return_value = mock_response
+    success, error = MiningEnginerService.change_issue_status(make_token(), 1, 31)
+    assert success is True
+    assert error is None
 
-        results, error = MiningEnginerService.get_me_meetingeShedule_licenses(make_token())
-        assert error is None
-        assert len(results) == 1
-        assert results[0]["id"] == 1
-        assert results[0]["Detailed_Plan"] == "https://example.com/plan.pdf"
+@patch("services.mining_engineer_service.JWTUtils.get_api_key_from_token")
+@patch("services.mining_engineer_service.requests.put")
+def test_change_issue_status_failure(mock_put, mock_get_api_key):
+    mock_get_api_key.return_value = make_api_key()
 
-    @patch("services.mining_engineer_service.JWTUtils.get_api_key_from_token")
-    @patch("services.mining_engineer_service.requests.get")
-    def test_get_me_appointments_success(self, mock_requests_get, mock_get_api_key):
-        mock_get_api_key.return_value = make_api_key()
-        issues_data = {
-            "issues": [
-                {
-                    "id": 10,
-                    "subject": "Appointment 1",
-                    "start_date": "2025-06-14",
-                    "status": {"name": "Open"},
-                    "assigned_to": {"name": "Engineer 1"},
-                    "custom_fields": [
-                        {"id": 92, "value": "Location1"},
-                        {"id": 101, "value": "ML-101"}
-                    ]
-                }
-            ]
-        }
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = issues_data
-        mock_requests_get.return_value = mock_response
+    mock_response = MagicMock()
+    mock_response.status_code = 400
+    mock_response.text = "Bad request"
+    mock_put.return_value = mock_response
 
-        result = MiningEnginerService.get_me_appointments(make_token())
-        assert "appointments" in result
-        assert len(result["appointments"]) == 1
-        assert result["appointments"][0]["id"] == 10
-        assert result["appointments"][0]["Google_location"] == "Location1"
+    success, error = MiningEnginerService.change_issue_status(make_token(), 1, 31)
+    assert success is None
+    assert "Failed to update issue status" in error
 
-    @patch("services.mining_engineer_service.JWTUtils.get_api_key_from_token")
-    def test_get_me_appointments_invalid_token(self, mock_get_api_key):
-        mock_get_api_key.return_value = None
-        result = MiningEnginerService.get_me_appointments("badtoken")
-        assert "error" in result
-        assert "Invalid API token" in result["error"]
+@patch("services.mining_engineer_service.requests.put")
+def test_change_issue_status_invalid_api_key(mock_put):
+    mock_response = MagicMock()
+    mock_response.status_code = 401
+    mock_response.text = "Invalid or missing API key"  # <-- add this line
+    mock_response.json.return_value = {"error": "Invalid or missing API key"}
+    mock_put.return_value = mock_response
 
-    @patch("services.mining_engineer_service.JWTUtils.get_api_key_from_token")
-    @patch("services.mining_engineer_service.requests.get")
-    def test_get_me_appointments_api_error(self, mock_requests_get, mock_get_api_key):
-        mock_get_api_key.return_value = make_api_key()
-        mock_response = MagicMock()
-        mock_response.status_code = 500
-        mock_response.text = "Server error"
-        mock_requests_get.return_value = mock_response
+    success, error = MiningEnginerService.change_issue_status("badtoken", 1, 31)
 
-        result = MiningEnginerService.get_me_appointments(make_token())
-        assert "error" in result
-        assert "Redmine API error" in result["error"]
+    assert success is None
+    assert "Invalid or missing API key" in error
+
+
+@patch("services.mining_engineer_service.JWTUtils.get_api_key_from_token")
+@patch("services.mining_engineer_service.MLOUtils.get_user_info_from_token")
+@patch("services.mining_engineer_service.requests.get")
+@patch("services.mining_engineer_service.MiningEnginerService.get_attachment_urls")
+@patch("services.mining_engineer_service.LimitUtils.get_limit")
+def test_get_me_meeting_schedule_licenses_success(mock_get_limit, mock_get_attachment_urls, mock_requests_get, mock_get_user_info, mock_get_api_key):
+    mock_get_api_key.return_value = make_api_key()
+    mock_get_user_info.return_value = (make_user_id(), None)
+    mock_get_limit.return_value = 10
+    mock_get_attachment_urls.return_value = {
+        "Detailed Mine Restoration Plan": "https://example.com/plan.pdf",
+        "Payment Receipt": "https://example.com/receipt.pdf",
+        "Deed and Survey Plan": "https://example.com/deed.pdf"
+    }
+
+    issues_data = {
+        "issues": [
+            {
+                "id": 1,
+                "subject": "Test Issue",
+                "status": {"name": "Scheduled"},
+                "assigned_to": {"name": "Engineer"},
+                "custom_fields": [
+                    {"id": 19, "value": "ELN123"},
+                    {"id": 28, "value": "LandName"},
+                    {"id": 29, "value": "OwnerName"},
+                    {"id": 30, "value": "VillageName"},
+                    {"id": 31, "value": "GN Division"},
+                    {"id": 32, "value": "DS Division"},
+                    {"id": 33, "value": "District"},
+                    {"id": 34, "value": "CapacityVal"},
+                    {"id": 66, "value": "1234567890"},
+                    {"id": 92, "value": "Loc"},
+                    {"id": 72, "value": None},
+                    {"id": 80, "value": None},
+                    {"id": 90, "value": None}
+                ]
+            }
+        ]
+    }
+
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = issues_data
+    mock_requests_get.return_value = mock_response
+
+    results, error = MiningEnginerService.get_me_meeting_schedule_licenses(make_token())
+    assert error is None
+    assert len(results) == 1
+    assert results[0]["id"] == 1
+    assert results[0]["Detailed_Plan"] == "https://example.com/plan.pdf"
+
+@patch("services.mining_engineer_service.JWTUtils.get_api_key_from_token")
+@patch("services.mining_engineer_service.requests.get")
+def test_get_me_appointments_success(mock_requests_get, mock_get_api_key):
+    mock_get_api_key.return_value = make_api_key()
+    issues_data = {
+        "issues": [
+            {
+                "id": 10,
+                "subject": "Appointment 1",
+                "start_date": "2025-06-14",
+                "status": {"name": "Open"},
+                "assigned_to": {"name": "Engineer 1"},
+                "custom_fields": [
+                    {"id": 92, "value": "Location1"},
+                    {"id": 101, "value": "ML-101"}
+                ]
+            }
+        ]
+    }
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = issues_data
+    mock_requests_get.return_value = mock_response
+
+    result = MiningEnginerService.get_me_appointments(make_token())
+    assert "appointments" in result
+    assert len(result["appointments"]) == 1
+    assert result["appointments"][0]["id"] == 10
+    assert result["appointments"][0]["Google_location"] == "Location1"
+
+@patch("services.mining_engineer_service.JWTUtils.get_api_key_from_token")
+def test_get_me_appointments_invalid_token(mock_get_api_key):
+    mock_get_api_key.return_value = None
+    result = MiningEnginerService.get_me_appointments("badtoken")
+    assert "error" in result
+    assert "Invalid API token" in result["error"]
+
+@patch("services.mining_engineer_service.JWTUtils.get_api_key_from_token")
+@patch("services.mining_engineer_service.requests.get")
+def test_get_me_appointments_api_error(mock_requests_get, mock_get_api_key):
+    mock_get_api_key.return_value = make_api_key()
+    mock_response = MagicMock()
+    mock_response.status_code = 500
+    mock_response.text = "Server error"
+    mock_requests_get.return_value = mock_response
+
+    result = MiningEnginerService.get_me_appointments(make_token())
+    assert "error" in result
+    assert "Redmine API error" in result["error"]
 
     
 @patch("services.mining_engineer_service.requests.get")
@@ -575,7 +600,7 @@ def test_get_me_hold_licenses_success(mock_get):
 @patch("services.mining_engineer_service.JWTUtils.get_api_key_from_token")
 @patch("services.mining_engineer_service.requests.get")
 @patch("services.mining_engineer_service.os.getenv")
-def test_get_miningLicense_view_button_success(mock_getenv, mock_requests_get, mock_get_api_key):
+def test_get_mining_license_view_button_success(mock_getenv, mock_requests_get, mock_get_api_key):
     # Arrange
     mock_get_api_key.return_value = MOCK_API_KEY
     mock_getenv.return_value = MOCK_REDMINE_URL
@@ -603,7 +628,7 @@ def test_get_miningLicense_view_button_success(mock_getenv, mock_requests_get, m
     mock_requests_get.return_value = mock_response
 
     with patch("services.mining_engineer_service.MiningEnginerService.get_attachment_urls", return_value={"Payment Receipt": "https://files.com/123"}):
-        result, error = MiningEnginerService.get_miningLicense_view_button(MOCK_TOKEN, MOCK_ISSUE_ID)
+        result, error = MiningEnginerService.get_mining_license_view_button(MOCK_TOKEN, MOCK_ISSUE_ID)
 
     # Assert
     assert error is None
@@ -614,8 +639,8 @@ def test_get_miningLicense_view_button_success(mock_getenv, mock_requests_get, m
 
 
 @patch("services.mining_engineer_service.JWTUtils.get_api_key_from_token", return_value=None)
-def test_get_miningLicense_view_button_invalid_token(mock_get_api_key):
-    result, error = MiningEnginerService.get_miningLicense_view_button("badtoken", MOCK_ISSUE_ID)
+def test_get_mining_licensee_view_button_invalid_token(mock_get_api_key):
+    result, error = MiningEnginerService.get_mining_license_view_button("badtoken", MOCK_ISSUE_ID)
     assert result is None
     assert "Invalid or missing API key" in error
 
@@ -623,13 +648,13 @@ def test_get_miningLicense_view_button_invalid_token(mock_get_api_key):
 @patch("services.mining_engineer_service.JWTUtils.get_api_key_from_token", return_value=MOCK_API_KEY)
 @patch("services.mining_engineer_service.requests.get")
 @patch("services.mining_engineer_service.os.getenv", return_value=MOCK_REDMINE_URL)
-def test_get_miningLicense_view_button_api_error(mock_getenv, mock_requests_get, mock_get_api_key):
+def test_get_mining_license_view_button_api_error(mock_getenv, mock_requests_get, mock_get_api_key):
     mock_response = MagicMock()
     mock_response.status_code = 500
     mock_response.text = "Internal Server Error"
     mock_requests_get.return_value = mock_response
 
-    result, error = MiningEnginerService.get_miningLicense_view_button(MOCK_TOKEN, MOCK_ISSUE_ID)
+    result, error = MiningEnginerService.get_mining_license_view_button(MOCK_TOKEN, MOCK_ISSUE_ID)
     assert result is None
     assert "Failed to fetch issue" in error
 
@@ -637,12 +662,12 @@ def test_get_miningLicense_view_button_api_error(mock_getenv, mock_requests_get,
 @patch("services.mining_engineer_service.JWTUtils.get_api_key_from_token", return_value=MOCK_API_KEY)
 @patch("services.mining_engineer_service.requests.get")
 @patch("services.mining_engineer_service.os.getenv", return_value=MOCK_REDMINE_URL)
-def test_get_miningLicense_view_button_missing_issue(mock_getenv, mock_requests_get, mock_get_api_key):
+def test_get_mining_license_view_button_missing_issue(mock_getenv, mock_requests_get, mock_get_api_key):
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.json.return_value = {}  # No "issue" key
     mock_requests_get.return_value = mock_response
 
-    result, error = MiningEnginerService.get_miningLicense_view_button(MOCK_TOKEN, MOCK_ISSUE_ID)
+    result, error = MiningEnginerService.get_mining_license_view_button(MOCK_TOKEN, MOCK_ISSUE_ID)
     assert result is None
     assert "Issue data not found" in error

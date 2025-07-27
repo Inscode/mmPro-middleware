@@ -1,22 +1,18 @@
 from flask import Flask
-from flask_wtf import CSRFProtect
 from flask_cors import CORS
 from config import Config
 from controllers import (
     auth_bp, mining_owner_bp, gsmb_officer_bp, 
     police_officer_bp, general_public_bp, 
-    mining_enginer_bp, gsmb_management_bp,
-    director_general_bp
+    mining_enginer_bp, gsmb_management_bp
 )
 
-csrf = CSRFProtect()
 
 def create_app():
     app = Flask(__name__)
     
     app.config.from_object(Config)
     
-    csrf.init_app(app)
 
     allowed_origins = [
         origin.strip()
@@ -43,7 +39,7 @@ def create_app():
     app.register_blueprint(police_officer_bp, url_prefix='/police-officer')
     app.register_blueprint(general_public_bp, url_prefix='/general-public')
     app.register_blueprint(gsmb_management_bp, url_prefix='/gsmb-management')
-    app.register_blueprint(director_general_bp, url_prefix='/director-general')
+    
     
     return app
 

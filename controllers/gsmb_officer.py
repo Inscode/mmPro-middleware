@@ -1,4 +1,4 @@
-# from flask_cors import CORS
+
 from tabnanny import check
 from flask import Blueprint, jsonify, request
 from middleware.auth_middleware import role_required, check_token
@@ -11,7 +11,7 @@ import requests  # For making HTTP requests to Redmine
 from flask import Response  # For streaming file responses in Flask
 from utils.jwt_utils import JWTUtils
 from werkzeug.http import parse_options_header
-
+from utils.constants import AUTH_TOKEN_MISSING_ERROR
 
 
 # Define the Blueprint for gsmb_officer
@@ -27,8 +27,8 @@ def user_detail(user_id):
         # Check if the Authorization token is present in the request
         auth_header = request.headers.get('Authorization')
         if not auth_header:
-            return jsonify({"error": "Authorization token is missing"}), 401
-        
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 401
+          
         # Check if the token starts with 'Bearer ' (you can also validate it further here if needed)
         if not auth_header.startswith('Bearer '):
             return jsonify({"error": "Invalid token format. Expected 'Bearer <token>'"}), 401
@@ -65,7 +65,7 @@ def add_new_license():
         token =request.headers.get('Authorization')
 
         if not token:
-            return jsonify({"error":"Authorization token is missing"}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         # Get the payload from the request body (expected to be a JSON)
         payload = request.json 
@@ -99,7 +99,7 @@ def get_license_details(licenseId):
         token =request.headers.get('Authorization')
 
         if not token:
-            return jsonify({"error":"Authorization token is missing"}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         # pass the token and payload to the service method
         license_details, error =GsmbOfficerService.get_license_details(token,licenseId )
@@ -125,7 +125,7 @@ def update_license(licenseId):
         token =request.headers.get('Authorization')
 
         if not token:
-            return jsonify({"error":"Authorization token is missing"}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         # Get the payload from the request body (expected to be a JSON)
         payload = request.json 
@@ -159,7 +159,7 @@ def view_tpls():
         token = request.headers.get('Authorization')
 
         if not token:
-            return jsonify({"error": "Authorization token is missing"}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         # Fetch tpl data from service
         issues, error = GsmbOfficerService.view_tpls(token)
@@ -183,7 +183,7 @@ def get_mlowners():
         token = request.headers.get('Authorization')
 
         if not token:
-            return jsonify({"error": "Authorization token is missing"}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         mlowners_details, error = GsmbOfficerService.get_mlowners(token)
 
@@ -204,7 +204,7 @@ def get_individual_mlowners():
         token = request.headers.get('Authorization')
 
         if not token:
-            return jsonify({"error": "Authorization token is missing"}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         all_mlowners, error = GsmbOfficerService.get_mlowners(token)
 
@@ -252,7 +252,7 @@ def get_company_mlowners():
         token = request.headers.get('Authorization')
 
         if not token:
-            return jsonify({"error": "Authorization token is missing"}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         all_mlowners, error = GsmbOfficerService.get_mlowners(token)
 
@@ -298,7 +298,7 @@ def get_tpls():
         token = request.headers.get('Authorization')
 
         if not token:
-            return jsonify({"error": "Authorization token is missing"}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         # Fetch TPLs from the service
         tpls, error = GsmbOfficerService.get_tpls(token)
@@ -320,7 +320,7 @@ def get_mining_licenses():
         token = request.headers.get('Authorization')
 
         if not token:
-            return jsonify({"error": "Authorization token is missing"}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         # Fetch Mining Licenses from the service
         mining_licenses, error = GsmbOfficerService.get_mining_licenses(token)
@@ -340,7 +340,7 @@ def get_mining_license_by_id(issue_id):
     try:
         token = request.headers.get('Authorization')
         if not token:
-            return jsonify({"error": "Authorization token is missing"}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         # Fetch issue details
         mining_license, error = GsmbOfficerService.get_mining_license_by_id(token, issue_id)
@@ -360,7 +360,7 @@ def download_attachment(attachment_id):
     try:
         token = request.headers.get('Authorization')
         api_key = JWTUtils.get_api_key_from_token(token)
-        # api_key = os.getenv("REDMINE_ADMIN_API_KEY")
+        
 
         REDMINE_URL = os.getenv("REDMINE_URL")
         attachment_url = f"{REDMINE_URL}/attachments/download/{attachment_id}"
@@ -415,7 +415,7 @@ def get_mining_license_counts():
         token = request.headers.get('Authorization')
 
         if not token:
-            return jsonify({"error": "Authorization token is missing"}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         # Fetch mining license counts
         license_counts, error = GsmbOfficerService.get_mining_license_counts(token)
@@ -438,7 +438,7 @@ def upload_mining_license():
         user_mobile = UserUtils.get_user_phone(ml_owner_id)
 
         if not token:
-            return jsonify({"error": "Authorization token is missing"}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         # Get form fields
         data = {
@@ -452,8 +452,9 @@ def upload_mining_license():
             "village_name": request.form.get('village_name'),
             "land_name": request.form.get('land_name'),
             "exploration_licence_no": request.form.get('exploration_licence_no'),
-            #"author": request.form.get('author'),
-            "mobile_number": request.form.get('mobile_number'),
+
+
+
             "land_owner_name": request.form.get('land_owner_name'),
             "royalty": request.form.get('royalty'),
             "capacity": request.form.get('capacity'),
@@ -470,7 +471,7 @@ def upload_mining_license():
         detailed_plan_file = request.files.get('detailed_mine_restoration_plan')
         economic_report_file = request.files.get('economic_viability_report')
         boundary_survey_file = request.files.get('deed_and_survey_plan')
-        #license_fee_receipt_file = request.files.get('license_fee_receipt')
+       
         payment_receipt_file = request.files.get('payment_receipt')
         license_boundary_survey_file = request.files.get('license_boundary_survey')
 
@@ -508,7 +509,7 @@ def upload_payment_receipt():
     try:
         token = request.headers.get('Authorization')
         if not token:
-            return jsonify({"error": "Authorization token is missing"}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         # Extract form-data
         
@@ -544,7 +545,7 @@ def reject_physical_document():
     try:
         token = request.headers.get('Authorization')
         if not token:
-            return jsonify({"error": "Authorization token is missing"}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         mining_request_id = request.form.get('mining_request_id')
 
@@ -566,14 +567,14 @@ def reject_physical_document():
 @gsmb_officer_bp.route('/get-mlownersWithNic', methods=['GET'])
 @check_token
 @role_required(['GSMBOfficer'])
-def get_mlownersWithNic():
+def get_mlowners_with_nic():
     try:
         token = request.headers.get('Authorization')
 
         if not token:
-            return jsonify({"error": "Authorization token is missing"}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
-        mlowners_details, error = GsmbOfficerService.get_mlownersDetails(token)
+        mlowners_details, error = GsmbOfficerService.get_ml_owners_details(token)
 
         if error:
             return jsonify({"error": error}), 500
@@ -592,7 +593,7 @@ def get_appointments():
         token = request.headers.get('Authorization')
 
         if not token:
-            return jsonify({"error": "Authorization token is missing"}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         # Fetch appointments from the service
         appointments, error = GsmbOfficerService.get_appointments(token)
@@ -612,7 +613,7 @@ def create_appointment():
     try:
         token = request.headers.get('Authorization')
         if not token:
-            return jsonify({"error": "Authorization token is missing"}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         # Get parameters from request body (JSON)
         data = request.get_json()
@@ -655,7 +656,7 @@ def approve_license():
     try:
         token = request.headers.get('Authorization')
         if not token:
-            return jsonify({"error": "Authorization token is missing"}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         data = request.get_json()
         issue_id = data.get('issue_id')
@@ -687,7 +688,7 @@ def update_issue_status():
     try:
         token = request.headers.get('Authorization')
         if not token:
-            return jsonify({"error": "Authorization token is missing"}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         data = request.get_json()
         issue_id = data.get('issue_id')
@@ -718,7 +719,7 @@ def mark_complaint_resolved(issue_id):
     try:
         token = request.headers.get('Authorization')
         if not token:
-            return jsonify({"error": "Authorization token is missing"}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         result, error = GsmbOfficerService.mark_complaint_resolved(token, issue_id)
 
@@ -740,7 +741,7 @@ def get_mining_license_request():
         token = request.headers.get('Authorization')
 
         if not token:
-            return jsonify({"error": "Authorization token is missing"}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         summary_data, error = GsmbOfficerService.get_mining_license_request(token)
 
@@ -755,14 +756,14 @@ def get_mining_license_request():
 @gsmb_officer_bp.route('/get-miningRequest-view-button/<int:issue_id>', methods=['GET'])
 @check_token
 @role_required(['GSMBOfficer'])
-def get_miningRequest_view_button(issue_id):
+def get_mining_request_view_button(issue_id):
     try:
         token = request.headers.get('Authorization')
         if not token:
-            return jsonify({"error": "Authorization token is missing"}), 400
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         # Fetch issue details
-        mining_license, error = GsmbOfficerService.get_miningLicense_view_button(token, issue_id)
+        mining_license, error = GsmbOfficerService.get_mining_license_view_button(token, issue_id)
 
         if error:
             return jsonify({"error": error}), 500

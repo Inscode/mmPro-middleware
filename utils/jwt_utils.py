@@ -12,49 +12,7 @@ class JWTUtils:
     key = Fernet.generate_key()
     cipher = Fernet(key)
 
-    # @staticmethod
-    # def create_jwt_token(user_id, user_role, api_key):
-    #     encrypted_api_key = JWTUtils.cipher.encrypt(api_key.encode()).decode()
-    #     expiration_time = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=24)
-
-    #     payload = {
-    #         'user_id': user_id,
-    #         'role': user_role,
-    #         'api_key': encrypted_api_key,
-    #         'exp': expiration_time
-    #     }
-
-    #     token = jwt.encode(payload, Config.SECRET_KEY, algorithm=Config.JWT_ALGORITHM)
-    #     return token
-
-    # @staticmethod
-    # def create_jwt_token(user_id, user_role, api_key):
-    #     encrypted_api_key = JWTUtils.cipher.encrypt(api_key.encode()).decode()
-        
-
-    #     access_token_exp = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=60)
-
-    #     access_payload = {
-    #         'user_id': user_id,
-    #         'role': user_role,
-    #         'api_key': encrypted_api_key,
-    #         'exp': access_token_exp
-    #     }
-    #     access_token = jwt.encode(access_payload, Config.SECRET_KEY, algorithm=Config.JWT_ALGORITHM)
-
-    #     refresh_token_exp = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=7)
-    #     refresh_payload = {
-    #         'user_id': user_id,
-    #         'role': user_role,
-    #         'exp': refresh_token_exp,
-    #         'refresh': True  # Identify this as a refresh token
-    #     }
-    #     refresh_token = jwt.encode(refresh_payload, Config.SECRET_KEY, algorithm=Config.JWT_ALGORITHM)
-
-    #     return {
-    #         'access_token': access_token,
-    #         'refresh_token': refresh_token
-    #     }
+    
     
     @staticmethod
     def create_jwt_token(user_id, user_role):
@@ -87,7 +45,7 @@ class JWTUtils:
         """
         Generate a short-lived access token.
         """
-        # encrypted_api_key = JWTUtils.cipher.encrypt(api_key.encode()).decode()
+        
 
         access_token_exp = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=15)
         access_payload = {

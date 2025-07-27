@@ -3,9 +3,17 @@ import os
 from dotenv import load_dotenv
 from utils.jwt_utils import JWTUtils
 from flask import jsonify
-from utils.limit_utils import LimitUtils
+from utils.limit_utils import LimitUtils    
+from utils.constants import REDMINE_API_ERROR_MSG,API_KEY_MISSING_ERROR,CONTENT_TYPE_JSON
+
 
 load_dotenv()
+
+USER_AGENT = "GSMB-Management-Service/1.0"
+NIC_BACK_IMAGE_FIELD = "NIC back image"
+NIC_FRONT_IMAGE_FIELD = "NIC front image"
+USER_TYPE_FIELD = "User Type"
+WORK_ID_FIELD = "work ID"
 
 class GsmbManagmentService:
     @staticmethod
@@ -15,10 +23,10 @@ class GsmbManagmentService:
             api_key = JWTUtils.get_api_key_from_token(token)
 
             if not REDMINE_URL:
-                return None, "Redmine URL is missing"
+                return None, REDMINE_API_ERROR_MSG
 
             if not api_key:
-                return None, "API Key is missing"
+                return None, API_KEY_MISSING_ERROR
 
             params = {
                 "project_id": 1,
@@ -27,7 +35,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             monthly_data = {
@@ -96,10 +104,10 @@ class GsmbManagmentService:
             api_key = JWTUtils.get_api_key_from_token(token)
 
             if not REDMINE_URL:
-                return None, "Redmine URL is missing"
+                return None, REDMINE_API_ERROR_MSG
 
             if not api_key:
-                return None, "API Key is missing"
+                return None, API_KEY_MISSING_ERROR
 
             params = {
                 "project_id": 1,
@@ -108,7 +116,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             mining_data = []
@@ -146,12 +154,8 @@ class GsmbManagmentService:
                         (field.get("value") for field in custom_fields if field.get("name") == "Used"), None
                     )
 
-                    # capacity = float(capacity_str) if capacity_str and capacity_str.strip() != "" else 0
-                    # used = float(used_str) if used_str and used_str.strip() != "" else 0
+                    
 
-                    # if owner and capacity > 0:
-                    #     percentage_used = ((used / capacity) * 100) if capacity else 0
-                    #     mining_data.append({"label": owner, "value": round(percentage_used, 2), "capacity": capacity})
                     capacity = safe_float(capacity_str)
                     used = safe_float(used_str)
 
@@ -178,10 +182,10 @@ class GsmbManagmentService:
             api_key = JWTUtils.get_api_key_from_token(token)
 
             if not REDMINE_URL:
-                return None, "Redmine URL is missing"
+                return None, REDMINE_API_ERROR_MSG
 
             if not api_key:
-                return None, "API Key is missing"
+                return None, API_KEY_MISSING_ERROR
 
             total_royalty = 0
             fetched_orders = []
@@ -193,7 +197,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             offset = 0
@@ -261,13 +265,13 @@ class GsmbManagmentService:
             api_key = JWTUtils.get_api_key_from_token(token)
 
             if not REDMINE_URL:
-                return None, "Redmine URL is missing"
+                return None, REDMINE_API_ERROR_MSG
 
             if not api_key:
-                return None, "API Key is missing"
+                return None, API_KEY_MISSING_ERROR
 
             headers = {
-                "Content-Type": "application/json",
+                "Content-Type": CONTENT_TYPE_JSON,
                 "X-Redmine-API-Key": api_key
             }
 
@@ -327,10 +331,10 @@ class GsmbManagmentService:
             api_key = JWTUtils.get_api_key_from_token(token)
 
             if not REDMINE_URL:
-                return None, "Redmine URL is missing"
+                return None, REDMINE_API_ERROR_MSG
 
             if not api_key:
-                return None, "API Key is missing"
+                return None, API_KEY_MISSING_ERROR
 
             params = {
                 "project_id": 1,
@@ -339,7 +343,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             destination_counts = {}
@@ -393,10 +397,10 @@ class GsmbManagmentService:
             api_key = JWTUtils.get_api_key_from_token(token)
 
             if not REDMINE_URL:
-                return None, "Redmine URL is missing"
+                return None, REDMINE_API_ERROR_MSG
 
             if not api_key:
-                return None, "API Key is missing"
+                return None, API_KEY_MISSING_ERROR
 
             params = {
                 "project_id": 1,
@@ -405,7 +409,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             location_counts = {}
@@ -459,10 +463,10 @@ class GsmbManagmentService:
             api_key = JWTUtils.get_api_key_from_token(token)
 
             if not REDMINE_URL:
-                return None, "Redmine URL is missing"
+                return None, REDMINE_API_ERROR_MSG
 
             if not api_key:
-                return None, "API Key is missing"
+                return None, API_KEY_MISSING_ERROR
 
             params = {
                 "project_id": 1,
@@ -471,7 +475,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             counts = {
@@ -530,14 +534,14 @@ class GsmbManagmentService:
             
 
             if not REDMINE_URL:
-                return None, "Redmine URL is missing"
+                return None, REDMINE_API_ERROR_MSG
 
             if not api_key:
-                return None, "API Key is missing"
+                return None, API_KEY_MISSING_ERROR
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             counts = {
@@ -599,10 +603,10 @@ class GsmbManagmentService:
             api_key = JWTUtils.get_api_key_from_token(token)
 
             if not REDMINE_URL:
-                return None, "Redmine URL is missing"
+                return None, REDMINE_API_ERROR_MSG
 
             if not api_key:
-                return None, "API Key is missing"
+                return None, API_KEY_MISSING_ERROR
 
             params = {
                 "project_id": 1,
@@ -612,7 +616,7 @@ class GsmbManagmentService:
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
 
             counts = {
@@ -663,7 +667,7 @@ class GsmbManagmentService:
             return None, f"Server error: {str(e)}"
         
 
-    def is_license_expired(due_date_str):
+    def is_license_expired(self,due_date_str):
         try:
             from datetime import datetime
         
@@ -682,22 +686,23 @@ class GsmbManagmentService:
     @staticmethod
     def unactive_gsmb_officers(token):
         try:
-            REDMINE_URL = os.getenv("REDMINE_URL", "http://gsmb.aasait.lk")
+            REDMINE_URL = os.getenv("REDMINE_URL")
             api_key = JWTUtils.get_api_key_from_token(token)
 
+            if not REDMINE_URL:
+                return None, REDMINE_API_ERROR_MSG
+
             if not api_key:
-                return None, "API Key is missing"
+                return None, API_KEY_MISSING_ERROR
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json",
-                "User-Agent": "GSMB-Management-Service/1.0"
+                "Content-Type": CONTENT_TYPE_JSON,
+                "User-Agent": USER_AGENT
             }
 
             params = {"status": 3, "include": "custom_fields"}
-            request_url = f"{REDMINE_URL}/users.json?status=3"
-
-
+    
             response = requests.get(
                 f"{REDMINE_URL}/users.json",
                 headers=headers,
@@ -710,8 +715,7 @@ class GsmbManagmentService:
                 return None, f"API request failed (Status {response.status_code})"
 
             users = response.json().get("users", [])
-           # custom_fields = issue.get("custom_fields", [])  # Extract custom fields
-           # attachment_urls = GsmbManagmentService.get_attachment_urls(user_api_key, REDMINE_URL, custom_fields)
+           
         
             # Filter GSMB officers
             officers = []
@@ -733,11 +737,11 @@ class GsmbManagmentService:
                     "custom_fields": {
                         "Designation": custom_fields_dict.get("Designation"),
                         "Mobile Number": custom_fields_dict.get("Mobile Number"),
-                        "NIC back image":custom_fields_dict.get("NIC back image"),
-                        "NIC front image": custom_fields_dict.get("NIC front image"),
+                        NIC_BACK_IMAGE_FIELD:custom_fields_dict.get(NIC_BACK_IMAGE_FIELD),
+                        NIC_FRONT_IMAGE_FIELD: custom_fields_dict.get(NIC_FRONT_IMAGE_FIELD),
                         "National Identity Card": custom_fields_dict.get("National Identity Card"),
-                        "User Type": custom_fields_dict.get("User Type"),
-                        "work ID": custom_fields_dict.get("work ID")
+                        USER_TYPE_FIELD: custom_fields_dict.get(USER_TYPE_FIELD),
+                        WORK_ID_FIELD: custom_fields_dict.get(WORK_ID_FIELD)
                     }
                 }
                 officers.append(officer)
@@ -755,16 +759,19 @@ class GsmbManagmentService:
     @staticmethod
     def get_users_by_type(token, user_type):
         try:
-            REDMINE_URL = os.getenv("REDMINE_URL", "http://gsmb.aasait.lk")
+            REDMINE_URL = os.getenv("REDMINE_URL")
             api_key = JWTUtils.get_api_key_from_token(token)
 
+            if not REDMINE_URL:
+                return None, REDMINE_API_ERROR_MSG
+
             if not api_key:
-                return None, "API Key is missing"
+                return None, API_KEY_MISSING_ERROR
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json",
-                "User-Agent": "GSMB-Management-Service/1.0"
+                "Content-Type": CONTENT_TYPE_JSON,
+                "User-Agent": USER_AGENT
             }
 
             all_users = []
@@ -810,7 +817,7 @@ class GsmbManagmentService:
                     if field.get("value")
                 }
 
-                if custom_fields_dict.get("User Type") == user_type:
+                if custom_fields_dict.get(USER_TYPE_FIELD) == user_type:
                     matched_users.append({
                         "id": user["id"],
                         "name": f"{user.get('firstname', '')} {user.get('lastname', '')}".strip(),
@@ -830,16 +837,19 @@ class GsmbManagmentService:
     @staticmethod
     def get_active_ml_owners(token):
         try:
-            REDMINE_URL = os.getenv("REDMINE_URL", "http://gsmb.aasait.lk")
+            REDMINE_URL = os.getenv("REDMINE_URL")
             api_key = JWTUtils.get_api_key_from_token(token)
 
+            if not REDMINE_URL:
+                return None, REDMINE_API_ERROR_MSG
+
             if not api_key:
-                return None, "API Key is missing"
+                return None, API_KEY_MISSING_ERROR
 
             headers = {
                 "X-Redmine-API-Key": api_key,
-                "Content-Type": "application/json",
-                "User-Agent": "GSMB-Management-Service/1.0"
+                "Content-Type": CONTENT_TYPE_JSON,
+                "User-Agent": USER_AGENT
             }
 
             limit = 100
@@ -882,7 +892,7 @@ class GsmbManagmentService:
                     if field.get("value")
                 }
 
-                user_type = custom_fields_dict.get("User Type", "")
+                user_type = custom_fields_dict.get(USER_TYPE_FIELD, "")
 
                 if user_type == "mlOwner":
                     matched_users.append({
@@ -908,9 +918,12 @@ class GsmbManagmentService:
             REDMINE_URL = os.getenv("REDMINE_URL")
             API_KEY = JWTUtils.get_api_key_from_token(token)
 
-            if not REDMINE_URL or not API_KEY:
-                return None, "Redmine URL or API Key is missing"
-            
+            if not REDMINE_URL:
+                return None, REDMINE_API_ERROR_MSG
+
+            if not API_KEY:
+                return None, API_KEY_MISSING_ERROR
+
             payload = {
                 "user": {
                     "status": 1  # Set status to active
@@ -918,7 +931,7 @@ class GsmbManagmentService:
             }
 
             headers = {
-            "Content-Type": "application/json",
+            "Content-Type": CONTENT_TYPE_JSON,
             "X-Redmine-API-Key": API_KEY
             }
 
@@ -935,7 +948,7 @@ class GsmbManagmentService:
                 try:
                     error_data = response.json()
                     error_msg += f", Error: {error_data.get('errors', 'Unknown error')}"
-                except:
+                except ValueError:
                     error_msg += f", Response: {response.text}"
                 return None, error_msg
 
@@ -944,52 +957,14 @@ class GsmbManagmentService:
         except Exception as e:
             return None, f"Unexpected error: {str(e)}"
         
-
-    # @staticmethod
-    # def get_attachment_urls(api_key, redmine_url, custom_fields):
-    #     try:
-    #         # Define the mapping of custom field names to their attachment IDs
-    #         file_fields = {
-    #             "NIC back image": None,
-    #             "NIC front image": None,
-    #             "work ID": None
-                
-    #         }
-
-    #         # Extract attachment IDs from custom fields
-    #         for field in custom_fields:
-    #             field_name = field.get("name")
-    #             attachment_id = field.get("value")
-
-    #             if field_name in file_fields and attachment_id.isdigit():
-    #                 file_fields[field_name] = attachment_id
-
-    #         # Fetch URLs for valid attachment IDs
-    #         file_urls = {}
-    #         for field_name, attachment_id in file_fields.items():
-    #             if attachment_id:
-    #                 attachment_url = f"{redmine_url}/attachments/{attachment_id}.json"
-    #                 response = requests.get(
-    #                     attachment_url,
-    #                     headers={"X-Redmine-API-Key": api_key, "Content-Type": "application/json"}
-    #                 )
-
-    #                 if response.status_code == 200:
-    #                     attachment_data = response.json().get("attachment", {})
-    #                     file_urls[field_name] = attachment_data.get("content_url", "")
-
-    #         return file_urls
-
-    #     except Exception as e:
-    #         return {}
         
     @staticmethod
     def get_attachment_urls(custom_fields):
         try:
             upload_field_names = {
-                "NIC back image": None,
-                "NIC front image": None,
-                "work ID": None
+                NIC_BACK_IMAGE_FIELD: None,
+                NIC_FRONT_IMAGE_FIELD: None,
+                WORK_ID_FIELD: None
             }
 
             file_urls = {}
