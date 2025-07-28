@@ -97,7 +97,7 @@ def create_ml_appointment():
         if not data:
             return jsonify({"error": "Request body is empty"}), 400
 
-        required_fields = ['start_date', 'mining_license_number','Google_location']
+        required_fields = ['start_date', 'mining_license_number','google_location']
         if not all(field in data for field in required_fields):
             return jsonify({
                 "error": f"Missing required fields: {', '.join(required_fields)}"
@@ -108,7 +108,7 @@ def create_ml_appointment():
             token=token,
             start_date=data['start_date'],
             mining_license_number=data['mining_license_number'],
-            Google_location=data['Google_location']
+            google_location=data['google_location']
         )
 
         # 4. Handle response

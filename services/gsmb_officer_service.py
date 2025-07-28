@@ -280,16 +280,11 @@ class GsmbOfficerService:
     @staticmethod
     def get_complaints(token):
         try:
-            # 🔑 Extract user's API key from token
             user_api_key = JWTUtils.get_api_key_from_token(token)
             if not user_api_key:
                 return None, INVALID_API_KEY_IN_TOKEN
 
-            # 🌐 Get Redmine URL
             REDMINE_URL = os.getenv("REDMINE_URL")
-
-
-            # 🚀 Fetch Complaint issues
             complaints_url = f"{REDMINE_URL}/issues.json?tracker_id=6&project_id=1"
             response = requests.get(
                 complaints_url,
@@ -304,47 +299,28 @@ class GsmbOfficerService:
 
             for issue in issues:
                 custom_fields = issue.get("custom_fields", [])
+                field_map = {field["name"]: field["value"] for field in custom_fields if "name" in field and "value" in field}
 
-                # Extract relevant fields
-                lorry_number = None
-                mobile_number = None
-                role = None
-                resolved = None  # ✅ NEW
-
-                for field in custom_fields:
-                    if field.get("name") == "Lorry Number":
-                        lorry_number = field.get("value")
-                    elif field.get("name") == MOBILE_NUMBER:
-                        mobile_number = field.get("value")
-                    elif field.get("name") == "Role":
-                        role = field.get("value")
-                    elif field.get("name") == "Resolved":  # ✅ NEW
-                        resolved = field.get("value")
-
-                # 🛠️ Format complaint_date
                 created_on = issue.get("created_on")
-                complaint_date = None
-                if created_on:
-                    try:
-                        dt = datetime.strptime(created_on, "%Y-%m-%dT%H:%M:%SZ")
-                        complaint_date = dt.strftime("%Y-%m-%d %H:%M:%S")
-                    except Exception as e:
-                        complaint_date = created_on
+                try:
+                    complaint_date = datetime.strptime(created_on, "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d %H:%M:%S")
+                except Exception:
+                    complaint_date = created_on
 
-                formatted_complaint = {
+                formatted_complaints.append({
                     "id": issue.get("id"),
-                    "lorry_number": lorry_number,
-                    "mobile_number": mobile_number,
+                    "lorry_number": field_map.get("Lorry Number"),
+                    "mobile_number": field_map.get(MOBILE_NUMBER),
                     "complaint_date": complaint_date,
-                    "role": role,
-                    "resolved": resolved  # ✅ Add to response
-                }
-                formatted_complaints.append(formatted_complaint)
+                    "role": field_map.get("Role"),
+                    "resolved": field_map.get("Resolved")
+                })
 
             return formatted_complaints, None
 
         except Exception as e:
             return None, str(e)
+
 
 
     @staticmethod

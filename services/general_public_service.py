@@ -24,61 +24,49 @@ class GeneralPublicService:
     @staticmethod
     def is_lorry_number_valid(lorry_number):
         try:
-            # Extract the user-specific API key from the token
             api_key = API_KEY
-
             if not REDMINE_URL or not api_key:
                 return None, REDMINE_API_ERROR_MSG
-
+            
             headers = {"X-Redmine-API-Key": api_key}
-
-            # Fetch all TPL licenses (tracker_id = 5)
             tpl_params = {"tracker_id": 5}
             tpl_response = requests.get(f"{REDMINE_URL}/issues.json", params=tpl_params, headers=headers)
-
+            
             if tpl_response.status_code != 200:
                 return None, f"Failed to fetch TPL issues: {tpl_response.status_code} - {tpl_response.text}"
-
+            
             tpl_issues = tpl_response.json().get("issues", [])
             lorry_number_lower = lorry_number.lower()
             current_time = datetime.now(timezone.utc)
 
-
-            # Check if any TPL license matches the given lorry number (cf_13)
-            for issue in tpl_issues:
-            # Check lorry number match
-                lorry_match = any(
-                    cf["id"] == 53 and cf["value"] and cf["value"].lower() == lorry_number_lower 
+            def issue_has_lorry_number(issue):
+                return any(
+                    cf["id"] == 53 and cf.get("value") and cf["value"].lower() == lorry_number_lower
                     for cf in issue.get("custom_fields", [])
                 )
-            
-                if lorry_match:
-                    # Check license validity
-                    created_on_str = issue.get("created_on")
-                    if not created_on_str:
-                        continue  # Skip if no creation date
+
+            def license_is_valid(issue):
+                created_on_str = issue.get("created_on")
+                if not created_on_str:
+                    return False
                 
-                    try:
-                        created_on = datetime.strptime(created_on_str, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
-                        estimated_hours = issue.get("estimated_hours", 0)
-                    
-                        # Calculate expiration time
-                        expiration_time = created_on + timedelta(hours=estimated_hours)
-                    
-                        # Check if license is still valid
-                        if current_time < expiration_time:
-                            return True, None  # Valid license found
-                        else:
-                            continue  # License expired, check next one
-                    except Exception as e:
-                        print(f"Error processing issue {issue.get('id')}: {str(e)}")
-                        continue
+                try:
+                    created_on = datetime.strptime(created_on_str, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+                    estimated_hours = issue.get("estimated_hours", 0)
+                    expiration_time = created_on + timedelta(hours=estimated_hours)
+                    return current_time < expiration_time
+                except Exception as e:
+                    print(f"Error processing issue {issue.get('id')}: {str(e)}")
+                    return False
 
-            # If we get here, no valid license was found
+            for issue in tpl_issues:
+                if issue_has_lorry_number(issue) and license_is_valid(issue):
+                    return True, None
+            
             return False, None
-
         except Exception as e:
             return None, f"Server error: {str(e)}"
+
 
     @staticmethod
     def generate_otp():
@@ -122,7 +110,7 @@ class GeneralPublicService:
             return False, "Invalid OTP"
 
     @staticmethod
-    def create_complaint(phoneNumber, vehicleNumber):
+    def create_complaint(phone_number, vehicle_number):
         issue_data = {
                 'issue': {
                     'project_id': 1,  
@@ -131,8 +119,8 @@ class GeneralPublicService:
                     'status_id': 1, 
                     'priority_id': 2,  
                     'custom_fields': [
-                        {'id': 66, 'name': "Mobile Number", 'value': phoneNumber},
-                        {'id': 53, 'name': "Lorry Number", 'value': vehicleNumber},
+                        {'id': 66, 'name': "Mobile Number", 'value': phone_number},
+                        {'id': 53, 'name': "Lorry Number", 'value': vehicle_number},
                         {'id': 67, 'name': "Role", 'value': "Public"}
                     ]
                 }
