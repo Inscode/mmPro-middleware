@@ -194,14 +194,14 @@ def ml_request():
         detailed_mine_file = request.files.get('detailed_mine_plan') 
         economic_report_file = request.files.get('economic_viability_report')
         payment_receipt_file = request.files.get('payment_receipt')  #Deed and Survey Plan
-        Deed_plan_file = request.files.get('Deed_plan')
+        deed_plan_file = request.files.get('Deed_plan')
         license_boundary_survey_file = request.files.get('license_boundary_survey')
 
 
         detailed_mine_plan_id = AuthService.upload_file_to_redmine(detailed_mine_file) if detailed_mine_file else None
         economic_viability_report_id = AuthService.upload_file_to_redmine(economic_report_file) if economic_report_file else None
         payment_receipt_id = AuthService.upload_file_to_redmine(payment_receipt_file) if payment_receipt_file else None
-        Deed_plan_id = AuthService.upload_file_to_redmine(Deed_plan_file) if Deed_plan_file else None
+        deed_plan_id = AuthService.upload_file_to_redmine(deed_plan_file) if deed_plan_file else None
         license_boundary_survey_id = AuthService.upload_file_to_redmine(license_boundary_survey_file) if license_boundary_survey_file else None
 
         # Add file references to custom fields
@@ -209,8 +209,8 @@ def ml_request():
             custom_fields.append({"id": 72, "value": detailed_mine_plan_id})
         if payment_receipt_id:
             custom_fields.append({"id": 80, "value": payment_receipt_id})
-        if Deed_plan_id:
-            custom_fields.append({"id": 90, "value": Deed_plan_id})
+        if deed_plan_id:
+            custom_fields.append({"id": 90, "value": deed_plan_id})
         if economic_viability_report_id:
             custom_fields.append({"id": 100, "value": economic_viability_report_id})    
         if license_boundary_survey_id:
@@ -438,10 +438,10 @@ def create_payhere_session():
         order_id = f"ROYALTY_{issue_id}_{int(time.time())}"
 
         # Generate correct PayHere hash
-        # def generate_payhere_hash():
-        #     hashed_secret = sha256(merchant_secret.encode()).hexdigest().upper()
-        #     base_string = f"{merchant_id}{order_id}{amount_float:.2f}LKR{hashed_secret}"
-        #     return sha256(base_string.encode()).hexdigest().upper()
+        def generate_payhere_hash():
+            hashed_secret = sha256(merchant_secret.encode()).hexdigest().upper()
+            base_string = f"{merchant_id}{order_id}{amount_float:.2f}LKR{hashed_secret}"
+            return sha256(base_string.encode()).hexdigest().upper()
 
         payment_config = {
             "sandbox": True,  # Set to False in production
@@ -454,7 +454,7 @@ def create_payhere_session():
             "amount": f"{amount_float:.2f}",
             "currency": "LKR",
             "custom_1": issue_id,
-            # "hash": generate_payhere_hash(),
+            "hash": generate_payhere_hash(),
             "first_name": "Mining",
             "last_name": "Operator",
             "email": "mining@example.com",

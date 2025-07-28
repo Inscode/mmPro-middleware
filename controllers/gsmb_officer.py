@@ -90,10 +90,10 @@ def add_new_license():
            # Fetch a single license by ID
 
 
-@gsmb_officer_bp.route('/get-license/<int:licenseId>', methods=['GET'])
+@gsmb_officer_bp.route('/get-license/<int:license_id>', methods=['GET'])
 @check_token
 @role_required(['GSMBOfficer'])
-def get_license_details(licenseId):
+def get_license_details(license_id):
     try:
         #Get the token from the request header
         token =request.headers.get('Authorization')
@@ -102,7 +102,7 @@ def get_license_details(licenseId):
             return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 400
 
         # pass the token and payload to the service method
-        license_details, error =GsmbOfficerService.get_license_details(token,licenseId )
+        license_details, error =GsmbOfficerService.get_license_details(token,license_id )
 
         if error:
             return jsonify({"error": error}), 500
@@ -116,10 +116,10 @@ def get_license_details(licenseId):
            # Update a license by ID
 
 
-@gsmb_officer_bp.route('/update-license/<int:licenseId>', methods=['PUT'])
+@gsmb_officer_bp.route('/update-license/<int:license_id>', methods=['PUT'])
 @check_token
 @role_required(['GSMBOfficer'])
-def update_license(licenseId):
+def update_license(license_id):
     try:
         #Get the token from the request header
         token =request.headers.get('Authorization')
@@ -136,7 +136,7 @@ def update_license(licenseId):
             return jsonify({"error" : "Missing required data in the request"}), 400
         
         # pass the token and payload to the service method
-        update_license, error =GsmbOfficerService.update_license(token, payload ,licenseId)
+        update_license, error =GsmbOfficerService.update_license(token, payload ,license_id)
 
         if error:
             return jsonify({"error": error}), 500

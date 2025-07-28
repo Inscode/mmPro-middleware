@@ -130,9 +130,9 @@ class PoliceOfficerService:
             return None, f"Server error: {str(e)}"    
 
     @staticmethod
-    def create_complaint(vehicleNumber, userID, token):
+    def create_complaint(vehicle_number, user_id, token):
        
-        phone_number  = UserUtils.get_user_phone(userID)
+        phone_number  = UserUtils.get_user_phone(user_id)
        
 
         issue_data = {
@@ -145,7 +145,7 @@ class PoliceOfficerService:
                     'assigned_to_id': 8,
                     'custom_fields': [
                         {'id':66, 'name': "Mobile Number", 'value': phone_number },
-                        {'id':53, 'name': "Lorry Number", 'value': vehicleNumber},
+                        {'id':53, 'name': "Lorry Number", 'value': vehicle_number},
                         {'id':67, 'name': "Role", 'value': "PoliceOfficer"}
                     ]
                 }

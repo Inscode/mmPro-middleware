@@ -33,7 +33,7 @@ def create_complaint():
 
     token = request.headers.get("Authorization")
     
-    success, result = PoliceOfficerService.create_complaint(data['input'],data['userID'],token)
+    success, result = PoliceOfficerService.create_complaint(data['input'],data['user_id'],token)
 
     if success:
         return jsonify({'success': True, 'complaint_id': result})

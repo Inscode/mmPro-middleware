@@ -649,7 +649,7 @@ class GsmbManagmentService:
 
                 for issue in issues:
                     status = issue.get("status", {}).get("name", "")
-                    due_date = None
+                    
                     
                     if status == "Valid":
                         counts["valid"] += 1

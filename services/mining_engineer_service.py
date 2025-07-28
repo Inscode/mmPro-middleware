@@ -127,7 +127,7 @@ class MiningEnginerService:
                 processed_issues.append({
                     "id": issue.get("id"),
                     "assigned_to": issue.get("assigned_to", {}).get("name"),
-                    "Google_location": custom_fields.get(92),
+                    "google_location": custom_fields.get(92),
                     "mining_number": custom_fields.get(101),
                 })
 
@@ -329,7 +329,7 @@ class MiningEnginerService:
             return None, f"Unexpected error: {str(e)}"
 
     @staticmethod
-    def create_ml_appointment(token, start_date,mining_license_number,Google_location):
+    def create_ml_appointment(token, start_date,mining_license_number,google_location):
         """
         Creates a Mining Engineer appointment in Redmine.
         
@@ -383,7 +383,7 @@ class MiningEnginerService:
                         },
                         {
                             "id": 92,  # Mining License Number field
-                            "value": Google_location,
+                            "value": google_location,
                         }
                     ]
                 }
@@ -537,7 +537,7 @@ class MiningEnginerService:
                     "administrative_district": custom_fields.get(33),
                     "Capacity": custom_fields.get(34),
                     "Mobile_Numbe": custom_fields.get(66),
-                    "Google_location": custom_fields.get(92),
+                    "google_location": custom_fields.get(92),
                     "Detailed_Plan": attachment_urls.get(MiningEnginerService.DETAILED_MINE_RESTORATION_PLAN) or custom_fields.get(72),
                     "Payment_Receipt": attachment_urls.get(MiningEnginerService.PAYMENT_RECEIPT) or custom_fields.get(80),
                     "Deed_Plan": attachment_urls.get(MiningEnginerService.DEED_AND_SURVEY_PLAN) or custom_fields.get(90),
@@ -593,7 +593,7 @@ class MiningEnginerService:
                         "start_date": issue.get("start_date"),
                         "status": issue.get("status", {}).get("name"),
                         "assigned_to": issue.get("assigned_to", {}).get("name"),
-                        "Google_location": next(
+                        "google_location": next(
                             (cf["value"] for cf in issue.get("custom_fields", []) 
                             if cf.get("id") == 92),
                             None
@@ -690,7 +690,7 @@ class MiningEnginerService:
                         "administrative_district": custom_fields.get(33),
                         "Capacity": custom_fields.get(34),
                         "Mobile_Numbe": custom_fields.get(66),
-                        "Google_location": custom_fields.get(92),
+                        "google_location": custom_fields.get(92),
                         "Detailed_Plan": attachment_urls.get(MiningEnginerService.DETAILED_MINE_RESTORATION_PLAN) or custom_fields.get(72),
                         "Payment_Receipt": attachment_urls.get(MiningEnginerService.PAYMENT_RECEIPT) or custom_fields.get(80),
                         "Deed_Plan": attachment_urls.get(MiningEnginerService.DEED_AND_SURVEY_PLAN) or custom_fields.get(90),
@@ -766,7 +766,7 @@ class MiningEnginerService:
                 "administrative_district": custom_fields.get(33),
                 "Capacity": custom_fields.get(34),
                 "Mobile_Numbe": custom_fields.get(66),
-                "Google_location": custom_fields.get(92),
+                "google_location": custom_fields.get(92),
                 "Detailed_Plan": attachment_urls.get(MiningEnginerService.DETAILED_MINE_RESTORATION_PLAN) or custom_fields.get(72),
                 "Payment_Receipt": attachment_urls.get(MiningEnginerService.PAYMENT_RECEIPT) or custom_fields.get(80),
                 "Deed_Plan": attachment_urls.get(MiningEnginerService.DEED_AND_SURVEY_PLAN) or custom_fields.get(90),
@@ -1011,7 +1011,7 @@ class MiningEnginerService:
                         "administrative_district": custom_fields.get(33),
                         "Capacity": custom_fields.get(34),
                         "Mobile_Numbe": custom_fields.get(66),
-                        "Google_location": custom_fields.get(92),
+                        "google_location": custom_fields.get(92),
                         "Mining_license_Number": custom_fields.get(101),
                         "hold": custom_fields.get(106),
                         "Detailed_Plan": attachment_urls.get(MiningEnginerService.DETAILED_MINE_RESTORATION_PLAN) or custom_fields.get(72),
@@ -1141,7 +1141,7 @@ class MiningEnginerService:
                     "id": issue.get("id"),
                     "status": issue.get("status", {}).get("name"),
                     "assigned_to": issue.get("assigned_to", {}).get("name"),
-                    "Google_location": custom_fields.get(92),
+                    "google_location": custom_fields.get(92),
                     "mining_number": custom_fields.get(101),
                 })
 
