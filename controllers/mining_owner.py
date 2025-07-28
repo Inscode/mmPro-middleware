@@ -9,7 +9,9 @@ from hashlib import sha256
 import time
 import requests
 from utils.constants import AUTH_TOKEN_MISSING_ERROR, INTERNAL_SERVER_ERROR
+from dotenv import load_dotenv
 
+load_dotenv()
 
 # Define the Blueprint for mining_owner
 mining_owner_bp = Blueprint('mining_owner', __name__)
@@ -436,10 +438,10 @@ def create_payhere_session():
         order_id = f"ROYALTY_{issue_id}_{int(time.time())}"
 
         # Generate correct PayHere hash
-        def generate_payhere_hash():
-            hashed_secret = sha256(merchant_secret.encode()).hexdigest().upper()
-            base_string = f"{merchant_id}{order_id}{amount_float:.2f}LKR{hashed_secret}"
-            return sha256(base_string.encode()).hexdigest().upper()
+        # def generate_payhere_hash():
+        #     hashed_secret = sha256(merchant_secret.encode()).hexdigest().upper()
+        #     base_string = f"{merchant_id}{order_id}{amount_float:.2f}LKR{hashed_secret}"
+        #     return sha256(base_string.encode()).hexdigest().upper()
 
         payment_config = {
             "sandbox": True,  # Set to False in production
@@ -452,7 +454,7 @@ def create_payhere_session():
             "amount": f"{amount_float:.2f}",
             "currency": "LKR",
             "custom_1": issue_id,
-            "hash": generate_payhere_hash(),
+            # "hash": generate_payhere_hash(),
             "first_name": "Mining",
             "last_name": "Operator",
             "email": "mining@example.com",
