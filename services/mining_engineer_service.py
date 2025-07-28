@@ -464,89 +464,30 @@ class MiningEnginerService:
 
     
     @staticmethod
-    def get_me_meeting_schedule_licenses(token):  
+    def get_me_meeting_schedule_licenses(token):
         try:
-            REDMINE_URL = os.getenv("REDMINE_URL")
-            API_KEY = JWTUtils.get_api_key_from_token(token)
-
-            if not REDMINE_URL or not API_KEY:
+            redmine_url = os.getenv("REDMINE_URL")
+            api_key = JWTUtils.get_api_key_from_token(token)
+            if not redmine_url or not api_key:
                 return None, REDMINE_API_ERROR_MSG
 
-            # Query parameters for Redmine
+            headers = {"X-Redmine-API-Key": api_key}
             params = {
                 "project_id": 1,
-                "tracker_id": 4,  # ML tracker ID
-                "status_id": 31   # Scheduled status
+                "tracker_id": 4,
+                "status_id": 31
             }
 
-            headers = {
-                "X-Redmine-API-Key": API_KEY
-            }
+            issues, error = MiningEnginerService._fetch_redmine_issues(redmine_url, headers, params)
+            if error:
+                return None, error
 
-            all_issues = []
-            offset = 0
-            limit = 100
-
-            while True:
-                response = requests.get(
-                    f"{REDMINE_URL}/projects/mmpro-gsmb/issues.json",
-                    params={**params, "offset": offset, "limit": limit},
-                    headers=headers
-                )
-
-                if response.status_code != 200:
-                    error_msg = f"Redmine API error: {response.status_code}"
-                    if response.text:
-                        error_msg += f" - {response.text[:200]}"
-                    return None, error_msg
-
-                data = response.json()
-                issues = data.get("issues", [])
-                total_count = data.get("total_count", 0)
-
-                all_issues.extend(issues)
-
-                if offset + limit >= total_count:
-                    break
-
-                offset += limit
-
-            processed_issues = []
-            for issue in all_issues:
-                custom_fields = {
-                    field['id']: field['value']
-                    for field in issue.get('custom_fields', [])
-                    if field.get('value') and str(field.get('value')).strip()
-                }
-
-                attachment_urls = MiningEnginerService.get_attachment_urls(
-                    issue.get("custom_fields", [])
-                )
-
-                processed_issues.append({
-                    "id": issue.get("id"),
-                    "subject": issue.get("subject"),
-                    "status": issue.get("status", {}).get("name"),
-                    "assigned_to": issue.get("assigned_to", {}).get("name"),
-                    "exploration_license_no": custom_fields.get(19),
-                    "Land_Name": custom_fields.get(28),
-                    "Land_owner_name": custom_fields.get(29),
-                    "Name_of_village": custom_fields.get(30),
-                    "Grama_Niladhari": custom_fields.get(31),
-                    "Divisional_Secretary_Division": custom_fields.get(32),
-                    "administrative_district": custom_fields.get(33),
-                    "Capacity": custom_fields.get(34),
-                    "Mobile_Numbe": custom_fields.get(66),
-                    "google_location": custom_fields.get(92),
-                    "Detailed_Plan": attachment_urls.get(MiningEnginerService.DETAILED_MINE_RESTORATION_PLAN) or custom_fields.get(72),
-                    "Payment_Receipt": attachment_urls.get(MiningEnginerService.PAYMENT_RECEIPT) or custom_fields.get(80),
-                    "Deed_Plan": attachment_urls.get(MiningEnginerService.DEED_AND_SURVEY_PLAN) or custom_fields.get(90),
-                })
-
+            processed_issues = [MiningEnginerService._process_issue(issue) for issue in issues]
             return processed_issues, None
 
         except Exception as e:
             return None, f"Server error: {str(e)}"
+
 
     @staticmethod
     def get_me_appointments(token):
@@ -621,11 +562,55 @@ class MiningEnginerService:
 
 
     @staticmethod
-    def get_me_approve_license(token):  
+    def _fetch_issues(offset, redmine_url, headers):
+        params = {
+            "project_id": 1,
+            "tracker_id": 4,
+            "status_id": 32,
+            "offset": offset,
+        }
+        resp = requests.get(f"{redmine_url}/projects/mmpro-gsmb/issues.json", params=params, headers=headers)
+        if resp.status_code != 200:
+            msg = f"Redmine API error: {resp.status_code}"
+            if resp.text:
+                msg += f" - {resp.text[:200]}"
+            return None, msg
+        return resp.json(), None
+
+    @staticmethod
+    def _process_issue(issue):
+        cf = {
+            f['id']: f['value']
+            for f in issue.get('custom_fields', [])
+            if f.get('value') and str(f.get('value')).strip()
+        }
+        attachments = MiningEnginerService.get_attachment_urls(issue.get("custom_fields", []))
+        return {
+            "id": issue.get("id"),
+            "subject": issue.get("subject"),
+            "status": issue.get("status", {}).get("name"),
+            "assigned_to": issue.get("assigned_to", {}).get("name"),
+            "exploration_license_no": cf.get(19),
+            "Land_Name": cf.get(28),
+            "Land_owner_name": cf.get(29),
+            "Name_of_village": cf.get(30),
+            "Grama_Niladhari": cf.get(31),
+            "Divisional_Secretary_Division": cf.get(32),
+            "administrative_district": cf.get(33),
+            "Capacity": cf.get(34),
+            "Mobile_Numbe": cf.get(66),
+            "google_location": cf.get(92),
+            "Detailed_Plan": attachments.get(MiningEnginerService.DETAILED_MINE_RESTORATION_PLAN) or cf.get(72),
+            "Payment_Receipt": attachments.get(MiningEnginerService.PAYMENT_RECEIPT) or cf.get(80),
+            "Deed_Plan": attachments.get(MiningEnginerService.DEED_AND_SURVEY_PLAN) or cf.get(90),
+            "mining_license_number": cf.get(101),
+        }
+
+    @staticmethod
+    def get_me_approve_license(token):
         try:
             REDMINE_URL = os.getenv("REDMINE_URL")
             API_KEY = JWTUtils.get_api_key_from_token(token)
-
             if not REDMINE_URL or not API_KEY:
                 return None, REDMINE_API_ERROR_MSG
 
@@ -633,75 +618,28 @@ class MiningEnginerService:
             if not user_id:
                 return None, error
 
-            headers = {
-                "X-Redmine-API-Key": API_KEY
-            }
+            headers = {"X-Redmine-API-Key": API_KEY}
 
+            processed = []
             offset = 0
-            processed_issues = []
-            total_count = None
+            total = None
 
-            while True:
-                params = {
-                    "project_id": 1,
-                    "tracker_id": 4,  # ML tracker ID
-                    "status_id": 32,  # Approved status
-                    "offset": offset
-                    # No limit specified → Redmine defaults to 25
-                }
+            while total is None or offset < total:
+                data, err = MiningEnginerService._fetch_issues(offset, REDMINE_URL, headers)
+                if err:
+                    return None, err
 
-                response = requests.get(
-                    f"{REDMINE_URL}/projects/mmpro-gsmb/issues.json",
-                    params=params,
-                    headers=headers
-                )
-
-                if response.status_code != 200:
-                    error_msg = f"Redmine API error: {response.status_code}"
-                    if response.text:
-                        error_msg += f" - {response.text[:200]}"
-                    return None, error_msg
-
-                data = response.json()
                 issues = data.get("issues", [])
-                if total_count is None:
-                    total_count = data.get("total_count", 0)
+                if total is None:
+                    total = data.get("total_count", 0)
 
-                for issue in issues:
-                    custom_fields = {
-                        field['id']: field['value']
-                        for field in issue.get('custom_fields', [])
-                        if field.get('value') and str(field.get('value')).strip()
-                    }
-
-                    attachment_urls = MiningEnginerService.get_attachment_urls(issue.get("custom_fields", []))
-
-                    processed_issues.append({
-                        "id": issue.get("id"),
-                        "subject": issue.get("subject"),
-                        "status": issue.get("status", {}).get("name"),
-                        "assigned_to": issue.get("assigned_to", {}).get("name"),
-                        "exploration_license_no": custom_fields.get(19),
-                        "Land_Name": custom_fields.get(28),
-                        "Land_owner_name": custom_fields.get(29),
-                        "Name_of_village": custom_fields.get(30),
-                        "Grama_Niladhari": custom_fields.get(31),
-                        "Divisional_Secretary_Division": custom_fields.get(32),
-                        "administrative_district": custom_fields.get(33),
-                        "Capacity": custom_fields.get(34),
-                        "Mobile_Numbe": custom_fields.get(66),
-                        "google_location": custom_fields.get(92),
-                        "Detailed_Plan": attachment_urls.get(MiningEnginerService.DETAILED_MINE_RESTORATION_PLAN) or custom_fields.get(72),
-                        "Payment_Receipt": attachment_urls.get(MiningEnginerService.PAYMENT_RECEIPT) or custom_fields.get(80),
-                        "Deed_Plan": attachment_urls.get(MiningEnginerService.DEED_AND_SURVEY_PLAN) or custom_fields.get(90),
-                        "mining_license_number": custom_fields.get(101),
-                    })
-
-                offset += len(issues)
-                if offset >= total_count or not issues:
+                if not issues:
                     break
 
-            return processed_issues, None
+                processed.extend(MiningEnginerService._process_issue(i) for i in issues)
+                offset += len(issues)
+
+            return processed, None
 
         except Exception as e:
             return None, f"Server error: {str(e)}"
@@ -946,87 +884,101 @@ class MiningEnginerService:
 
     
     @staticmethod
-    def get_me_hold_licenses(token):  
+    def get_me_hold_licenses(token):
         try:
-            REDMINE_URL = os.getenv("REDMINE_URL")
-            API_KEY = JWTUtils.get_api_key_from_token(token)
-
-            if not REDMINE_URL or not API_KEY:
+            redmine_url, api_key = MiningEnginerService._get_redmine_url_and_api_key(token)
+            if not redmine_url or not api_key:
                 return None, REDMINE_API_ERROR_MSG
 
-            headers = {
-                "X-Redmine-API-Key": API_KEY
-            }
-
-            offset = 0
-            processed_issues = []
-            total_count = None  # unknown at first
-
-            while True:
-                params = {
-                    "project_id": 1,
-                    "tracker_id": 4,
-                    "status_id": 39,
-                    "offset": offset
-                    # No limit → Redmine defaults to 25
-                }
-
-                response = requests.get(
-                    f"{REDMINE_URL}/projects/mmpro-gsmb/issues.json",
-                    params=params,
-                    headers=headers
-                )
-
-                if response.status_code != 200:
-                    error_msg = f"Redmine API error: {response.status_code}"
-                    if response.text:
-                        error_msg += f" - {response.text[:200]}"
-                    return None, error_msg
-
-                data = response.json()
-                issues = data.get("issues", [])
-                if total_count is None:
-                    total_count = data.get("total_count", 0)
-
-                for issue in issues:
-                    custom_fields = {
-                        field['id']: field['value']
-                        for field in issue.get('custom_fields', [])
-                        if field.get('value') and str(field.get('value')).strip()
-                    }
-
-                    attachment_urls = MiningEnginerService.get_attachment_urls(issue.get("custom_fields", []))
-
-                    processed_issues.append({
-                        "id": issue.get("id"),
-                        "subject": issue.get("subject"),
-                        "status": issue.get("status", {}).get("name"),
-                        "assigned_to": issue.get("assigned_to", {}).get("name"),
-                        "exploration_license_no": custom_fields.get(19),
-                        "Land_Name": custom_fields.get(28),
-                        "Land_owner_name": custom_fields.get(29),
-                        "Name_of_village": custom_fields.get(30),
-                        "Grama_Niladhari": custom_fields.get(31),
-                        "Divisional_Secretary_Division": custom_fields.get(32),
-                        "administrative_district": custom_fields.get(33),
-                        "Capacity": custom_fields.get(34),
-                        "Mobile_Numbe": custom_fields.get(66),
-                        "google_location": custom_fields.get(92),
-                        "Mining_license_Number": custom_fields.get(101),
-                        "hold": custom_fields.get(106),
-                        "Detailed_Plan": attachment_urls.get(MiningEnginerService.DETAILED_MINE_RESTORATION_PLAN) or custom_fields.get(72),
-                        "Payment_Receipt": attachment_urls.get(MiningEnginerService.PAYMENT_RECEIPT) or custom_fields.get(80),
-                        "Deed_Plan": attachment_urls.get(MiningEnginerService.DEED_AND_SURVEY_PLAN) or custom_fields.get(90),
-                    })
-
-                offset += len(issues)  # move to next page
-                if offset >= total_count or not issues:
-                    break
-
-            return processed_issues, None
+            headers = {"X-Redmine-API-Key": api_key}
+            return MiningEnginerService._fetch_hold_licenses(headers, redmine_url)
 
         except Exception as e:
             return None, f"Server error: {str(e)}"
+
+    @staticmethod
+    def _get_redmine_url_and_api_key(token):
+        return os.getenv("REDMINE_URL"), JWTUtils.get_api_key_from_token(token)
+
+    @staticmethod
+    def _fetch_hold_licenses(headers, redmine_url):
+        offset = 0
+        processed_issues = []
+        total_count = None
+
+        while True:
+            issues_data, error, total = MiningEnginerService._get_issues(headers, redmine_url, offset)
+            if error:
+                return None, error
+
+            if total_count is None:
+                total_count = total
+
+            for issue in issues_data:
+                processed_issues.append(MiningEnginerService._process_issue(issue))
+
+            offset += len(issues_data)
+            if offset >= total_count or not issues_data:
+                break
+
+        return processed_issues, None
+
+    @staticmethod
+    def _get_issues(headers, redmine_url, offset):
+        params = {
+            "project_id": 1,
+            "tracker_id": 4,
+            "status_id": 39,
+            "offset": offset
+        }
+
+        response = requests.get(
+            f"{redmine_url}/projects/mmpro-gsmb/issues.json",
+            params=params,
+            headers=headers
+        )
+
+        if response.status_code != 200:
+            error_msg = f"Redmine API error: {response.status_code}"
+            if response.text:
+                error_msg += f" - {response.text[:200]}"
+            return None, error_msg, None
+
+        data = response.json()
+        return data.get("issues", []), None, data.get("total_count", 0)
+
+    @staticmethod
+    def _process_issue(issue):
+        custom_fields = {
+            field['id']: field['value']
+            for field in issue.get('custom_fields', [])
+            if field.get('value') and str(field.get('value')).strip()
+        }
+
+        attachments = MiningEnginerService.get_attachment_urls(issue.get("custom_fields", []))
+
+        return {
+            "id": issue.get("id"),
+            "subject": issue.get("subject"),
+            "status": issue.get("status", {}).get("name"),
+            "assigned_to": issue.get("assigned_to", {}).get("name"),
+            "exploration_license_no": custom_fields.get(19),
+            "Land_Name": custom_fields.get(28),
+            "Land_owner_name": custom_fields.get(29),
+            "Name_of_village": custom_fields.get(30),
+            "Grama_Niladhari": custom_fields.get(31),
+            "Divisional_Secretary_Division": custom_fields.get(32),
+            "administrative_district": custom_fields.get(33),
+            "Capacity": custom_fields.get(34),
+            "Mobile_Numbe": custom_fields.get(66),
+            "google_location": custom_fields.get(92),
+            "Mining_license_Number": custom_fields.get(101),
+            "hold": custom_fields.get(106),
+            "Detailed_Plan": attachments.get(MiningEnginerService.DETAILED_MINE_RESTORATION_PLAN) or custom_fields.get(72),
+            "Payment_Receipt": attachments.get(MiningEnginerService.PAYMENT_RECEIPT) or custom_fields.get(80),
+            "Deed_Plan": attachments.get(MiningEnginerService.DEED_AND_SURVEY_PLAN) or custom_fields.get(90),
+        }
+
 
 
     @staticmethod

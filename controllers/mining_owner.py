@@ -310,95 +310,43 @@ def get_mining_license_refined():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
 
 @mining_owner_bp.route('/update-royalty', methods=['POST'])
 def handle_payhere_ipn():
     try:
-        # 1. Get PayHere IPN data (form-urlencoded)
         data = request.form
 
-        # 2. Required fields
-        required_fields = [
-            'merchant_id', 'order_id', 'payhere_amount',
-            'payhere_currency', 'status_code', 'md5sig'
-        ]
-        if not all(field in data for field in required_fields):
+        if not _has_required_fields(data):
             return jsonify({"error": "Missing required fields"}), 400
 
-        # 3. Verify PayHere signature
-        merchant_secret = os.getenv("MERCHANT_SECRET")
-        hashed_secret = sha256(merchant_secret.encode()).hexdigest().upper()
-        base_string = (
-            f"{data['merchant_id']}{data['order_id']}{data['payhere_amount']}"
-            f"{data['payhere_currency']}{data['status_code']}{hashed_secret}"
-        )
-        calculated_sig = sha256(base_string.encode()).hexdigest().upper()
-
-        if calculated_sig != data['md5sig']:
+        if not _is_signature_valid(data):
             return jsonify({"error": "Invalid signature"}), 403
 
-        # 4. Only process successful payments
         if data['status_code'] != "2":
             return jsonify({"message": f"Ignoring non-successful payment status: {data['status_code']}"}), 200
 
-        # 5. Extract issue ID from custom_1
         issue_id = data.get('custom_1')
         if not issue_id:
             return jsonify({"error": "Missing issue_id in custom_1"}), 400
 
-        # 6. Redmine credentials
-        redmine_url = os.getenv("REDMINE_URL")
-        api_key = os.getenv("REDMINE_ADMIN_API_KEY")
+        redmine_url, api_key = os.getenv("REDMINE_URL"), os.getenv("REDMINE_ADMIN_API_KEY")
         if not redmine_url or not api_key:
             return jsonify({"error": "Server configuration error"}), 500
 
-        issue_url = f"{redmine_url}/issues/{issue_id}.json"
-        headers = {
-            "X-Redmine-API-Key": api_key,
-            "Content-Type": "application/json"
-        }
+        current_royalty = _get_current_royalty(redmine_url, api_key, issue_id)
+        if current_royalty is None:
+            return jsonify({"error": "Failed to fetch issue or royalty"}), 400
 
-        # 7. Fetch current issue
-        response = requests.get(issue_url, headers=headers)
-        if response.status_code != 200:
-            return jsonify({"error": f"Failed to fetch issue: {response.text}"}), 400
-
-        current_royalty = 0
-        for field in response.json().get('issue', {}).get('custom_fields', []):
-            if field.get('id') == 18:  # Royalty field ID
-                try:
-                    # Convert to float first, then to int to handle strings with decimals
-                    current_royalty = int(float(field.get('value', 0)))
-                except (ValueError, TypeError):
-                    current_royalty = 0
-                break
-
-        # 8. Add royalty (convert amount to integer)
         try:
-            amount = int(round(float(data['payhere_amount'])))  # Convert to integer
+            amount = int(round(float(data['payhere_amount'])))
         except ValueError:
             return jsonify({"error": "Invalid amount format"}), 400
 
         new_royalty = current_royalty + amount
+        if not _update_redmine_royalty(redmine_url, api_key, issue_id, new_royalty):
+            return jsonify({"error": "Failed to update Redmine"}), 400
 
-        # 9. Update Redmine issue with integer value
-        update_response = requests.put(
-            issue_url,
-            headers=headers,
-            json={
-                "issue": {
-                    "custom_fields": [{
-                        "id": 18,
-                        "value": str(new_royalty)  # Store as string but without decimals
-                    }]
-                }
-            }
-        )
-
-        if update_response.status_code != 204:
-            return jsonify({"error": f"Failed to update Redmine: {update_response.text}"}), 400
-
-        # 10. Success response
         print(f"✅ Royalty updated for issue {issue_id}. New amount: {new_royalty}")
         return jsonify({
             "success": True,
@@ -408,10 +356,59 @@ def handle_payhere_ipn():
         }), 200
 
     except Exception as e:
-        return jsonify({
-            "error": INTERNAL_SERVER_ERROR,
-            "details": str(e)
-        }), 500
+        return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
+
+
+def _has_required_fields(data):
+    required = [
+        'merchant_id', 'order_id', 'payhere_amount',
+        'payhere_currency', 'status_code', 'md5sig'
+    ]
+    return all(field in data for field in required)
+
+
+def _is_signature_valid(data):
+    merchant_secret = os.getenv("MERCHANT_SECRET")
+    hashed_secret = sha256(merchant_secret.encode()).hexdigest().upper()
+    base_string = (
+        f"{data['merchant_id']}{data['order_id']}{data['payhere_amount']}"
+        f"{data['payhere_currency']}{data['status_code']}{hashed_secret}"
+    )
+    calculated_sig = sha256(base_string.encode()).hexdigest().upper()
+    return calculated_sig == data['md5sig']
+
+
+def _get_current_royalty(redmine_url, api_key, issue_id):
+    url = f"{redmine_url}/issues/{issue_id}.json"
+    headers = {
+        "X-Redmine-API-Key": api_key,
+        "Content-Type": "application/json"
+    }
+    resp = requests.get(url, headers=headers)
+    if resp.status_code != 200:
+        return None
+    for field in resp.json().get('issue', {}).get('custom_fields', []):
+        if field.get('id') == 18:
+            try:
+                return int(float(field.get('value', 0)))
+            except (ValueError, TypeError):
+                return 0
+    return 0
+
+
+def _update_redmine_royalty(redmine_url, api_key, issue_id, amount):
+    url = f"{redmine_url}/issues/{issue_id}.json"
+    headers = {
+        "X-Redmine-API-Key": api_key,
+        "Content-Type": "application/json"
+    }
+    response = requests.put(
+        url,
+        headers=headers,
+        json={"issue": {"custom_fields": [{"id": 18, "value": str(amount)}]}}
+    )
+    return response.status_code == 204
+
     
 @mining_owner_bp.route('/create-payhere-session', methods=['POST'])
 @check_token
