@@ -17,312 +17,301 @@ WORK_ID_FIELD = "work ID"
 
 class GsmbManagmentService:
     @staticmethod
+    def _fetch_issues_page(redmine_url, headers, params):
+        response = requests.get(f"{redmine_url}/issues.json", headers=headers, params=params)
+        if response.status_code != 200:
+            raise RuntimeError(f"Failed to fetch issues: {response.status_code} - {response.text}")
+        return response.json().get("issues", [])
+
+    @staticmethod
+    def _process_issue(issue, monthly_data):
+        custom_fields = issue.get("custom_fields", [])
+        cube_field = next((f for f in custom_fields if f.get("id") == 58 and f.get("name") == "Cubes"), None)
+        if not cube_field or not cube_field.get("value"):
+            return
+        issue_date = issue.get("created_on")
+        if not issue_date:
+            return
+        month_index = int(issue_date[5:7]) - 1
+        month_name = list(monthly_data.keys())[month_index]
+        monthly_data[month_name] += float(cube_field["value"])
+
+    @staticmethod
     def monthly_total_sand_cubes(token):
         try:
             REDMINE_URL = os.getenv("REDMINE_URL")
             api_key = JWTUtils.get_api_key_from_token(token)
-
             if not REDMINE_URL:
                 return None, REDMINE_API_ERROR_MSG
-
             if not api_key:
                 return None, API_KEY_MISSING_ERROR
 
-            params = {
-                "project_id": 1,
-                "tracker_id": 5  # TPL
-            }
-
-            headers = {
-                "X-Redmine-API-Key": api_key,
-                "Content-Type": CONTENT_TYPE_JSON
-            }
-
-            monthly_data = {
-                "Jan": 0, "Feb": 0, "Mar": 0, "Apr": 0, "May": 0, "Jun": 0,
-                "Jul": 0, "Aug": 0, "Sep": 0, "Oct": 0, "Nov": 0, "Dec": 0
-            }
-
+            params = {"project_id": 1, "tracker_id": 5}  # TPL
+            headers = {"X-Redmine-API-Key": api_key, "Content-Type": CONTENT_TYPE_JSON}
+            monthly_data = {m: 0 for m in ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                                          "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]}
             offset = 0
-            has_more_issues = True
 
-            while has_more_issues:
+            while True:
                 params["offset"] = offset
-                response = requests.get(
-                    f"{REDMINE_URL}/issues.json",
-                    headers=headers,
-                    params=params
-                )
-
-                if response.status_code != 200:
-                    return None, f"Failed to fetch issues: {response.status_code} - {response.text}"
-
-                data = response.json()
-                issues = data.get("issues", [])
-
+                issues = GsmbManagmentService._fetch_issues_page(REDMINE_URL, headers, params)
                 if not issues:
-                    has_more_issues = False
                     break
-
                 for issue in issues:
-                    custom_fields = issue.get("custom_fields", [])
-                    cube_field = next(
-                        (field for field in custom_fields if field.get("id") == 58 and field.get("name") == "Cubes"), None
-                    )
-
-                    if cube_field and cube_field.get("value"):
-                        issue_date = issue.get("created_on")
-                        if issue_date:
-                            month_index = int(issue_date[5:7]) - 1  # Extract month from YYYY-MM-DD
-                            month_name = list(monthly_data.keys())[month_index]
-                            monthly_data[month_name] += float(cube_field["value"])
-
+                    GsmbManagmentService._process_issue(issue, monthly_data)
                 offset += len(issues)
 
-            ordered_months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-
-            formatted_data = [
-                {"month": month, "totalCubes": monthly_data[month]}
-                for month in ordered_months
-            ]
-
+            ordered_months = list(monthly_data.keys())
+            formatted_data = [{"month": month, "totalCubes": monthly_data[month]} for month in ordered_months]
             return formatted_data, None
-
         except Exception as e:
             return None, f"Server error: {str(e)}"
+
+    @staticmethod
+    def safe_float(value):
+        try:
+            return float(value)
+        except (ValueError, TypeError):
+            return 0
+
+    @staticmethod
+    def get_redmine_url_and_api_key(token):
+        redmine_url = os.getenv("REDMINE_URL")
+        api_key = JWTUtils.get_api_key_from_token(token)
+        if not redmine_url:
+            return None, None, REDMINE_API_ERROR_MSG
+        if not api_key:
+            return None, None, API_KEY_MISSING_ERROR
+        return redmine_url, api_key, None
+
+    @staticmethod
+    def fetch_all_issues(redmine_url, headers, params):
+        all_issues = []
+        offset = 0
+        while True:
+            paged_params = {**params, "offset": offset}
+            response = requests.get(f"{redmine_url}/issues.json", headers=headers, params=paged_params)
+            if response.status_code != 200:
+                return None, f"Issue fetch failed: {response.status_code} - {response.text}"
+            batch = response.json().get("issues", [])
+            if not batch:
+                break
+            all_issues.extend(batch)
+            offset += len(batch)
+        return all_issues, None
+
+    @staticmethod
+    def get_field_value(fields, name):
+        return GsmbManagmentService.safe_float(next((f.get("value") for f in fields if f.get("name") == name), None))
+
+    @staticmethod
+    def build_holder_entry(issue):
+        assigned = issue.get("assigned_to")
+        if assigned is None:
+            return None
+        owner = assigned.get("name")
+        if not owner:
+            return None
+        fields = issue.get("custom_fields", [])
+        capacity = GsmbManagmentService.get_field_value(fields, "Capacity")
+        used = GsmbManagmentService.get_field_value(fields, "Used")
+        if capacity <= 0:
+            return None
+        percentage_used = round((used / capacity) * 100, 2)
+        return {
+            "label": owner,
+            "value": percentage_used,
+            "capacity": capacity
+        }
 
     @staticmethod
     def fetch_top_mining_holders(token):
-        def safe_float(value):
-            try:
-                return float(value)
-            except (ValueError, TypeError):
-                return 0
         try:
-            REDMINE_URL = os.getenv("REDMINE_URL")
-            api_key = JWTUtils.get_api_key_from_token(token)
-
-            if not REDMINE_URL:
-                return None, REDMINE_API_ERROR_MSG
-
-            if not api_key:
-                return None, API_KEY_MISSING_ERROR
-
-            params = {
-                "project_id": 1,
-                "tracker_id": 4  # Mining Licenses
-            }
+            redmine_url, api_key, error = GsmbManagmentService.get_redmine_url_and_api_key(token)
+            if error:
+                return None, error
 
             headers = {
                 "X-Redmine-API-Key": api_key,
                 "Content-Type": CONTENT_TYPE_JSON
             }
+            params = {
+                "project_id": 1,
+                "tracker_id": 4
+            }
 
-            mining_data = []
-            offset = 0
-            has_more_issues = True
+            issues, fetch_error = GsmbManagmentService.fetch_all_issues(redmine_url, headers, params)
+            if fetch_error:
+                return None, fetch_error
 
-            while has_more_issues:
-                params["offset"] = offset
-                response = requests.get(
-                    f"{REDMINE_URL}/issues.json",
-                    headers=headers,
-                    params=params
-                )
+            holders = filter(None, map(GsmbManagmentService.build_holder_entry, issues))
+            top_holders = sorted(holders, key=lambda x: x["capacity"], reverse=True)[:10]
 
-                if response.status_code != 200:
-                    return None, f"Failed to fetch issues: {response.status_code} - {response.text}"
-
-                data = response.json()
-                issues = data.get("issues", [])
-
-                if not issues:
-                    has_more_issues = False
-                    break
-
-                for issue in issues:
-                    assigned_to = issue.get("assigned_to", {})
-                    owner = assigned_to.get("name") if assigned_to else None
-
-                    custom_fields = issue.get("custom_fields", [])
-                   
-                    capacity_str = next(
-                        (field.get("value") for field in custom_fields if field.get("name") == "Capacity"), None
-                    )
-                    used_str = next(
-                        (field.get("value") for field in custom_fields if field.get("name") == "Used"), None
-                    )
-
-                    
-
-                    capacity = safe_float(capacity_str)
-                    used = safe_float(used_str)
-
-                    if owner and capacity > 0:
-                        percentage_used = ((used / capacity) * 100)
-                        mining_data.append({
-                            "label": owner,
-                            "value": round(percentage_used, 2),
-                            "capacity": capacity
-                        })
-
-                offset += len(issues)
-
-            mining_data.sort(key=lambda x: x['capacity'], reverse=True)
-            return mining_data[:10], None
+            return top_holders, None
 
         except Exception as e:
             return None, f"Server error: {str(e)}"
 
     @staticmethod
-    def fetch_royalty_counts(token):
+    def safe_float_strict(value):
+        if isinstance(value, (int, float)):
+            # Accept numeric types directly
+            return float(value)
+        if isinstance(value, str):
+            value = value.strip()
+            # Optional: reject empty strings or non-numeric strings strictly
+            if value == '':
+                return None
+            try:
+                val = float(value)
+                # Reject NaN and Inf values
+                if val != val or val == float('inf') or val == float('-inf'):
+                    return None
+                return val
+            except ValueError:
+                return None
+        # Reject other types strictly
+        return None
+
+
+    @staticmethod
+    def is_valid_issue(issue):
+        tracker = issue.get("tracker", {})
+        status = issue.get("status", {})
+        return tracker.get("id") == 4 and tracker.get("name") == "ML" and status.get("name") == "Valid"
+
+    @staticmethod
+    def extract_royalty(issue):
+        royalty_field = next(
+            (f for f in issue.get("custom_fields", []) if f.get("name") == "Royalty"), None
+        )
+        return GsmbManagmentService.safe_float_strict(royalty_field.get("value", "0") or "0") if royalty_field else 0
+
+    @staticmethod
+    def fetch_issues(redmine_url, headers, params):
         try:
-            REDMINE_URL = os.getenv("REDMINE_URL")
-            api_key = JWTUtils.get_api_key_from_token(token)
-
-            if not REDMINE_URL:
-                return None, REDMINE_API_ERROR_MSG
-
-            if not api_key:
-                return None, API_KEY_MISSING_ERROR
-
-            total_royalty = 0
-            fetched_orders = []
-
-            params = {
-                "project_id": 1,
-                "tracker_id": 4,
-            }
-
-            headers = {
-                "X-Redmine-API-Key": api_key,
-                "Content-Type": CONTENT_TYPE_JSON
-            }
-
-            offset = 0
-            has_more_issues = True
-
-            while has_more_issues:
-                params["offset"] = offset
-                response = requests.get(
-                    f"{REDMINE_URL}/issues.json",
-                    headers=headers,
-                    params=params
-                )
-
-                if response.status_code != 200:
-                    return None, f"Failed to fetch issues: {response.status_code} - {response.text}"
-
-                data = response.json()
-                issues = data.get('issues', [])
-
-                if not issues:
-                    has_more_issues = False
-                    break
-
-                for issue in issues:
-                    if issue.get("tracker", {}).get("id") == 4 and issue.get("tracker", {}).get("name") == "ML" and issue.get("status", {}).get("name") == "Valid":
-                        royalty_field = next(
-                            (field for field in issue.get("custom_fields", []) if field.get("name") == "Royalty"),
-                            None
-                        )
-
-                        royalty_value = 0
-                        if royalty_field:
-                            try:
-                                royalty_value = float(royalty_field.get("value", "0") or "0")
-                            except ValueError:
-                                royalty_value = 0
-
-                        if royalty_value > 0:
-                            total_royalty += royalty_value
-                            fetched_orders.append({
-                                "title": issue.get("assigned_to", {}).get("name", "Unknown"),
-                                "description": f"Royalty: {royalty_value}",
-                                "avatar": "https://via.placeholder.com/40",
-                                "royalty_value": royalty_value 
-                            })
-
-                offset += len(issues)
-
-                fetched_orders.sort(key=lambda x: x["royalty_value"], reverse=True)
-                top_5_orders = fetched_orders[:5]
-
-            return jsonify({
-                "total_royalty": total_royalty,
-                "orders": top_5_orders
-            }), None
-
+            response = requests.get(f"{redmine_url}/issues.json", headers=headers, params=params)
+            if response.status_code != 200:
+                return None, f"Failed to fetch issues: {response.status_code} - {response.text}"
+            return response.json().get("issues", []), None
         except Exception as e:
-            print("Error fetching royalty data:", e)
-            return None, "An error occurred while fetching data"
+            return None, str(e)
+
+    @staticmethod
+    def fetch_royalty_counts(token):
+        redmine_url = os.getenv("REDMINE_URL")
+        if not redmine_url:
+            return None, REDMINE_API_ERROR_MSG
+
+        api_key = JWTUtils.get_api_key_from_token(token)
+        if not api_key:
+            return None, API_KEY_MISSING_ERROR
+
+        headers = {
+            "X-Redmine-API-Key": api_key,
+            "Content-Type": CONTENT_TYPE_JSON,
+        }
+        params = {"project_id": 1, "tracker_id": 4, "offset": 0}
+
+        total_royalty = 0
+        fetched_orders = []
+
+        while True:
+            issues, error = GsmbManagmentService.fetch_issues(redmine_url, headers, params)
+            if error:
+                return None, error
+            if not issues:
+                break
+
+            for issue in issues:
+                if not GsmbManagmentService.is_valid_issue(issue):
+                    continue
+
+                royalty_value = GsmbManagmentService.extract_royalty(issue)
+                if royalty_value <= 0:
+                    continue
+
+                total_royalty += royalty_value
+                fetched_orders.append({
+                    "title": issue.get("assigned_to", {}).get("name", "Unknown"),
+                    "description": f"Royalty: {royalty_value}",
+                    "avatar": "https://via.placeholder.com/40",
+                    "royalty_value": royalty_value,
+                })
+
+            params["offset"] += len(issues)
+
+        fetched_orders.sort(key=lambda x: x["royalty_value"], reverse=True)
+        top_5_orders = fetched_orders[:5]
+
+        return jsonify({"total_royalty": total_royalty, "orders": top_5_orders}), None
+
+
+
+    @staticmethod
+    def _get_headers(api_key):
+        return {
+            "Content-Type": CONTENT_TYPE_JSON,
+            "X-Redmine-API-Key": api_key
+        }
+
+    @staticmethod
+    def _fetch_issues(url, headers, offset):
+        response = requests.get(f"{url}/issues.json?offset={offset}", headers=headers)
+        if response.status_code != 200:
+            raise RuntimeError(f"Failed to fetch data from Redmine: {response.status_code}")
+        return response.json().get("issues", [])
+
+    @staticmethod
+    def _process_issues(issues, license_counts):
+        for issue in issues:
+            tracker = issue.get("tracker", {})
+            if tracker.get("id") != 4 or tracker.get("name") != "ML":
+                continue
+            created_date = issue.get("created_on")
+            if not created_date:
+                continue
+            month = created_date.split("-")[1]
+            license_counts[month] = license_counts.get(month, 0) + 1
 
     @staticmethod
     def monthly_mining_license_count(token):
         try:
             REDMINE_URL = os.getenv("REDMINE_URL")
-            api_key = JWTUtils.get_api_key_from_token(token)
-
             if not REDMINE_URL:
                 return None, REDMINE_API_ERROR_MSG
 
+            api_key = JWTUtils.get_api_key_from_token(token)
             if not api_key:
                 return None, API_KEY_MISSING_ERROR
 
-            headers = {
-                "Content-Type": CONTENT_TYPE_JSON,
-                "X-Redmine-API-Key": api_key
-            }
-
+            headers = GsmbManagmentService._get_headers(api_key)
             license_counts = {}
             offset = 0
-            has_more_issues = True
 
-            while has_more_issues:
-                response = requests.get(
-                    f"{REDMINE_URL}/issues.json?offset={offset}",
-                    headers=headers
-                )
-
-                if response.status_code != 200:
-                    return None, f"Failed to fetch data from Redmine: {response.status_code}"
-
-                data = response.json()
-                issues = data.get("issues", [])
-
+            while True:
+                issues = GsmbManagmentService._fetch_issues(REDMINE_URL, headers, offset)
                 if not issues:
-                    has_more_issues = False
                     break
-
-                for issue in issues:
-                    if issue.get("tracker", {}).get("id") == 4 and issue.get("tracker", {}).get("name") == "ML":
-                        created_date = issue.get("created_on")
-                        if created_date:
-                            month = created_date.split("-")[1]
-                            license_counts[month] = license_counts.get(month, 0) + 1
-
+                GsmbManagmentService._process_issues(issues, license_counts)
                 offset += len(issues)
 
+            month_map = {
+                "01": "Jan", "02": "Feb", "03": "Mar", "04": "Apr",
+                "05": "May", "06": "Jun", "07": "Jul", "08": "Aug",
+                "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dec",
+            }
+
             formatted_data = [
-                {"month": "Jan", "miningLicense": license_counts.get("01", 0)},
-                {"month": "Feb", "miningLicense": license_counts.get("02", 0)},
-                {"month": "Mar", "miningLicense": license_counts.get("03", 0)},
-                {"month": "Apr", "miningLicense": license_counts.get("04", 0)},
-                {"month": "May", "miningLicense": license_counts.get("05", 0)},
-                {"month": "Jun", "miningLicense": license_counts.get("06", 0)},
-                {"month": "Jul", "miningLicense": license_counts.get("07", 0)},
-                {"month": "Aug", "miningLicense": license_counts.get("08", 0)},
-                {"month": "Sep", "miningLicense": license_counts.get("09", 0)},
-                {"month": "Oct", "miningLicense": license_counts.get("10", 0)},
-                {"month": "Nov", "miningLicense": license_counts.get("11", 0)},
-                {"month": "Dec", "miningLicense": license_counts.get("12", 0)},
+                {"month": month_map[m], "miningLicense": license_counts.get(m, 0)}
+                for m in sorted(month_map.keys())
             ]
 
             return formatted_data, None
 
         except Exception as e:
             return None, str(e)
+
 
     @staticmethod
     def transport_license_destination(token):
@@ -461,23 +450,18 @@ class GsmbManagmentService:
         try:
             REDMINE_URL = os.getenv("REDMINE_URL")
             api_key = JWTUtils.get_api_key_from_token(token)
-
             if not REDMINE_URL:
                 return None, REDMINE_API_ERROR_MSG
-
             if not api_key:
                 return None, API_KEY_MISSING_ERROR
-
             params = {
                 "project_id": 1,
                 "tracker_id": 6
             }
-
             headers = {
                 "X-Redmine-API-Key": api_key,
                 "Content-Type": CONTENT_TYPE_JSON
             }
-
             counts = {
                 "New": 0,
                 "Rejected": 0,
@@ -485,10 +469,15 @@ class GsmbManagmentService:
                 "Executed": 0,
                 "total": 0
             }
-
+            # Map statuses to keys in counts dictionary
+            status_map = {
+                "New": "New",
+                "Rejected": "Rejected",
+                "In Progress": "InProgress",
+                "Executed": "Executed"
+            }
             offset = 0
             has_more_issues = True
-
             while has_more_issues:
                 params["offset"] = offset
                 response = requests.get(
@@ -496,33 +485,21 @@ class GsmbManagmentService:
                     headers=headers,
                     params=params
                 )
-
                 if response.status_code != 200:
                     return None, f"Failed to fetch issues: {response.status_code} - {response.text}"
-
                 data = response.json()
                 issues = data.get("issues", [])
-
                 if not issues:
                     has_more_issues = False
                     break
-
                 for issue in issues:
                     status = issue.get("status", {}).get("name", "")
-                    if status == "New":
-                        counts["New"] += 1
-                    elif status == "Rejected":
-                        counts["Rejected"] += 1
-                    elif status == "In Progress":
-                        counts["InProgress"] += 1
-                    elif status == "Executed":
-                        counts["Executed"] += 1
-
+                    key = status_map.get(status)
+                    if key:
+                        counts[key] += 1
                 counts["total"] += len(issues)
                 offset += len(issues)
-
             return counts, None
-
         except Exception as e:
             return None, f"Server error: {str(e)}"
 
@@ -531,11 +508,9 @@ class GsmbManagmentService:
         try:
             REDMINE_URL = os.getenv("REDMINE_URL")
             api_key = JWTUtils.get_api_key_from_token(token)
-            
 
             if not REDMINE_URL:
                 return None, REDMINE_API_ERROR_MSG
-
             if not api_key:
                 return None, API_KEY_MISSING_ERROR
 
@@ -551,46 +526,37 @@ class GsmbManagmentService:
                 "miningEngineer": 0
             }
 
-            offset = 0
-            has_more_memberships = True
+            def increment_role_count(role_name):
+                role_map = {
+                    "MLOwner": "licenceOwner",
+                    "GSMBOfficer": "activeGSMBOfficers",
+                    "PoliceOfficer": "policeOfficers",
+                    "miningEngineer": "miningEngineer"
+                }
+                key = role_map.get(role_name)
+                if key:
+                    counts[key] += 1
 
-            while has_more_memberships:
+            offset = 0
+            while True:
                 url = f"{REDMINE_URL}/projects/mmpro-gsmb/memberships.json?offset={offset}"
                 response = requests.get(url, headers=headers)
-
                 if response.status_code != 200:
                     return None, f"Failed to fetch memberships: {response.status_code} - {response.text}"
 
-                data = response.json()
-                memberships = data.get("memberships", [])
-
+                memberships = response.json().get("memberships", [])
                 if not memberships:
-                    has_more_memberships = False
                     break
 
                 for membership in memberships:
                     roles = membership.get("roles", [])
                     if roles:
                         role_name = roles[0].get("name", "")
-                        if role_name == "MLOwner":
-                            counts["licenceOwner"] += 1
-                        elif role_name == "GSMBOfficer":
-                            counts["activeGSMBOfficers"] += 1
-                        elif role_name == "PoliceOfficer":
-                            counts["policeOfficers"] += 1
-                        elif role_name == "miningEngineer":
-                            counts["miningEngineer"] += 1
+                        increment_role_count(role_name)
 
                 offset += len(memberships)
 
-                total_count = (
-                    counts["licenceOwner"]
-                    + counts["activeGSMBOfficers"]
-                    + counts["policeOfficers"]
-                    + counts["miningEngineer"]
-                )
-                counts["total_count"] = total_count
-
+            counts["total_count"] = sum(counts.values())
             return counts, None
 
         except Exception as e:
@@ -649,7 +615,7 @@ class GsmbManagmentService:
 
                 for issue in issues:
                     status = issue.get("status", {}).get("name", "")
-                    due_date = None
+                    
                     
                     if status == "Valid":
                         counts["valid"] += 1

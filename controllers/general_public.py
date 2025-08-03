@@ -27,7 +27,7 @@ def validate_lorry_number():
 @general_public_bp.route('/create-complaint', methods=['POST'])
 def create_complaint():
     data = request.json
-    success, result = GeneralPublicService.create_complaint(data['phone'], data['vehicleNumber'])
+    success, result = GeneralPublicService.create_complaint(data['phone'], data['vehicle_number'])
 
     if success:
         return jsonify({'success': True, 'complaint_id': result})
