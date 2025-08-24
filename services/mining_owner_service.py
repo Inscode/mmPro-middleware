@@ -13,6 +13,10 @@ from werkzeug.utils import secure_filename
 import time
 from hashlib import md5
 from utils.constants import REDMINE_API_ERROR_MSG,CONTENT_TYPE_JSON
+from collections import Counter, defaultdict
+from datetime import datetime
+
+
 
 load_dotenv()
 
@@ -1312,3 +1316,71 @@ class MLOwnerService:
             return False, f"Server error: {str(e)}"
 
 
+    @staticmethod
+    def get_top_lorry_numbers(token: str, limit=3):
+        try:
+            redmine_url = os.getenv("REDMINE_URL")
+            api_key = JWTUtils.get_api_key_from_token(token)
+            if not redmine_url or not api_key:
+                return [], "Redmine URL or API key not set"
+
+            result = JWTUtils.decode_jwt_and_get_user_id(token)
+            if not result['success']:
+                return [], result.get('message', 'Failed to decode token')
+
+            user_id = result['user_id']
+            headers = {
+                "Content-Type": CONTENT_TYPE_JSON,
+                "X-Redmine-API-Key": api_key
+            }
+
+            offset = 0
+            all_issues = []
+            while True:
+                params = {
+                    "project_id": 1,
+                    "tracker_id": 5,
+                    "assigned_to_id": user_id,
+                    "limit": 100,
+                    "offset": offset
+                }
+                response = requests.get(f"{redmine_url}/issues.json", headers=headers, params=params)
+                if response.status_code != 200:
+                    return [], f"Failed to fetch issues: {response.status_code}"
+                data = response.json()
+                issues = data.get("issues", [])
+                if not issues:
+                    break
+                all_issues.extend(issues)
+                offset += len(issues)
+
+            # Map lorry numbers to contact numbers
+            lorry_contact_map = []
+            for issue in all_issues:
+                lorry_number = None
+                driver_contact = None
+                for f in issue.get("custom_fields", []):
+                    if f["name"] == "Lorry Number":
+                        lorry_number = f["value"]
+                    elif f["name"] == "Driver Contact":
+                        driver_contact = f["value"]
+                if lorry_number:
+                    lorry_contact_map.append((lorry_number, driver_contact))
+
+            # Count frequency of lorry numbers
+            lorry_counts = Counter([lc[0] for lc in lorry_contact_map])
+            most_common = [num for num, _ in lorry_counts.most_common(limit)]
+
+            # Final result with contact numbers
+            result_list = []
+            for lorry in most_common:
+                contact = next((c for (ln, c) in lorry_contact_map if ln == lorry), None)
+                result_list.append({
+                    "lorry_number": lorry,
+                    "driver_contact": contact
+                })
+
+            return result_list, None
+
+        except Exception as e:
+            return [], str(e)
