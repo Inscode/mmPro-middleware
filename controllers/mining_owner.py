@@ -465,4 +465,25 @@ def create_payhere_session():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+@mining_owner_bp.route('/lorry-numbers', methods=['GET'])
+@check_token
+@role_required(['MLOwner'])
+def get_lorry_numbers():
+    try:
+        token = request.headers.get('Authorization')
+        if not token:
+            return jsonify({"error": AUTH_TOKEN_MISSING_ERROR}), 401
+
+        # Call service to get top lorry numbers
+        top_lorries, error = MLOwnerService.get_top_lorry_numbers(token)
+
+        if error:
+            return jsonify({"error": error}), 500
+
+        return jsonify(top_lorries), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
